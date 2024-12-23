@@ -1,0 +1,15 @@
+{
+  "extends": ["@adobe/eslint-config-aio-lib-config", "prettier"],
+  "parserOptions": {
+    "ecmaVersion": 2021
+  },
+  "ignorePatterns": ["node_modules/", "dist/"],
+  "rules": {
+    "node/no-unpublished-require": [
+      "error",
+      {
+        "allowModules": ["dotenv", "js-yaml", "wait-for-expect"]
+      }
+    ]
+  }
+}

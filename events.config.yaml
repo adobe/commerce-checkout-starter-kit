@@ -1,0 +1,25 @@
+# This event specification is read by the `configure-events` script
+event_providers:
+  # Mandatory fields of event providers: label, provider_metadata
+  - label: 3rd party events test
+    provider_metadata: 3rd_party_custom_events
+    description: Test provider for events from a 3rd party system
+    docs_url: https://3rdparty.com/docs
+    events_metadata:
+      # Mandatory fields of event metadata: event_code, label
+      - event_code: com.3rdparty.events.test.Event1
+        label: Test event 1
+        description: Test event 1 for 3rd party system
+  - label: Commerce events provider
+    provider_metadata: dx_commerce_events
+    description: Event provider for Adobe Commerce
+    docs_url: https://developer.adobe.com/commerce/extensibility/events/
+    # Commerce event subscription payload: https://developer.adobe.com/commerce/extensibility/events/api/#subscribe-to-events
+    subscription:
+      - event:
+          # Starting with observer and add your prefix to avoid conflict with other projects
+          name: observer.checkout_oope.sales_order_creditmemo_save_after
+          # Original commerce event name
+          parent: observer.sales_order_creditmemo_save_after
+          fields:
+            - name: '*'

@@ -1,0 +1,82 @@
+application:
+  actions: actions
+  runtimeManifest:
+    packages:
+      commerce-checkout-starter-kit:
+        license: Apache-2.0
+        actions:
+          generic:
+            function: actions/generic/index.js
+            web: 'yes'
+            runtime: nodejs:22
+            inputs:
+              LOG_LEVEL: debug
+            annotations:
+              require-adobe-auth: true
+              final: true
+          validate-payment:
+            function: actions/validate-payment/index.js
+            web: 'yes'
+            runtime: nodejs:22
+            inputs:
+              LOG_LEVEL: debug
+              COMMERCE_PAYMENT_METHOD_CODES: $COMMERCE_PAYMENT_METHOD_CODES
+              COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
+            annotations:
+              require-adobe-auth: false
+              raw-http: true
+              final: true
+          consume:
+            function: actions/commerce-events/consume.js
+            web: 'no'
+            runtime: nodejs:22
+            inputs:
+              LOG_LEVEL: debug
+            annotations:
+              require-adobe-auth: true
+              final: true
+      3rd-party-events:
+        license: Apache-2.0
+        actions:
+          publish:
+            function: actions/3rd-party-events/publish.js
+            web: 'yes'
+            runtime: nodejs:22
+            inputs:
+              LOG_LEVEL: debug
+              OAUTH_CLIENT_ID: $OAUTH_CLIENT_ID
+              OAUTH_CLIENT_SECRETS: $OAUTH_CLIENT_SECRETS
+              OAUTH_TECHNICAL_ACCOUNT_ID: $OAUTH_TECHNICAL_ACCOUNT_ID
+              OAUTH_TECHNICAL_ACCOUNT_EMAIL: $OAUTH_TECHNICAL_ACCOUNT_EMAIL
+              OAUTH_IMS_ORG_ID: $OAUTH_IMS_ORG_ID
+              OAUTH_SCOPES: $OAUTH_SCOPES
+              AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING: $AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING
+              AIO_CLI_ENV: $AIO_CLI_ENV
+            annotations:
+              require-adobe-auth: true
+              final: true
+          consume:
+            function: actions/3rd-party-events/consume.js
+            web: 'no'
+            runtime: nodejs:22
+            inputs:
+              LOG_LEVEL: debug
+            annotations:
+              require-adobe-auth: true
+              final: true
+  events:
+    registrations:
+      Event registration for 3rd party system:
+        description: Event registration for 3rd party system
+        events_of_interest:
+          - provider_metadata: 3rd_party_custom_events
+            event_codes:
+              - com.3rdparty.events.test.Event1
+        runtime_action: 3rd-party-events/consume
+      Commerce events consumer:
+        description: Consumes events from Adobe Commerce
+        events_of_interest:
+          - provider_metadata: dx_commerce_events
+            event_codes:
+              - com.adobe.commerce.observer.checkout_oope.sales_order_creditmemo_save_after
+        runtime_action: commerce-checkout-starter-kit/consume
