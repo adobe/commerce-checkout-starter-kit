@@ -21,6 +21,30 @@ checkout experiences.
 - See [CICD.md](CICD.md) for information about the CI/CD setup.
 - See [EDS.md](EDS.md) for information about the Edge Delivery Service(EDS) Storefront integration.
 
+## Prerequisites
+
+Before starting with the starter kit, ensure that your Adobe Commerce installation meets the following prerequisites:
+
+### Install OOPE Payment Module in Adobe Commerce
+
+To utilize Out-of-Process Payment Extensions (OOPE), install the `magento/module-out-of-process-payment-methods` in your Commerce instance. This module enables out-of-process payment functionalities.
+Execute the following command using Composer:
+
+```bash
+composer require magento/module-out-of-process-payment-methods --with-dependencies
+```
+
+### Install Commerce Eventing Module in Adobe Commerce
+
+The [Commerce Eventing module](https://developer.adobe.com/commerce/extensibility/events/) is crucial for handling events within Adobe Commerce and has been included in the core since Adobe Commerce version 2.4.6.
+Ensure your installation is up-to-date, especially if you are using this starter kit, which requires at least version 1.10.0 of the Commerce Eventing module:
+
+```bash
+composer update magento/commerce-eventing --with-dependencies
+```
+
+For Adobe Commerce versions 2.4.4 or 2.4.5, the Adobe I/O Events for Adobe Commerce module will need to be installed manually. Follow the instructions provided in the [Adobe I/O Events installation documentation](https://developer.adobe.com/commerce/extensibility/events/installation/).
+
 ## Project structure
 
 ### Configurations
@@ -84,8 +108,7 @@ It reads `dx_commerce_events` event provider specification from the [events.conf
 
 To run the script, ensure you have set the followings up:
 
-1. You have the commerce eventing module installed in your commerce instance.
-   - If not, install the Adobe I/O Events for Adobe Commerce module in your commerce instance following this [documentation](https://developer.adobe.com/commerce/extensibility/events/installation/).
+1. You have the [commerce eventing module](#install-commerce-eventing-module-in-adobe-commerce) installed in your commerce instance.
 2. Make sure you have already set up the [Adobe Commerce HTTP Client](#adobe-commerce-http-client) to authenticate with the commerce instance.
 3. Ensure that your [events.config.yaml](#eventsconfigyaml) and `.env` files are correctly configured with the commerce event provider specification.
    - The event provider needs to be created in advance, which you can do by running the [configure-events](#configure-events) script.
@@ -255,7 +278,8 @@ and validate the payment according to the payment gateway needs.
 ## Adobe Commerce HTTP Client
 
 `adobe-commerce.js` provides a set of methods to interact with the Adobe Commerce instance. The client is built using the Adobe Commerce HTTP Client, which is a wrapper around the Adobe Commerce REST API.
-To utilize the Adobe Commerce HTTP Client, update `COMMERCE_BASE_URL=<corresponding_base_url>` in the `.env` file, and complete the authentication setup.
+
+To utilize the Adobe Commerce HTTP Client, update `COMMERCE_BASE_URL=<commerce_instance_url>` in the `.env` file, and complete the authentication setup.
 
 ### Authentication
 
@@ -326,96 +350,13 @@ getAdobeCommerceClient(process.env).then((client) => {
 });
 ```
 
-###### Request parameters
+###### Parameters
 
-- maskedCartId: String Cart id from the payment method webhook or event
+- `maskedCartId`: String Cart id from the payment method webhook or event
 
 ###### Response success
 
 This method uses the Adobe Commerce API order search criteria https://developer.adobe.com/commerce/webapi/rest/use-rest/performing-searches/#other-search-criteria
-
-#### getOopePaymentMethods
-
-Get the list of all out of process payment methods in the Adobe Commerce instance.
-
-```javascript
-const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
-
-getAdobeCommerceClient(process.env).then((client) => {
-  client.getOopePaymentMethods().then((response) => {
-    console.log(response);
-  });
-});
-```
-
-###### Request parameters
-
-\*\* No request parameters
-
-###### Response success
-
-```json
-{
-  "success": true,
-  "message": [
-    {
-      "id": 1,
-      "code": "method-1",
-      "title": "Method one",
-      "active": true,
-      "backend_integration_url": "http://oope-payment-method.pay/event",
-      "stores": [],
-      "order_status": "complete",
-      "countries": [],
-      "currencies": [],
-      "custom_config": []
-    }
-  ]
-}
-```
-
-#### getOopePaymentMethod
-
-Get one out of process payment method by code from the Adobe Commerce instance.
-
-```javascript
-const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
-
-getAdobeCommerceClient(process.env).then((client) => {
-  client.getOopePaymentMethod('method-1').then((response) => {
-    console.log(response);
-  });
-});
-```
-
-###### Request parameters
-
-- code: String: Code of the OOP payment method, must be unique including the regular payment methods
-
-###### Response success:
-
-```json
-{
-  "success": true,
-  "message": {
-    "id": 2,
-    "code": "method-1",
-    "title": "Method one",
-    "active": true,
-    "backend_integration_url": "http://oope-payment-method.pay/event",
-    "stores": ["default"],
-    "order_status": "complete",
-    "countries": ["ES", "US"],
-    "currencies": ["EUR", "USD"],
-    "custom_config": [
-      {
-        "key": "key1",
-        "value": "value1"
-      }
-    ]
-  }
-}
-```
 
 #### createOopePaymentMethod
 
@@ -483,6 +424,85 @@ getAdobeCommerceClient(process.env).then((client) => {
     "custom_config": [
       {
         "key1": "value1"
+      }
+    ]
+  }
+}
+```
+
+#### getOopePaymentMethods
+
+Get the list of all out of process payment methods in the Adobe Commerce instance.
+
+```javascript
+const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
+
+getAdobeCommerceClient(process.env).then((client) => {
+  client.getOopePaymentMethods().then((response) => {
+    console.log(response);
+  });
+});
+```
+
+###### Response success
+
+```json
+{
+  "success": true,
+  "message": [
+    {
+      "id": 1,
+      "code": "method-1",
+      "title": "Method one",
+      "active": true,
+      "backend_integration_url": "http://oope-payment-method.pay/event",
+      "stores": [],
+      "order_status": "complete",
+      "countries": [],
+      "currencies": [],
+      "custom_config": []
+    }
+  ]
+}
+```
+
+#### getOopePaymentMethod
+
+Get one out of process payment method by code from the Adobe Commerce instance.
+
+```javascript
+const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
+
+getAdobeCommerceClient(process.env).then((client) => {
+  client.getOopePaymentMethod('method-1').then((response) => {
+    console.log(response);
+  });
+});
+```
+
+###### Request parameters
+
+- code: String: Code of the OOP payment method, must be unique including the regular payment methods
+
+###### Response success:
+
+```json
+{
+  "success": true,
+  "message": {
+    "id": 2,
+    "code": "method-1",
+    "title": "Method one",
+    "active": true,
+    "backend_integration_url": "http://oope-payment-method.pay/event",
+    "stores": ["default"],
+    "order_status": "complete",
+    "countries": ["ES", "US"],
+    "currencies": ["EUR", "USD"],
+    "custom_config": [
+      {
+        "key": "key1",
+        "value": "value1"
       }
     ]
   }
