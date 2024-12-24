@@ -177,17 +177,15 @@ contains interesting information about how to handle event consumption (state of
 
 ### Payment flow: Obtain order details from Adobe Commerce using the masked cart id
 
-To understand it we have to know what is going to be the flow:
+To understand the payment flow, we need to consider the following steps:
 
-- All starts in the frontend, when checkout ends, the frontend will send the masked cart id to the payment gateway.
-- Then the payment gateway will send a request to the AppBuilder application with the masked cart id, because is the only information it has about the order. This request could be a webhook or a or an event.
-- The AppBuilder application will use the Adobe Commerce HTTP Client to get the order details using the masked cart id. To do so, this starter kit provides the method `getOrderByMaskedCartId` in the Adobe Commerce HTTP Client.
+1. It all starts on the frontend. When checkout is completed, the frontend sends the masked cart ID to the payment gateway.
+2. The payment gateway then sends a request to the AppBuilder application with the masked cart ID, as this is the only information it has about the order. This request could be a webhook or an event.
+3. The AppBuilder application uses the Adobe Commerce HTTP Client to retrieve the order details using the masked cart ID. To facilitate this, the starter kit provides the method `getOrderByMaskedCartId` in the Adobe Commerce HTTP Client.
 
 ![sequence.png](sequence.png)
 
-### Payment methods
-
-#### Validate payment info
+### Payment methods: Validate payment info
 
 Since the checkout process and the payment of the order is expected to be done in a headless way, the Commerce instance
 has to ensure that the payment has succeeded and the order can be placed.
@@ -256,43 +254,46 @@ and validate the payment according to the payment gateway needs.
 
 ## Adobe Commerce HTTP Client
 
-### Authentication
+`adobe-commerce.js` provides a set of methods to interact with the Adobe Commerce instance. The client is built using the Adobe Commerce HTTP Client, which is a wrapper around the Adobe Commerce REST API.
+To utilize the Adobe Commerce HTTP Client, update `COMMERCE_BASE_URL=<corresponding_base_url>` in the `.env` file, and complete the authentication setup.
 
+### Authentication
 
 Depending on your Adobe Commerce setup, there are 2 options to authenticate and communicate with the App Builder:
 
-- Configure Adobe Identity Management Service (IMS) 
-- Configure Commerce Integration
+1. [Configure Adobe Identity Management Service (IMS)](#option-1-configure-adobe-identity-management-service-ims)
+2. [Configure Commerce Integration](#option-2-configure-commerce-integration)
 
-One of the common requirement for both type of authentications is setting the `COMMERCE_BASE_URL=<corresponding_base_url>` in the `.env` file. It's important to know that if commerce integration is detected, it will have precedence over IMS Auth. However, if none of them is detected or configured, than client instantiation will directly fail.
+It's important to know that if commerce integration is detected, it will have precedence over IMS Auth. However, if none of them is detected or configured, than client instantiation will directly fail.
 
-#### Configure Adobe Identity Management Service (IMS)
+#### Option 1. Configure Adobe Identity Management Service (IMS)
 
 To proceed with this authentication, some previous setup needs to be done.
 
 1. Configure IMS for Commerce following the steps in [Configure the Commerce Admin Integration with Adobe ID](https://experienceleague.adobe.com/en/docs/commerce-admin/start/admin/ims/adobe-ims-config).
 
-2.  Create new IMS credentials through the [Adobe Developer Console](https://developer.adobe.com/console). To do so, add a new service of type `API` in the workspace. From the list of API's, select `I/O Management API` and follow the steps shown by the wizard. On completion, all credentials will be generated.
+2. Create new IMS credentials through the [Adobe Developer Console](https://developer.adobe.com/console). To do so, add a new service of type `API` in the workspace. From the list of API's, select `I/O Management API` and follow the steps shown by the wizard. On completion, all credentials will be generated.
 
 3. Add Technical Account to Commerce Admin
+
    1. Ensure that the technical account associated with the server-to-server credentials is added to the Commerce Admin with the appropriate permissions. If not, you can add it using [Admin User Creation Guide](https://experienceleague.adobe.com/en/docs/commerce-admin/systems/user-accounts/permissions-users-all#create-a-user).
    2. When associating the user, make sure to find your actual `Technical Account email` as a part of generated IMS credentials with following pattern: <technical-account>@techacct.adobe.com and use that value in the `Email` field shown in the following image:
-![img.png](userCreation.png)
-   
+      ![img.png](userCreation.png)
+
    3. When selecting the user role from the `User Role`tab shown in the previous image, make sure to select the `Administrators` to have all the necessary permissions.
 
 Finally, copy the generated credentials (client id, client secret, technical account id, technical account email) to the `.env` file in the root of the project as following:
 
-   ```text
-   OAUTH_CLIENT_ID=<client id>
-   OAUTH_CLIENT_SECRETS=<client secret>
-   OAUTH_TECHNICAL_ACCOUNT_ID=<technical account id>
-   OAUTH_TECHNICAL_ACCOUNT_EMAIL=<technical account email>
-   OAUTH_SCOPES=<scope>
-   OAUTH_IMS_ORG_ID=<img org>
-   ```
+```text
+OAUTH_CLIENT_ID=<client id>
+OAUTH_CLIENT_SECRETS=<client secret>
+OAUTH_TECHNICAL_ACCOUNT_ID=<technical account id>
+OAUTH_TECHNICAL_ACCOUNT_EMAIL=<technical account email>
+OAUTH_SCOPES=<scope>
+OAUTH_IMS_ORG_ID=<img org>
+```
 
-#### Configure Commerce Integration
+#### Option 2. Configure Commerce Integration
 
 This option also enables us to communicate with the platform. It requires some setup as following:
 
@@ -309,28 +310,11 @@ This option also enables us to communicate with the platform. It requires some s
 
 From now, you can also debug and see some customized logs using the `LOG_LEVEL` environment variable. If this variable is set, logs from different phases of the commerce client instantiation will be shown with detailed information.
 
+### Example of use
 
-### Example of use (Get one payment method by code):
-
-```javascript
-const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
-
-getAdobeCommerceClient(process.env).then((client) => {
-  client.getOopePaymentMethod('method-1').then((response) => {
-    console.log(response);
-  });
-});
-```
-
-#### Endpoints
-
-##### getOrderByMaskedCartId
-
-###### Description:
+#### getOrderByMaskedCartId
 
 Get the order by masked cart id from the Adobe Commerce instance. This is used when the app builder application receives a request (event or webhook) from the payment gateway with the masked cart id.. With this endpoint we could get the complete order information.
-
-###### Example:
 
 ```javascript
 const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
@@ -350,24 +334,9 @@ getAdobeCommerceClient(process.env).then((client) => {
 
 This method uses the Adobe Commerce API order search criteria https://developer.adobe.com/commerce/webapi/rest/use-rest/performing-searches/#other-search-criteria
 
-###### Response error
-
-```json
-{
-  "success": false,
-  "statusCode": 404,
-  "message": "Response code 404 (Not Found)",
-  "body": { "message": "masked_quote_id not found" }
-}
-```
-
-##### getOopePaymentMethods
-
-###### Description:
+#### getOopePaymentMethods
 
 Get the list of all out of process payment methods in the Adobe Commerce instance.
-
-###### Example:
 
 ```javascript
 const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
@@ -400,30 +369,14 @@ getAdobeCommerceClient(process.env).then((client) => {
       "countries": [],
       "currencies": [],
       "custom_config": []
-    },
-    {
-      "id": 2,
-      "code": "method-2",
-      "title": "Method Two",
-      "active": true,
-      "backend_integration_url": "http://oope-payment-method.pay/event",
-      "stores": [],
-      "order_status": "complete",
-      "countries": [],
-      "currencies": [],
-      "custom_config": []
     }
   ]
 }
 ```
 
-##### getOopePaymentMethod
-
-###### Description:
+#### getOopePaymentMethod
 
 Get one out of process payment method by code from the Adobe Commerce instance.
-
-###### Example:
 
 ```javascript
 const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
@@ -458,64 +411,36 @@ getAdobeCommerceClient(process.env).then((client) => {
       {
         "key": "key1",
         "value": "value1"
-      },
-      {
-        "key": "key2",
-        "value": "value2"
       }
     ]
   }
 }
 ```
 
-###### Response error:
-
-```json
-{
-  "success": false,
-  "statusCode": 404,
-  "message": "Response code 404 (Not Found)",
-  "body": {
-    "message": "Out of process payment method not found."
-  }
-}
-```
-
-##### createOopePaymentMethod
-
-###### Description:
+#### createOopePaymentMethod
 
 Create a new out of process payment method in the Adobe Commerce instance.
-
-###### Example:
 
 ```javascript
 const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
 
 getAdobeCommerceClient(process.env).then((client) => {
-  client
-    .createOopePaymentMethod({
-      code: 'method-1',
-      title: 'Method 1',
-      description: 'Method 1 description',
-      active: true,
-      backend_integration_url: 'https://example.com',
-      stores: ['store-1', 'store-2'],
-      order_status: 'processing',
-      countries: ['US', 'ES'],
-      currencies: ['USD', 'EUR'],
-      custom_config: [
-        {
-          key1: 'value1',
-        },
-        {
-          key2: 'value2',
-        },
-      ],
-    })
-    .then((response) => {
-      console.log(response);
-    });
+  client.createOopePaymentMethod({
+    code: 'method-1',
+    title: 'Method 1',
+    description: 'Method 1 description',
+    active: true,
+    backend_integration_url: 'https://example.com',
+    stores: ['store-1', 'store-2'],
+    order_status: 'processing',
+    countries: ['US', 'ES'],
+    currencies: ['USD', 'EUR'],
+    custom_config: [
+      {
+        key1: 'value1',
+      },
+    ],
+  });
 });
 ```
 
@@ -535,9 +460,6 @@ getAdobeCommerceClient(process.env).then((client) => {
   "custom_config": [
     {
       "key1": "value1"
-    },
-    {
-      "key2": "value2"
     }
   ]
 }
@@ -561,24 +483,8 @@ getAdobeCommerceClient(process.env).then((client) => {
     "custom_config": [
       {
         "key1": "value1"
-      },
-      {
-        "key2": "value2"
       }
     ]
-  }
-}
-```
-
-###### Response error:
-
-```json
-{
-  "success": false,
-  "statusCode": 400,
-  "message": "Response code 400 (Bad Request)",
-  "body": {
-    "message": "Error message"
   }
 }
 ```
