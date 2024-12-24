@@ -334,9 +334,9 @@ This option also enables us to communicate with the platform. It requires some s
 
 From now, you can also debug and see some customized logs using the `LOG_LEVEL` environment variable. If this variable is set, logs from different phases of the commerce client instantiation will be shown with detailed information.
 
-### API Methods
+### Commerce API Methods
 
-To call the Commerce API methods, initialize the Adobe Commerce Client as follows:
+To call the Commerce REST endpoints, initialize the Adobe Commerce Client as follows:
 
 ```javascript
 const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
