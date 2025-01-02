@@ -360,7 +360,7 @@ const commerceClient = await getAdobeCommerceClient(process.env);
 | `order_status`            | String  | Initial [order status](https://experienceleague.adobe.com/en/docs/commerce-admin/stores-sales/order-management/orders/order-status) when using this method. Default is `pending` |
 | `countries`               | Array   | List of countries where the method is available.                                                                                                                                 |
 | `currencies`              | Array   | Currencies supported by the payment method.                                                                                                                                      |
-| `custom_config`           | Array   | Custom configuration settings for Payment Methods                                                                                                                                |
+| `custom_config`           | Array   | Custom configuration settings for payment methods                                                                                                                                |
 
 **Example usage:**
 
