@@ -8,10 +8,10 @@ Three different workflow samples are provided to implement the continuous integr
 
 This workflow is triggered on a release event ([Github Events that trigger Workflows](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#release)), specifically when a release is marked as released and defines a single job called deploy, which performs the following steps sequentially to deploy the application to production.
 
-1. Environment Setup: 
+1. Environment Setup:
    - [Matrix Strategy](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/running-variations-of-jobs-in-a-workflow#about-matrix-strategies): The job runs on Ubuntu (ubuntu-latest) using Node.js version 20. It is configured to allow only one parallel execution (max-parallel: 1) and executes the following steps:
      - Checkout Code: Retrieves the code from the repository using actions/checkout.
-     - Setup Node.js: Configures the specified Node.js version (20) and runs a code check.
+     - Setup Node.js: Configures the specified Node.js version (20).
 2. npm Install: Installs the required dependencies for the application.
 3. CLI Setup:
    Installs and configures the `Adobe I/O CLI` tool using the `adobe/aio-cli-setup-action` action.
@@ -22,13 +22,12 @@ This workflow is triggered on a release event ([Github Events that trigger Workf
 6. Deployment:
    Deploys the application to production using the **deploy** command. Relevant credentials (e.g., AIO_RUNTIME_NAMESPACE, AIO_RUNTIME_AUTH) and project details (e.g., AIO_PROJECT_NAME, AIO_PROJECT_WORKSPACE_NAME) are securely provided as environment variables which need to be configured accordingly.
 
-
 ### deploy_stage.yml
 
 Overall this workflow is similar to the previous one. The key differences are:
+
 1. The workflow is triggered on a `push` to the `main` branch.
 2. Authentication and deployments secrets are staging-specific which means these need to be defined separately for this environment.
-
 
 ### pr_test.yml
 

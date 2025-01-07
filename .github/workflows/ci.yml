@@ -1,4 +1,4 @@
-name: Node CI Tests on PR
+name: Node CI Tests
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
       - main
 jobs:
   deploy:
-    name: Deploy to Stage
+    name: CI check
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
@@ -23,8 +23,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-      - name: npm install
-        run: npm i
+      - name: npm clean install
+        run: npm ci
       - run: npm run code:check
-      - run: npm run code:fix
       - run: npm test

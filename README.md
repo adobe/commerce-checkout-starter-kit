@@ -532,8 +532,7 @@ try {
 }
 ```
 
-
-## CI/CD 
+## CI/CD
 
 To read about continuous integration and continuous delivery for any application built using App builder visit [CI/CD for App Builder Applications](https://developer.adobe.com/app-builder/docs/guides/deployment/ci_cd_for_firefly_apps/).
 
