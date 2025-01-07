@@ -23,6 +23,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-      - run: npx prettier . --write
+      - name: npm install
+        run: npm i
       - run: npm run code:check
       - run: npm test
