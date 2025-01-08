@@ -4,7 +4,7 @@
 
 Three different workflow samples are provided to implement the continuous integration using the Github Actions feature.
 
-### deploy_prod.yml
+### [deploy_prod.yml](.github/workflows-samples/deploy_prod.yml)
 
 This workflow is triggered on a release event ([Github Events that trigger Workflows](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#release)), specifically when a release is marked as released and defines a single job called deploy, which performs the following steps sequentially to deploy the application to production.
 
@@ -22,14 +22,14 @@ This workflow is triggered on a release event ([Github Events that trigger Workf
 6. Deployment:
    Deploys the application to production using the **deploy** command. Relevant credentials (e.g., AIO_RUNTIME_NAMESPACE, AIO_RUNTIME_AUTH) and project details (e.g., AIO_PROJECT_NAME, AIO_PROJECT_WORKSPACE_NAME) are securely provided as environment variables which need to be configured accordingly.
 
-### deploy_stage.yml
+### [deploy_stage.yml](.github/workflows-samples/deploy_stage.yml)
 
 Overall this workflow is similar to the previous one. The key differences are:
 
 1. The workflow is triggered on a `push` to the `main` branch.
 2. Authentication and deployments secrets are staging-specific which means these need to be defined separately for this environment.
 
-### pr_test.yml
+### [pr_test.yml](.github/workflows-samples/pr_test.yml)
 
 This workflow is triggered when a pull request is opened, updated, or synchronized ([Pull request event](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#pull_request)) and is intended to test the changes in the pull request across multiple operating systems and Node.js versions before merging into the main branch.
 
