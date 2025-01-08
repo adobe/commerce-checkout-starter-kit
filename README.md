@@ -531,3 +531,9 @@ try {
   return errorResponse(HTTP_INTERNAL_ERROR, 'Failed to fetch order due to an unexpected error');
 }
 ```
+
+## CI/CD
+
+To read about continuous integration and continuous delivery for any application built using App builder visit [CI/CD for App Builder Applications](https://developer.adobe.com/app-builder/docs/guides/deployment/ci_cd_for_firefly_apps/).
+
+In addition, to help with the implementation, workflow samples are also provided under `workflow-samples`. To understand these workflows, visit `CICD.md` file in this project.
