@@ -12,7 +12,7 @@
   Builder. If you don't have access to the Adobe Developer Console or App Builder, you can check
   out [Get access to App Builder](https://developer.adobe.com/app-builder/docs/overview/getting_access/#get-access-to-app-builder).
 
-## Initial configuration (when this is promoted to a github, to be kept in CEXT-3863)
+## Initial configuration
 
 1. Create a folder for your project and navigate to it.
 2. Execute the following command to select or create the Adobe Developer Console project in your organization and use
