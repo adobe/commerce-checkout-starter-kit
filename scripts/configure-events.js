@@ -59,12 +59,6 @@ async function main() {
     return;
   }
 
-  const clientId = process.env.SERVICE_API_KEY;
-  if (!clientId) {
-    logger.warn('Cannot find SERVICE_API_KEY environment variable, event providers reconciliation will be skipped');
-    return;
-  }
-
   const { imsOrgId, apiKey, accessToken } = await resolveCredentials(process.env);
 
   logger.info(`Event providers label will be suffixed with "<label> - ${process.env.AIO_runtime_namespace}"`);

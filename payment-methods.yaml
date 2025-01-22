@@ -6,7 +6,7 @@ methods:
       backend_integration_url: http://oope-payment-method.pay/event
       stores:
         - default
-      order_status: pending
+      order_status: processing
       countries:
         - US
       currencies:
