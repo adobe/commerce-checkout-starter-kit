@@ -89,7 +89,6 @@ To run the `configure-events` script, ensure that your project configuration (`.
 
 Additionally, the script uses the following environment variables:
 
-- `SERVICE_API_KEY`: The API key for the service.
 - `AIO_runtime_namespace`: The Adobe I/O Runtime namespace used as suffix for the Adobe I/O Events provider label.
 - `AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING`: (Optional) Existing provider metadata to provider mapping.
 
