@@ -34,6 +34,15 @@ Execute the following command using Composer:
 composer require magento/module-out-of-process-payment-methods --with-dependencies
 ```
 
+### Install Out-of-Process Shipping Extensions (OOPE) Module in Adobe Commerce
+
+To enable out-of-process shipping methods in your Commerce instance, install the `magento/module-out-of-process-shipping-methods` in your Commerce instance. This module enables out-of-process shipping functionalities.
+Execute the following command using Composer:
+
+```bash
+composer require magento/module-out-of-process-shipping-methods --with-dependencies
+```
+
 ### Install Commerce Eventing Module in Adobe Commerce
 
 The [Commerce Eventing module](https://developer.adobe.com/commerce/extensibility/events/) is crucial for handling events within Adobe Commerce and has been included in the core since Adobe Commerce version 2.4.6.
@@ -274,6 +283,42 @@ Additionally, you can enable webhook signature generation according to [Webhooks
 See the action implemented in `actions/payment-methods/validate-payment.js` for an example of how to receive the request
 and validate the payment according to the payment gateway needs.
 
+## Shipping methods: configure webhooks
+
+In order to add out-of-process shipping methods the webhooks should be configured [Adobe Commerce Webhooks](https://developer.adobe.com/commerce/extensibility/webhooks).
+
+Each time when the Adobe Commerce application retrieves the shipping methods, a synchronous call is dispatched to the AppBuilder application to retrieve the out-of-process shipping methods. 
+To add the out-of-process shipping methods to the list of available shipping methods the appropriate shipping carrier should be created in the Adobe Commerce instance.
+
+In order to register a webhook, go to the Adobe Commerce Admin > System > Webhooks and create a new webhook with the following configuration:
+
+```
+Hook Settings
+  Webhook Method: plugin.magento.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates
+  Webhook Type: after
+  Batch Name shipping_methods
+  Hook Name: oope_shipping_methods_carrier_one
+  URL: https://yourappbuilder.runtime.adobe.io/api/v1/web/commerce-checkout-starter-kit/shipping-methods
+  Active: Yes
+  Method: POST
+
+Hook Fields
+  Field: rateRequest
+```
+
+You can add additional hook rules if you want to trigger the webhook only for specific countries, stores, websites or any other condition.
+
+For example for the filtration by the destination country, you can add the following rule:
+
+```
+Hook Rules
+  Field: rateRequest.dest_country_id Value: EN,US,ES Operator: in
+```
+
+Additionally, you can enable webhook signature generation according to [Webhooks signature verification](https://developer.adobe.com/commerce/extensibility/webhooks/signature-verification/)
+
+See the action implemented in `actions/shipping-methods/validate-payment.js` for an example of how to return the shipping methods from the AppBuilder action.
+
 ## Adobe Commerce HTTP Client
 
 `adobe-commerce.js` provides a set of methods to interact with the Adobe Commerce instance. The client is built using the Adobe Commerce HTTP Client, which is a wrapper around the Adobe Commerce REST API.
@@ -501,7 +546,6 @@ try {
   }
 }
 ```
-
 #### Retrieve an order by masked cart ID
 
 `getOrderByMaskedCartId` retrieves order details from the Adobe Commerce instance using a masked cart ID. This is typically used when the app builder application receives a webhook or event from the payment gateway.
@@ -528,6 +572,160 @@ try {
   console.log('Order details:', orderResponse.message);
 } catch (error) {
   return errorResponse(HTTP_INTERNAL_ERROR, 'Failed to fetch order due to an unexpected error');
+}
+```
+
+#### Create a new OOPE shipping carrier
+
+`createOopeShippingCarrier` creates a new out-of-process shipping carrier with the necessary details such as code, title, and configuration.
+
+**Payload parameters:**
+
+| Parameter                    | Type    | Description                                                             |
+|------------------------------|---------|-------------------------------------------------------------------------|
+| `code`                       | String  | Unique identifier for the shipping carrier.                             |
+| `title`                      | String  | Display name of the shipping carrier.                                   |
+| `stores`                     | Array   | List of store codes that the shipping carrier is available              |
+| `countries`                  | Array   | List of countries where the shipping carrier is available.              |
+| `active`                     | Boolean | Status indicating if the shipping carrier is active.                    |
+| `sort_order`                 | Integer | The sort order of shipping carriers.                                    |
+| `tracking_available`         | Boolean | Status indicating if the shipping carrier has available tracking.       |
+| `shipping_labels_available`  | Boolean | Status indicating if the shipping carrier has available sipping labels. |
+
+**Example usage:**
+
+```javascript
+try {
+  const createResponse = await commerceClient.createOopeShippingCarrier({
+    code: 'EPS',
+    title: 'Spain Postal Service',
+    countries: ['US', 'ES'],
+    stores: ['store-1', 'store-2'],
+    active: true,
+    sort_order: 100,
+    tracking_available: true,
+    shipping_labels_available: true
+  });
+
+  if (!createResponse.success) {
+    return errorResponse(createResponse.statusCode, 'Failed to create shipping carrier');
+  }
+
+  console.log('Created shipping carrier:', createResponse.message);
+} catch (error) {
+  return errorResponse(HTTP_INTERNAL_ERROR, 'Error occurred while creating shipping carrier');
+}
+```
+
+**Example response:**
+
+```json
+{
+  "success": true,
+  "message": {
+    "id": 3,
+    "code": "EPS",
+    "title": "Spain Postal Service",
+    "countries": ["US", "ES"],
+    "stores": ["store-1", "store-2"],
+    "active": true,
+    "sort_order": 100,
+    "tracking_available": true,
+    "shipping_labels_available": true
+  }
+}
+```
+
+#### List all shipping carriers methods
+
+`getOopeShippingCarriers` retrieves the list of all out of process shipping carriers in the Adobe Commerce instance.
+
+**Example usage:**
+
+```javascript
+try {
+  const listResponse = await commerceClient.getOopeShippingCarriers();
+  if (!listResponse.success) {
+    return errorResponse(listResponse.statusCode, 'Failed to list shipping carriers');
+  }
+  console.log('List of shipping carriers:', listResponse.message);
+} catch (error) {
+  return errorResponse(HTTP_INTERNAL_ERROR, 'Error occurred while listing shipping carriers');
+}
+```
+
+**Example response:**
+
+```json
+{
+  "success": true,
+  "message": [
+    {
+      "id": 3,
+      "code": "EPS",
+      "title": "Spain Postal Service",
+      "countries": ["US", "ES"],
+      "stores": ["store-1", "store-2"],
+      "active": true,
+      "sort_order": 50,
+      "tracking_available": true,
+      "shipping_labels_available": true
+    },
+    {
+      "id": 4,
+      "code": "FPS",
+      "title": "France Postal Service",
+      "countries": ["US", "FR"],
+      "stores": ["store-1", "store-2"],
+      "active": true,
+      "sort_order": 100,
+      "tracking_available": true,
+      "shipping_labels_available": true
+    }
+  ]
+}
+```
+
+#### Get an OOPE shipping carrier by code
+
+`getOopeShippingCarrier` retrieves one out of process shipping carrier by code from the Adobe Commerce instance.
+
+**Payload parameters:**
+
+| Parameter | Type   | Description                               |
+| --------- | ------ | ----------------------------------------- |
+| `code`    | String | Unique identifier for the shipping carrier. |
+
+**Example usage:**
+
+```javascript
+try {
+  const getResponse = await commerceClient.getOopeShippingCarrier('EPS');
+  if (!getResponse.success) {
+    return errorResponse(getResponse.statusCode, 'Failed to retrieve shipping carrier');
+  }
+  console.log('Retrieved shipping carrier details:', getResponse.message);
+} catch (error) {
+  return errorResponse(HTTP_INTERNAL_ERROR, 'Error occurred while retrieving shipping carrier');
+}
+```
+
+**Example response:**
+
+```json
+{
+  "success": true,
+  "message": {
+    "id": 3,
+    "code": "EPS",
+    "title": "Spain Postal Service",
+    "countries": ["US", "ES"],
+    "stores": ["store-1", "store-2"],
+    "active": true,
+    "sort_order": 100,
+    "tracking_available": true,
+    "shipping_labels_available": true
+  }
 }
 ```
 
