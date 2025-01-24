@@ -36,7 +36,8 @@
     "code:fix": "npm run format:fix && npm run lint:fix",
     "configure-events": "node -e \"require('./scripts/configure-events').main()\"",
     "configure-commerce-events": "aio console workspace download ws.json && node -e \"require('./scripts/configure-commerce-events').main('ws.json')\"; rm -f ws.json",
-    "create-payment-methods": "node -e \"require('./scripts/create-payment-methods').main('payment-methods.yaml')\""
+    "create-payment-methods": "node -e \"require('./scripts/create-payment-methods').main('payment-methods.yaml')\"",
+    "create-shipping-carriers": "node -e \"require('./scripts/create-shipping-carriers').main('shipping-carriers.yaml')\""
   },
   "engines": {
     "node": ">=22"
