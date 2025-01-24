@@ -598,8 +598,8 @@ try {
 ```javascript
 try {
   const createResponse = await commerceClient.createOopeShippingCarrier({
-    code: 'EPS',
-    title: 'Spain Postal Service',
+    code: 'DPS',
+    title: 'Demo Postal Service',
     countries: ['US', 'ES'],
     stores: ['store-1', 'store-2'],
     active: true,
@@ -625,8 +625,8 @@ try {
   "success": true,
   "message": {
     "id": 3,
-    "code": "EPS",
-    "title": "Spain Postal Service",
+    "code": "DPS",
+    "title": "Demo Postal Service",
     "countries": ["US", "ES"],
     "stores": ["store-1", "store-2"],
     "active": true,
@@ -663,8 +663,8 @@ try {
   "message": [
     {
       "id": 3,
-      "code": "EPS",
-      "title": "Spain Postal Service",
+      "code": "DPS",
+      "title": "Demo Postal Service",
       "countries": ["US", "ES"],
       "stores": ["store-1", "store-2"],
       "active": true,
@@ -718,8 +718,8 @@ try {
   "success": true,
   "message": {
     "id": 3,
-    "code": "EPS",
-    "title": "Spain Postal Service",
+    "code": "DPS",
+    "title": "Demo Postal Service",
     "countries": ["US", "ES"],
     "stores": ["store-1", "store-2"],
     "active": true,

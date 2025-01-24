@@ -40,9 +40,9 @@ async function main(params) {
       op: 'add',
       path: 'result',
       value: {
-        carrier_code: 'CPS',
-        method: 'cps_shipping_one',
-        method_title: 'CPS Custom Shipping One',
+        carrier_code: 'DPS',
+        method: 'dps_shipping_one',
+        method_title: 'Demo Custom Shipping One',
         price: 17,
         cost: 17,
         additional_data: [
@@ -70,9 +70,9 @@ async function main(params) {
         op: 'add',
         path: 'result',
         value: {
-          carrier_code: 'CPS',
-          method: 'cps_shipping_two',
-          method_title: 'CPS Custom Shipping Two',
+          carrier_code: 'DPS',
+          method: 'dps_shipping_two',
+          method_title: 'Demo Custom Shipping Two',
           price: 18,
           cost: 18,
           additional_data: {
