@@ -546,6 +546,7 @@ try {
   }
 }
 ```
+
 #### Retrieve an order by masked cart ID
 
 `getOrderByMaskedCartId` retrieves order details from the Adobe Commerce instance using a masked cart ID. This is typically used when the app builder application receives a webhook or event from the payment gateway.
