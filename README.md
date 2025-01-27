@@ -607,10 +607,10 @@ try {
   const createResponse = await commerceClient.createOopeShippingCarrier({
     code: 'DPS',
     title: 'Demo Postal Service',
-    countries: ['US', 'ES'],
-    stores: ['store-1', 'store-2'],
+    stores: ['default'],
+    countries: ['US', 'CA'],
     active: true,
-    sort_order: 100,
+    sort_order: 10,
     tracking_available: true,
     shipping_labels_available: true,
   });
@@ -631,13 +631,13 @@ try {
 {
   "success": true,
   "message": {
-    "id": 3,
+    "id": 1,
     "code": "DPS",
     "title": "Demo Postal Service",
-    "countries": ["US", "ES"],
-    "stores": ["store-1", "store-2"],
+    "stores": ["default"],
+    "countries": ["US", "CA"],
     "active": true,
-    "sort_order": 100,
+    "sort_order": 10,
     "tracking_available": true,
     "shipping_labels_available": true
   }
@@ -669,30 +669,32 @@ try {
   "success": true,
   "message": [
     {
-      "id": 3,
+      "id": 1,
       "code": "DPS",
       "title": "Demo Postal Service",
-      "countries": ["US", "ES"],
-      "stores": ["store-1", "store-2"],
+      "stores": ["default"],
+      "countries": ["US", "CA"],
+      "sort_order": 10,
       "active": true,
-      "sort_order": 50,
       "tracking_available": true,
       "shipping_labels_available": true
     },
     {
-      "id": 4,
-      "code": "FPS",
-      "title": "France Postal Service",
-      "countries": ["US", "FR"],
-      "stores": ["store-1", "store-2"],
+      "id": 2,
+      "code": "Fedex",
+      "title": "Fedex Service",
+      "stores": ["default"],
+      "countries": ["US"],
+      "sort_order": 50,
       "active": true,
-      "sort_order": 100,
-      "tracking_available": true,
+      "tracking_available": false,
       "shipping_labels_available": true
     }
   ]
 }
 ```
+
+
 
 #### Get an OOPE shipping carrier by code
 
@@ -724,13 +726,13 @@ try {
 {
   "success": true,
   "message": {
-    "id": 3,
+    "id": 1,
     "code": "DPS",
     "title": "Demo Postal Service",
-    "countries": ["US", "ES"],
-    "stores": ["store-1", "store-2"],
+    "stores": ["default"],
+    "countries": ["US", "CA"],
+    "sort_order": 10,
     "active": true,
-    "sort_order": 100,
     "tracking_available": true,
     "shipping_labels_available": true
   }
