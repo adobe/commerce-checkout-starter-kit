@@ -21,7 +21,7 @@ async function main() {
   console.info('Fetching shipping carriers...');
   if (response.success) {
     console.info(
-      ` Total ${response.message.length} shipping carriers fetched with carrier_codes - ${response.message.map((carrier) => ' ' + carrier.code)}`
+      `Total ${response.message.length} shipping carriers fetched with carrier_codes - ${response.message.map((carrier) => '\n' + JSON.stringify(carrier, null, 2))}`
     );
   } else {
     console.error(`Failed to retrieve shipping carriers` + response.message);
