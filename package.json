@@ -37,7 +37,9 @@
     "configure-events": "node -e \"require('./scripts/configure-events').main()\"",
     "configure-commerce-events": "aio console workspace download ws.json && node -e \"require('./scripts/configure-commerce-events').main('ws.json')\"; rm -f ws.json",
     "create-payment-methods": "node -e \"require('./scripts/create-payment-methods').main('payment-methods.yaml')\"",
-    "create-shipping-carriers": "node -e \"require('./scripts/create-shipping-carriers').main('shipping-carriers.yaml')\""
+    "create-shipping-carriers": "node -e \"require('./scripts/create-shipping-carriers').main('shipping-carriers.yaml')\"",
+    "getAll-shipping-carriers": "node -e \"require('./scripts/getAll-shipping-carriers').main()\"",
+    "get-shipping-carrier": "node -e \"require('./scripts/get-shipping-carrier').main()\""
   },
   "engines": {
     "node": ">=22"

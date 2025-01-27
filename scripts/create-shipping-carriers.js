@@ -15,8 +15,8 @@ const yaml = require('js-yaml');
 
 /**
  * Creates a shipping carrier defined in the shipping-carriers.yaml file in the configured Adobe Commerce instance
- * @param configFilePath
- * @returns array of strings
+ * @param {string} configFilePath shipping-carriers.yaml file path
+ * @returns  {string[]} array of strings
  */
 async function main(configFilePath) {
   console.info('Reading shipping configuration file...');

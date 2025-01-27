@@ -1,0 +1,24 @@
+shipping_carriers:
+  - carrier:
+      code: 'method-1'
+      title: 'Method one'
+      stores:
+        - default
+      countries:
+        - US
+        - CA
+      sort_order: 10
+      active: true
+      tracking_available: true
+      shipping_labels_available: true
+  - carrier:
+      code: 'method-2'
+      title: 'Method two'
+      stores:
+        - default
+      countries:
+        - US
+      sort_order: 50
+      active: true
+      tracking_available: false
+      shipping_labels_available: true
