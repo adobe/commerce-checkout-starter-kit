@@ -1,14 +1,15 @@
 shipping_carriers:
   - carrier:
-      code: 'USPS'
-      title: 'United States Postal Service'
+      code: 'DPS'
+      title: 'Demo Postal Service'
       stores:
         - default
       countries:
         - US
-      sort_order: 0
+        - CA
+      sort_order: 10
       active: true
-      tracking_available: false
+      tracking_available: true
       shipping_labels_available: true
   - carrier:
       code: 'Fedex'
@@ -17,7 +18,7 @@ shipping_carriers:
         - default
       countries:
         - US
-      sort_order: 0
+      sort_order: 50
       active: true
       tracking_available: false
       shipping_labels_available: true

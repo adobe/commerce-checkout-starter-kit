@@ -31,15 +31,16 @@ async function main(params) {
     }
 
     const { rateRequest: request } = params;
+    const {
+      dest_country_id: destCountryId = 'US',
+      dest_postcode: destPostcode = '12345'
+    } = request;
 
     logger.info('Received request: ', request);
 
-    let operations = [];
+    const operations = [];
 
-    operations.push({
-      op: 'add',
-      path: 'result',
-      value: {
+    operations.push(createShippingOperation({
         carrier_code: 'DPS',
         method: 'dps_shipping_one',
         method_title: 'Demo Custom Shipping One',
@@ -59,17 +60,11 @@ async function main(params) {
             value: 'additional_data_value3'
           }
         ]
-      },
-    });
-
-    const postCode = request.dest_postcode;
+    }));
 
     // Based on the postal code, we can add another shipping method
-    if (postCode > 30000) {
-      operations.push({
-        op: 'add',
-        path: 'result',
-        value: {
+    if (destPostcode > 30000) {
+      operations.push(createShippingOperation({
           carrier_code: 'DPS',
           method: 'dps_shipping_two',
           method_title: 'Demo Custom Shipping Two',
@@ -79,8 +74,22 @@ async function main(params) {
             key: 'additional_data_key',
             value: 'additional_data_value'
           },
-        }
-      });
+      }));
+    }
+
+    // Based on the country we can add another shipping method
+    if (destCountryId !== 'CA') {
+      operations.push(createShippingOperation({
+          carrier_code: 'DPS',
+          method: 'dps_shipping_ca_one',
+          method_title: 'Demo Custom Shipping for Canada only',
+          price: 18,
+          cost: 18,
+          additional_data: {
+            key: 'additional_data_key',
+            value: 'additional_data_value'
+          },
+      }));
     }
 
     return {
@@ -91,6 +100,20 @@ async function main(params) {
     logger.error(error);
     return webhookErrorResponse(`Server error: ${error.message}`);
   }
+}
+
+/**
+ * Creates a shipping operation
+ *
+ * @param {object} carrierData - The carrier data for the shipping operation
+ * @returns {object} The shipping operation object
+ */
+function createShippingOperation(carrierData) {
+  return {
+    op: 'add',
+    path: 'result',
+    value: carrierData
+  };
 }
 
 exports.main = main

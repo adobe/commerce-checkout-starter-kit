@@ -136,6 +136,13 @@ It reads the payment methods configuration from the `payment-methods.yaml` file 
 
 To run the `create-payment-methods` script, ensure that the [Adobe Commerce HTTP Client](#adobe-commerce-http-client) is configured.
 
+#### create-shipping-carriers
+
+The `create-shipping-carriers` script is used to create shipping carriers in Adobe Commerce.
+It reads the shipping carriers configuration from the `shipping-carriers.yaml` file and creates the out-of-process shipping carriers in Adobe Commerce.
+
+To run the `create-shipping-carriers` script, ensure that the [Adobe Commerce HTTP Client](#adobe-commerce-http-client) is configured.
+
 ## Use cases
 
 ### 3rd party events processing
