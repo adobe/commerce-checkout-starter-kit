@@ -17,7 +17,7 @@ const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
  */
 async function main() {
   const client = await getAdobeCommerceClient(process.env);
-  const response = await client.getAllOopeShippingCarriers();
+  const response = await client.getOopeShippingCarriers();
   console.info('Fetching shipping carriers...');
   if (response.success) {
     console.info(
