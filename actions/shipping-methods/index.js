@@ -30,18 +30,16 @@ async function main(params) {
       return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
     }
 
-    const payload = JSON.parse(atob(params.__ow_body))
+    const payload = JSON.parse(atob(params.__ow_body));
     const { rateRequest: request } = payload;
-    const {
-      dest_country_id: destCountryId = 'US',
-      dest_postcode: destPostcode = '12345'
-    } = request;
+    const { dest_country_id: destCountryId = 'US', dest_postcode: destPostcode = '12345' } = request;
 
     logger.info('Received request: ', request);
 
     const operations = [];
 
-    operations.push(createShippingOperation({
+    operations.push(
+      createShippingOperation({
         carrier_code: 'DPS',
         method: 'dps_shipping_one',
         method_title: 'Demo Custom Shipping One',
@@ -50,22 +48,24 @@ async function main(params) {
         additional_data: [
           {
             key: 'additional_data_key',
-            value: 'additional_data_value'
+            value: 'additional_data_value',
           },
           {
             key: 'additional_data_key2',
-            value: 'additional_data_value2'
+            value: 'additional_data_value2',
           },
           {
             key: 'additional_data_key3',
-            value: 'additional_data_value3'
-          }
-        ]
-    }));
+            value: 'additional_data_value3',
+          },
+        ],
+      })
+    );
 
     // Based on the postal code, we can add another shipping method
     if (destPostcode > 30000) {
-      operations.push(createShippingOperation({
+      operations.push(
+        createShippingOperation({
           carrier_code: 'DPS',
           method: 'dps_shipping_two',
           method_title: 'Demo Custom Shipping Two',
@@ -73,14 +73,16 @@ async function main(params) {
           cost: 18,
           additional_data: {
             key: 'additional_data_key',
-            value: 'additional_data_value'
+            value: 'additional_data_value',
           },
-      }));
+        })
+      );
     }
 
     // Based on the country we can add another shipping method
     if (destCountryId === 'CA') {
-      operations.push(createShippingOperation({
+      operations.push(
+        createShippingOperation({
           carrier_code: 'DPS',
           method: 'dps_shipping_ca_one',
           method_title: 'Demo Custom Shipping for Canada only',
@@ -88,15 +90,16 @@ async function main(params) {
           cost: 18,
           additional_data: {
             key: 'additional_data_key',
-            value: 'additional_data_value'
+            value: 'additional_data_value',
           },
-      }));
+        })
+      );
     }
 
     return {
       statusCode: HTTP_OK,
-      body: JSON.stringify(operations)
-    }
+      body: JSON.stringify(operations),
+    };
   } catch (error) {
     logger.error(error);
     return webhookErrorResponse(`Server error: ${error.message}`);
@@ -113,8 +116,8 @@ function createShippingOperation(carrierData) {
   return {
     op: 'add',
     path: 'result',
-    value: carrierData
+    value: carrierData,
   };
 }
 
-exports.main = main
+exports.main = main;

@@ -294,7 +294,7 @@ and validate the payment according to the payment gateway needs.
 
 In order to add out-of-process shipping methods the webhooks should be configured [Adobe Commerce Webhooks](https://developer.adobe.com/commerce/extensibility/webhooks).
 
-Each time when the Adobe Commerce application retrieves the shipping methods, a synchronous call is dispatched to the AppBuilder application to retrieve the out-of-process shipping methods. 
+Each time when the Adobe Commerce application retrieves the shipping methods, a synchronous call is dispatched to the AppBuilder application to retrieve the out-of-process shipping methods.
 To add the out-of-process shipping methods to the list of available shipping methods the appropriate shipping carrier should be created in the Adobe Commerce instance.
 
 In order to register a webhook, go to the Adobe Commerce Admin > System > Webhooks and create a new webhook with the following configuration:
@@ -589,16 +589,16 @@ try {
 
 **Payload parameters:**
 
-| Parameter                    | Type    | Description                                                             |
-|------------------------------|---------|-------------------------------------------------------------------------|
-| `code`                       | String  | Unique identifier for the shipping carrier.                             |
-| `title`                      | String  | Display name of the shipping carrier.                                   |
-| `stores`                     | Array   | List of store codes that the shipping carrier is available              |
-| `countries`                  | Array   | List of countries where the shipping carrier is available.              |
-| `active`                     | Boolean | Status indicating if the shipping carrier is active.                    |
-| `sort_order`                 | Integer | The sort order of shipping carriers.                                    |
-| `tracking_available`         | Boolean | Status indicating if the shipping carrier has available tracking.       |
-| `shipping_labels_available`  | Boolean | Status indicating if the shipping carrier has available sipping labels. |
+| Parameter                   | Type    | Description                                                             |
+| --------------------------- | ------- | ----------------------------------------------------------------------- |
+| `code`                      | String  | Unique identifier for the shipping carrier.                             |
+| `title`                     | String  | Display name of the shipping carrier.                                   |
+| `stores`                    | Array   | List of store codes that the shipping carrier is available              |
+| `countries`                 | Array   | List of countries where the shipping carrier is available.              |
+| `active`                    | Boolean | Status indicating if the shipping carrier is active.                    |
+| `sort_order`                | Integer | The sort order of shipping carriers.                                    |
+| `tracking_available`        | Boolean | Status indicating if the shipping carrier has available tracking.       |
+| `shipping_labels_available` | Boolean | Status indicating if the shipping carrier has available sipping labels. |
 
 **Example usage:**
 
@@ -612,7 +612,7 @@ try {
     active: true,
     sort_order: 100,
     tracking_available: true,
-    shipping_labels_available: true
+    shipping_labels_available: true,
   });
 
   if (!createResponse.success) {
@@ -700,8 +700,8 @@ try {
 
 **Payload parameters:**
 
-| Parameter | Type   | Description                               |
-| --------- | ------ | ----------------------------------------- |
+| Parameter | Type   | Description                                 |
+| --------- | ------ | ------------------------------------------- |
 | `code`    | String | Unique identifier for the shipping carrier. |
 
 **Example usage:**
