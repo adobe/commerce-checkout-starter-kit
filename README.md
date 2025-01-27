@@ -708,7 +708,7 @@ try {
 
 ```javascript
 try {
-  const getResponse = await commerceClient.getOopeShippingCarrier('EPS');
+  const getResponse = await commerceClient.getOopeShippingCarrier('DPS');
   if (!getResponse.success) {
     return errorResponse(getResponse.statusCode, 'Failed to retrieve shipping carrier');
   }
