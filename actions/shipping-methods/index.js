@@ -30,7 +30,8 @@ async function main(params) {
       return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
     }
 
-    const { rateRequest: request } = params;
+    const payload = JSON.parse(atob(params.__ow_body))
+    const { rateRequest: request } = payload;
     const {
       dest_country_id: destCountryId = 'US',
       dest_postcode: destPostcode = '12345'
@@ -78,7 +79,7 @@ async function main(params) {
     }
 
     // Based on the country we can add another shipping method
-    if (destCountryId !== 'CA') {
+    if (destCountryId === 'CA') {
       operations.push(createShippingOperation({
           carrier_code: 'DPS',
           method: 'dps_shipping_ca_one',
