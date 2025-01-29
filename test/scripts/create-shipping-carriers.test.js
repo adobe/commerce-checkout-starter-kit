@@ -19,15 +19,15 @@ describe('create-shipping-carriers', () => {
     mockAdobeCommerceClient({ success: true }, { success: true });
     const { main } = require('../../scripts/create-shipping-carriers');
     const result = await main('test/scripts/shipping-carriers-test.yaml');
-    expect(result).toEqual(['method-1', 'method-2']);
+    expect(result).toEqual(['carrier-1', 'carrier-2']);
   });
   test('only one shipping carrier is created', async () => {
     mockAdobeCommerceClient({ success: true }, { success: false });
     const { main } = require('../../scripts/create-shipping-carriers');
     const result = await main('test/scripts/shipping-carriers-test.yaml');
-    expect(result).toEqual(['method-1']);
+    expect(result).toEqual(['carrier-1']);
   });
-  test('no one shipping carrier is created', async () => {
+  test('no shipping carrier is created', async () => {
     mockAdobeCommerceClient({ success: false }, { success: false });
     const { main } = require('../../scripts/create-shipping-carriers');
     const result = await main('test/scripts/shipping-carriers-test.yaml');

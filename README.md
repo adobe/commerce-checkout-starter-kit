@@ -694,8 +694,6 @@ try {
 }
 ```
 
-
-
 #### Get an OOPE shipping carrier by code
 
 `getOopeShippingCarrier` retrieves one out of process shipping carrier by code from the Adobe Commerce instance.
