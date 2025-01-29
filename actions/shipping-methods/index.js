@@ -18,8 +18,8 @@ const { HTTP_OK } = require('../../lib/http');
  * This action returns the list of out-of-process shipping methods for the given request.
  * It has to be configured as Commerce Webhook in the Adobe Commerce Admin.
  *
- * @param params the input parameters
- * @returns {Promise<{body: {op: string}, statusCode: number}>}
+ * @param {object} params the input parameters
+ * @returns {Promise<object>} the response object
  * @see https://developer.adobe.com/commerce/extensibility/webhooks
  */
 async function main(params) {

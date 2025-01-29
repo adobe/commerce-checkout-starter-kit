@@ -36,8 +36,11 @@ describe('create-shipping-carriers', () => {
 });
 
 /**
- * @param response1
- * @param response2
+ * Mocks the Adobe Commerce client for testing purposes.
+ *
+ *
+ * @param {object} response1 The response to be returned by the first call to `createOopeShippingCarrier`.
+ * @param {object} response2 The response to be returned by the second call to `createOopeShippingCarrier`.
  */
 function mockAdobeCommerceClient(response1, response2) {
   jest.mock('../../lib/adobe-commerce', () => ({

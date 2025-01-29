@@ -590,7 +590,7 @@ try {
 **Payload parameters:**
 
 | Parameter                   | Type    | Required | Description                                                              |
-|-----------------------------|---------|----------|--------------------------------------------------------------------------|
+| --------------------------- | ------- | -------- | ------------------------------------------------------------------------ |
 | `code`                      | String  | Yes      | Unique identifier for the shipping carrier.                              |
 | `title`                     | String  | Yes      | Display name of the shipping carrier.                                    |
 | `stores`                    | Array   | No       | List of store codes where the shipping carrier is available.             |
