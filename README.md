@@ -589,16 +589,16 @@ try {
 
 **Payload parameters:**
 
-| Parameter                   | Type    | Description                                                             |
-| --------------------------- | ------- | ----------------------------------------------------------------------- |
-| `code`                      | String  | Unique identifier for the shipping carrier.                             |
-| `title`                     | String  | Display name of the shipping carrier.                                   |
-| `stores`                    | Array   | List of store codes that the shipping carrier is available              |
-| `countries`                 | Array   | List of countries where the shipping carrier is available.              |
-| `active`                    | Boolean | Status indicating if the shipping carrier is active.                    |
-| `sort_order`                | Integer | The sort order of shipping carriers.                                    |
-| `tracking_available`        | Boolean | Status indicating if the shipping carrier has available tracking.       |
-| `shipping_labels_available` | Boolean | Status indicating if the shipping carrier has available sipping labels. |
+| Parameter                   | Type    | Required | Description                                                              |
+|-----------------------------|---------|----------|--------------------------------------------------------------------------|
+| `code`                      | String  | Yes      | Unique identifier for the shipping carrier.                              |
+| `title`                     | String  | Yes      | Display name of the shipping carrier.                                    |
+| `stores`                    | Array   | No       | List of store codes where the shipping carrier is available.             |
+| `countries`                 | Array   | No       | List of countries where the shipping carrier is available.               |
+| `active`                    | Boolean | No       | Status indicating if the shipping carrier is active.                     |
+| `sort_order`                | Integer | No       | The sort order of shipping carriers.                                     |
+| `tracking_available`        | Boolean | No       | Status indicating if the shipping carrier has available tracking.        |
+| `shipping_labels_available` | Boolean | No       | Status indicating if the shipping carrier has available shipping labels. |
 
 **Example usage:**
 
