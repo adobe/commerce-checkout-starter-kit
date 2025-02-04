@@ -39,14 +39,14 @@ The way of integration can vary depending on your use case. Please refer to the 
    ```javascript
    export default async function decorate(block) {
        ...
-       CheckoutProvider.render(PlaceOrder, {
-           onPlaceOrder: async (_ctx) => {
+       handlePlaceOrder.render(PlaceOrder, {
+           onPlaceOrder: async ({ cartId, code }) => {
                try {
-                   if (_ctx.code === 'oope_adyen') {
+                   if (code === 'oope_adyen') {
                        // Start payment when OOPE payment method is selected
                        await startPayment(cartData, environment, sessionUrl, clientKey, returnUrl);
                    } else {
-                       await checkoutApi.placeOrder();
+                       await orderApi.placeOrder(cartId);
                    }
                } catch (error) {
                    console.error(error);
