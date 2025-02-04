@@ -40,13 +40,13 @@ The way of integration can vary depending on your use case. Please refer to the 
    export default async function decorate(block) {
        ...
        CheckoutProvider.render(PlaceOrder, {
-           onPlaceOrder: async (_ctx) => {
+           handlePlaceOrder: async ({ cartId, code }) => {
                try {
-                   if (_ctx.code === 'oope_adyen') {
+                   if (code === 'oope_adyen') {
                        // Start payment when OOPE payment method is selected
                        await startPayment(cartData, environment, sessionUrl, clientKey, returnUrl);
                    } else {
-                       await checkoutApi.placeOrder();
+                       await orderApi.placeOrder(cartId);
                    }
                } catch (error) {
                    console.error(error);
@@ -186,3 +186,11 @@ If you want to retrieve OOPE payment method information from the Commerce instan
    ```javascript
    events.on('checkout/initialized', handleCheckoutInitialized, { eager: true });
    ```
+
+## Retrieve Cart Data
+
+You can retrieve the current cart data that can be used for payment processing.
+
+```javascript
+events.on('cart/data', handleCartData, { eager: true });
+```
