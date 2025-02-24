@@ -105,14 +105,10 @@ async function main(params) {
     // In the next example, the shipping method is added if any of `country_origin` attributes is equal to China
     // The additional data based on attributes or another logic can be added to the shipping method as
     // part of the additional_data key-value array
-    const {
-      all_items: cartItems = []
-    } = request;
+    const { all_items: cartItems = [] } = request;
 
     cartItems.forEach((cartItem) => {
-      const {
-        country_origin: country = ''
-      } = cartItem?.product?.attributes ?? {};
+      const { country_origin: country = '' } = cartItem?.product?.attributes ?? {};
 
       if (country.toLowerCase() === 'china') {
         operations.push({
@@ -127,13 +123,13 @@ async function main(params) {
             additional_data: [
               {
                 key: 'shipped_from',
-                value: 'China'
+                value: 'China',
               },
               {
                 key: 'delivery_time',
-                value: '15 days'
-              }
-            ]
+                value: '15 days',
+              },
+            ],
           },
         });
       }
@@ -141,15 +137,13 @@ async function main(params) {
 
     // If the Commerce customer is logged in, the request contains customer data otherwise the customer is set to null
     // In the next example, the shipping method is added based on the Customer group id
-    const {
-      customer: Customer = {}
-    } = request;
+    const { customer: Customer = {} } = request;
 
     if (
       Customer !== null &&
       typeof Customer === 'object' &&
-      Customer.hasOwnProperty('group_id') &&
-      Customer.group_id === "1"
+      Object.prototype.hasOwnProperty.call(Customer, 'group_id') &&
+      Customer.group_id === '1'
     ) {
       operations.push({
         op: 'add',
@@ -163,9 +157,9 @@ async function main(params) {
           additional_data: [
             {
               key: 'group_special',
-              value: '-20%'
-            }
-          ]
+              value: '-20%',
+            },
+          ],
         },
       });
     }
