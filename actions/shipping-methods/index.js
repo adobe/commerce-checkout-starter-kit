@@ -146,6 +146,7 @@ async function main(params) {
     } = request;
 
     if (
+      Customer !== null &&
       typeof Customer === 'object' &&
       Customer.hasOwnProperty('group_id') &&
       Customer.group_id === "1"
