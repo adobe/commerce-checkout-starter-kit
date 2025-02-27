@@ -164,6 +164,18 @@ async function main(params) {
       });
     }
 
+    // You can remove the shipping method based on some conditions.
+    // For this, provide the method name within the remove flag set to true
+    //
+    // operations.push({
+    //   op: 'add',
+    //   path: 'result',
+    //   value: {
+    //     method: 'flatrate',
+    //     remove: true,
+    //   },
+    // });
+
     return {
       statusCode: HTTP_OK,
       body: JSON.stringify(operations),
