@@ -16,7 +16,7 @@ const { HTTP_OK } = require('../../lib/http');
 
 /**
  * This action returns the list of out-of-process payment method codes
- * that needs to be removed from the list of available payment methods.
+ * that needs to be filtered from the list of available payment methods.
  * It has to be configured as Commerce Webhook in the Adobe Commerce Admin.
  *
  * @param {object} params the input parameters
@@ -24,7 +24,7 @@ const { HTTP_OK } = require('../../lib/http');
  * @see https://developer.adobe.com/commerce/extensibility/webhooks
  */
 async function main(params) {
-  const logger = Core.Logger('remove-payment', { level: params.LOG_LEVEL || 'info' });
+  const logger = Core.Logger('filter-payment', { level: params.LOG_LEVEL || 'info' });
   try {
     const { success, error } = webhookVerify(params);
     if (!success) {
@@ -42,13 +42,13 @@ async function main(params) {
 
     const operations = [];
 
-    // The payment method can be removed based on some conditions.
+    // The payment method can be filtered based on some conditions.
     operations.push(
       createPaymentRemovalOperation('checkmo')
     )
 
     // If the Commerce customer is logged in, the payload contains customer data otherwise the customer is set to null
-    // In the next example, the payment method is removed based on Customer group id
+    // In the next example, the payment method is filtered based on Customer group id
     const { customer: Customer = {} } = payload;
 
     if (
@@ -62,8 +62,8 @@ async function main(params) {
       )
     }
 
-    // The payment method can be removed based on product custom attribute values.
-    // In the next example,  payment method can is removed if any of `country_origin` attributes is equal to China
+    // The payment method can be filtered based on product custom attribute values.
+    // In the next example,  payment method can is filtered if any of `country_origin` attributes is equal to China
     const { items: cartItems = [] } = payload.cart;
 
     cartItems.forEach((cartItem) => {
@@ -89,7 +89,7 @@ async function main(params) {
 /**
  * Creates a payment removal operation
  *
- * @param {string} paymentCode - The code of the payment method that needs to be removed
+ * @param {string} paymentCode - The code of the payment method that needs to be filtered
  * @returns {object} The payment removal operation object
  */
 function createPaymentRemovalOperation(paymentCode) {
