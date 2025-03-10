@@ -26,8 +26,8 @@ application:
               require-adobe-auth: false
               raw-http: true
               final: true
-          remove-payment:
-            function: actions/remove-payment/index.js
+          filter-payment:
+            function: actions/filter-payment/index.js
             web: 'yes'
             runtime: nodejs:22
             inputs:
