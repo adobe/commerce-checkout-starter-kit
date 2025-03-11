@@ -43,9 +43,7 @@ async function main(params) {
     const operations = [];
 
     // The payment method can be filtered out based on some conditions.
-    operations.push(
-      createPaymentRemovalOperation('checkmo')
-    )
+    operations.push(createPaymentRemovalOperation('checkmo'));
 
     // If the Commerce customer is logged in, the payload contains customer data otherwise the customer is set to null
     // In the next example, the payment method is filtered out based on Customer group id
@@ -57,22 +55,18 @@ async function main(params) {
       Object.prototype.hasOwnProperty.call(Customer, 'group_id') &&
       Customer.group_id === '1'
     ) {
-      operations.push(
-        createPaymentRemovalOperation('cashondelivery')
-      )
+      operations.push(createPaymentRemovalOperation('cashondelivery'));
     }
 
     // The payment method can be filtered out based on product custom attribute values.
-    // In the next example,  payment method can is filtered out if any of `country_origin` attributes is equal to China
+    // In the next example, payment method can is filtered out if any of `country_origin` attributes is equal to China
     const { items: cartItems = [] } = payload.cart;
 
     cartItems.forEach((cartItem) => {
       const { country_origin: country = '' } = cartItem?.product?.attributes ?? {};
 
       if (country.toLowerCase() === 'china') {
-        operations.push(
-          createPaymentRemovalOperation('banktransfer')
-        )
+        operations.push(createPaymentRemovalOperation('banktransfer'));
       }
     });
 
@@ -97,7 +91,7 @@ function createPaymentRemovalOperation(paymentCode) {
     op: 'add',
     path: 'result',
     value: {
-      'code': paymentCode
+      code: paymentCode,
     },
   };
 }
