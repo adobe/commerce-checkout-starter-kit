@@ -35,7 +35,10 @@ async function main(configFilePath) {
       console.info(`[INFO] Tax integration ${taxIntegrationCode} created`);
       createdTaxIntegrations.push(taxIntegrationCode);
     } else {
-      console.error(`[ERROR] Failed to create tax integration ${taxIntegrationCode}: ` + (response.statusCode === 400 ? response.body.message : response.message ));
+      console.error(
+        `[ERROR] Failed to create tax integration ${taxIntegrationCode}: ` +
+          (response.statusCode === 400 ? response.body.message : response.message)
+      );
     }
   }
   return createdTaxIntegrations;

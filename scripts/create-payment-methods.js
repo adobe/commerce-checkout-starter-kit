@@ -14,7 +14,6 @@ const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
 const fs = require('fs');
 const yaml = require('js-yaml');
 
-
 /**
  * Creates all the payment methods defined in the payment-methods.yaml file in the configured Adobe Commerce instance
  * @param configFilePath
