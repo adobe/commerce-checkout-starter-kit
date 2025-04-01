@@ -13,6 +13,8 @@ governing permissions and limitations under the License.
 const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
 const fs = require('fs');
 const yaml = require('js-yaml');
+const { Core } = require('@adobe/aio-sdk');
+const logger = Core.Logger('create-tax-integration', { level: process.env.LOG_LEVEL || 'info' });
 
 /**
  * Creates all the payment methods defined in the payment-methods.yaml file in the configured Adobe Commerce instance
@@ -20,10 +22,10 @@ const yaml = require('js-yaml');
  * @returns array of strings
  */
 async function main(configFilePath) {
-  console.info('[INFO] Reading tax configuration file...');
+  logger.info('Reading tax configuration file...');
   const fileContents = fs.readFileSync(configFilePath, 'utf8');
   const data = yaml.load(fileContents);
-  console.info('[INFO] Creating tax integrations...');
+  logger.info('Creating tax integrations...');
   const createdTaxIntegrations = [];
 
   const client = await getAdobeCommerceClient(process.env);
@@ -32,11 +34,11 @@ async function main(configFilePath) {
     const response = await client.createTaxIntegration(taxIntegration);
     const taxIntegrationCode = taxIntegration.tax_integration.code;
     if (response.success) {
-      console.info(`[INFO] Tax integration ${taxIntegrationCode} created`);
+      logger.info(`Tax integration ${taxIntegrationCode} created`);
       createdTaxIntegrations.push(taxIntegrationCode);
     } else {
-      console.error(
-        `[ERROR] Failed to create tax integration ${taxIntegrationCode}: ` +
+      logger.info(
+        `Failed to create tax integration ${taxIntegrationCode}: ` +
           (response.statusCode === 400 ? response.body.message : response.message)
       );
     }
