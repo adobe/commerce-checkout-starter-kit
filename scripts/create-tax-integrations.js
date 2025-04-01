@@ -14,32 +14,31 @@ const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
 const fs = require('fs');
 const yaml = require('js-yaml');
 
-
 /**
  * Creates all the payment methods defined in the payment-methods.yaml file in the configured Adobe Commerce instance
  * @param configFilePath
  * @returns array of strings
  */
 async function main(configFilePath) {
-  console.info('Reading payment configuration file...');
+  console.info('[INFO] Reading tax configuration file...');
   const fileContents = fs.readFileSync(configFilePath, 'utf8');
   const data = yaml.load(fileContents);
-  console.info('Creating payment methods...');
-  const createdPaymentMethods = [];
+  console.info('[INFO] Creating tax integrations...');
+  const createdTaxIntegrations = [];
 
   const client = await getAdobeCommerceClient(process.env);
 
-  for (const paymentMethod of data.methods) {
-    const response = await client.createOopePaymentMethod(paymentMethod);
-    const paymentMethodCode = paymentMethod.payment_method.code;
+  for (const taxIntegration of data.tax_integrations) {
+    const response = await client.createTaxIntegration(taxIntegration);
+    const taxIntegrationCode = taxIntegration.tax_integration.code;
     if (response.success) {
-      console.info(`Payment method ${paymentMethodCode} created`);
-      createdPaymentMethods.push(paymentMethodCode);
+      console.info(`[INFO] Tax integration ${taxIntegrationCode} created`);
+      createdTaxIntegrations.push(taxIntegrationCode);
     } else {
-      console.error(`Failed to create payment method ${paymentMethodCode}: ` + response.message);
+      console.error(`[ERROR] Failed to create tax integration ${taxIntegrationCode}: ` + (response.statusCode === 400 ? response.body.message : response.message ));
     }
   }
-  return createdPaymentMethods;
+  return createdTaxIntegrations;
 }
 
 module.exports = { main };
