@@ -1,0 +1,7 @@
+tax_integrations:
+  - tax_integration:
+      code: 'oop-tax-integration'
+      title: 'My tax integration'
+      active: true
+      stores:
+        - default
