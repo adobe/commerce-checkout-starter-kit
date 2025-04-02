@@ -39,7 +39,9 @@ async function main(configFilePath) {
     } else {
       logger.error(
         `Failed to create tax integration ${taxIntegrationCode}: ` +
-          (response.statusCode === 400 && response.body.message !== undefined ? response.body.message : response.message)
+          (response.statusCode === 400 && response.body.message !== undefined
+            ? response.body.message
+            : response.message)
       );
     }
   }
