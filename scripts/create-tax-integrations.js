@@ -37,9 +37,9 @@ async function main(configFilePath) {
       logger.info(`Tax integration ${taxIntegrationCode} created`);
       createdTaxIntegrations.push(taxIntegrationCode);
     } else {
-      logger.info(
+      logger.error(
         `Failed to create tax integration ${taxIntegrationCode}: ` +
-          (response.statusCode === 400 ? response.body.message : response.message)
+          (response.statusCode === 400 && response.body.message !== undefined ? response.body.message : response.message)
       );
     }
   }
