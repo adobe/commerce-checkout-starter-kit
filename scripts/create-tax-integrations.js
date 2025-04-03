@@ -14,12 +14,12 @@ const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
 const fs = require('fs');
 const yaml = require('js-yaml');
 const { Core } = require('@adobe/aio-sdk');
-const logger = Core.Logger('create-tax-integration', { level: process.env.LOG_LEVEL || 'info' });
+const logger = Core.Logger('create-tax-integrations', { level: process.env.LOG_LEVEL || 'info' });
 
 /**
  * Creates all the payment methods defined in the payment-methods.yaml file in the configured Adobe Commerce instance
- * @param configFilePath
- * @returns array of strings
+ * @param {string} configFilePath - The file path to the YAML configuration file
+ * @returns {Promise<string[]>} An array of created tax integration codes
  */
 async function main(configFilePath) {
   logger.info('Reading tax configuration file...');
@@ -34,18 +34,31 @@ async function main(configFilePath) {
     const response = await client.createTaxIntegration(taxIntegration);
     const taxIntegrationCode = taxIntegration.tax_integration.code;
     if (response.success) {
-      logger.info(`Tax integration ${taxIntegrationCode} created`);
+      logger.info(`Tax integration ${taxIntegrationCode} created or updated`);
       createdTaxIntegrations.push(taxIntegrationCode);
     } else {
-      logger.error(
-        `Failed to create tax integration ${taxIntegrationCode}: ` +
-          (response.statusCode === 400 && response.body.message !== undefined
-            ? response.body.message
-            : response.message)
-      );
+      logger.error(formatErrorMessage(response));
     }
   }
   return createdTaxIntegrations;
+}
+
+/**
+ * Formats an error message by interpolating placeholder values from the response
+ * @param {object} response - The response object returned from the API
+ * @returns {string} A formatted error message string
+ */
+function formatErrorMessage(response) {
+  let msg =
+    response.statusCode === 400 && response.body?.message ? response.body.message : response.message || 'Unknown error';
+
+  if (response.body?.parameters) {
+    for (const [key, value] of Object.entries(response.body.parameters)) {
+      msg = msg.replaceAll(`%${key}%`, value);
+    }
+  }
+
+  return msg;
 }
 
 module.exports = { main };

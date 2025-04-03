@@ -36,9 +36,9 @@ describe('create-tax-integrations', () => {
 });
 
 /**
- *
- * @param response1
- * @param response2
+ * Mocks the Adobe Commerce client with two predefined responses.
+ * @param {object} response1 The response for the first tax integration request
+ * @param {object} response2 The response for the second tax integration request
  */
 function mockAdobeCommerceClient(response1, response2) {
   jest.mock('../../lib/adobe-commerce', () => ({
