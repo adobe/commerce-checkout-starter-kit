@@ -18,8 +18,8 @@ const logger = Core.Logger('create-tax-integrations', { level: process.env.LOG_L
 
 /**
  * Creates all the payment methods defined in the payment-methods.yaml file in the configured Adobe Commerce instance
- * @param configFilePath
- * @returns array of strings
+ * @param {string} configFilePath - The file path to the YAML configuration file
+ * @returns {Promise<string[]>} An array of created tax integration codes
  */
 async function main(configFilePath) {
   logger.info('Reading tax configuration file...');
@@ -44,7 +44,9 @@ async function main(configFilePath) {
 }
 
 /**
- * @param response
+ * Formats an error message by interpolating placeholder values from the response
+ * @param {object} response - The response object returned from the API
+ * @returns {string} A formatted error message string
  */
 function formatErrorMessage(response) {
   let msg =
