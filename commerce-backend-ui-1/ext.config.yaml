@@ -12,7 +12,7 @@ runtimeManifest:
         registration:
           function: actions/registration/index.js
           web: 'yes'
-          runtime: 'nodejs:20'
+          runtime: 'nodejs:22'
           inputs:
             LOG_LEVEL: debug
           annotations:
@@ -24,7 +24,7 @@ runtimeManifest:
         commerce-rest-api:
           function: actions/commerce/index.js
           web: 'yes'
-          runtime: 'nodejs:20'
+          runtime: 'nodejs:22'
           inputs:
             LOG_LEVEL: debug
             AIO_CLI_ENV: $AIO_CLI_ENV
