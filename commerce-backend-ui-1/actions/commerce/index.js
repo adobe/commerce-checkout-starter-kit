@@ -27,7 +27,6 @@ const actionMap = {
  */
 async function main(params) {
   const logger = Core.Logger('main', { level: params.LOG_LEVEL || 'debug' });
-  logger.info('Using commerce client with integration params', params);
 
   try {
     const requiredParams = ['operation', 'COMMERCE_BASE_URL'];
