@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Adobe. All rights reserved.
+Copyright 2025 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,13 +10,15 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
+/* This file exposes some common utilities for your actions */
+
 /**
  *
  * Returns a log ready string of the action input parameters.
  * The `Authorization` header content will be replaced by '<hidden>'.
  *
  * @param {object} params action input parameters.
- * @returns {string} the stringified parameters.
+ * @returns {string}
  */
 function stringParameters(params) {
   // hide authorization token without overriding params
@@ -59,9 +61,9 @@ function getMissingKeys(obj, required) {
  * A value of 0 or null is not considered as missing.
  *
  * @param {object} params action input parameters.
+ * @param {Array} requiredHeaders list of required input headers.
  * @param {Array} requiredParams list of required input parameters.
  *        Each element can be multi level deep using a '.' separator e.g. 'myRequiredObj.myRequiredKey'.
- * @param {Array} requiredHeaders list of required input headers.
  * @returns {string} if the return value is not null, then it holds an error message describing the missing inputs.
  */
 function checkMissingRequestInputs(params, requiredParams = [], requiredHeaders = []) {

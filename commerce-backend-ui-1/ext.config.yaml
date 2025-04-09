@@ -1,0 +1,46 @@
+operations:
+  view:
+    - type: web
+      impl: index.html
+actions: actions
+web: web-src
+runtimeManifest:
+  packages:
+    admin-ui-sdk:
+      license: Apache-2.0
+      actions:
+        registration:
+          function: actions/registration/index.js
+          web: 'yes'
+          runtime: 'nodejs:20'
+          inputs:
+            LOG_LEVEL: debug
+          annotations:
+            require-adobe-auth: false
+            final: true
+    CustomMenu:
+      license: Apache-2.0
+      actions:
+        commerce-rest-api:
+          function: actions/commerce/index.js
+          web: 'yes'
+          runtime: 'nodejs:20'
+          inputs:
+            LOG_LEVEL: debug
+            AIO_CLI_ENV: $AIO_CLI_ENV
+            COMMERCE_BASE_URL: $COMMERCE_BASE_URL
+            # Option 1. IMS authentication: https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/connect/#configure-adobe-identity-management-service-ims
+            OAUTH_CLIENT_ID: $OAUTH_CLIENT_ID
+            OAUTH_CLIENT_SECRETS: $OAUTH_CLIENT_SECRETS
+            OAUTH_TECHNICAL_ACCOUNT_ID: $OAUTH_TECHNICAL_ACCOUNT_ID
+            OAUTH_TECHNICAL_ACCOUNT_EMAIL: $OAUTH_TECHNICAL_ACCOUNT_EMAIL
+            OAUTH_SCOPES: $OAUTH_SCOPES
+            OAUTH_IMS_ORG_ID: $OAUTH_IMS_ORG_ID
+            # Option 2. Commerce integration: https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/connect/#create-a-commerce-integration
+            COMMERCE_CONSUMER_KEY: $COMMERCE_CONSUMER_KEY
+            COMMERCE_CONSUMER_SECRET: $COMMERCE_CONSUMER_SECRET
+            COMMERCE_ACCESS_TOKEN: $COMMERCE_ACCESS_TOKEN
+            COMMERCE_ACCESS_TOKEN_SECRET: $COMMERCE_ACCESS_TOKEN_SECRET
+          annotations:
+            require-adobe-auth: false
+            final: true
