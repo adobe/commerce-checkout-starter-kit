@@ -20,24 +20,21 @@ export const useCustomTaxCodes = (props) => {
     setIsLoadingCustomTaxCodes(true);
 
     try {
-      // fetch custom tax codes with your library
-      // const response = await callAction(props, 'tax-jar/fetch-categories', 'fetch');
-      // if (!response.success || !Array.isArray(response.data)) {
-      //   throw new Error('Invalid response format: Expected success true and data as an array.');
-      // }
 
+      // fetch here your custom tax codes
+      // const response = await callAction(props, 'action-name', 'fetch');
       // const codes = response.data.map(({ product_tax_code, name }) => ({
       //   taxCode: product_tax_code,
       //   name,
       // }));
 
+      // Mock tax codes for example
       const codes = [
         { taxCode: '001', name: 'Books' },
         { taxCode: '002', name: 'Food' },
         { taxCode: '003', name: 'Clothing' },
       ];
 
-      console.info(`Fetched ${codes.length} custom tax codes.`);
       setCustomTaxCodes(codes);
     } catch (error) {
       console.error('Error fetching custom tax codes:', error);
