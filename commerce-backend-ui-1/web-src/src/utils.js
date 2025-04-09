@@ -20,6 +20,7 @@ governing permissions and limitations under the License.
  * @returns {Promise<object>} The parsed JSON response from the backend
  */
 export async function callAction(props, action, operation, method = 'GET', payload = null) {
+  // eslint-disable-next-line node/no-unpublished-require
   const actions = require('./config.json');
 
   const res = await fetch(actions[action], {
