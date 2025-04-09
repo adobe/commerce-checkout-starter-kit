@@ -20,7 +20,6 @@ export const useCustomTaxCodes = (props) => {
     setIsLoadingCustomTaxCodes(true);
 
     try {
-
       // fetch here your custom tax codes
       // const response = await callAction(props, 'action-name', 'fetch');
       // const codes = response.data.map(({ product_tax_code, name }) => ({
