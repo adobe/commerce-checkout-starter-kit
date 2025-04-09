@@ -16,7 +16,7 @@ runtimeManifest:
           inputs:
             LOG_LEVEL: debug
           annotations:
-            require-adobe-auth: false
+            require-adobe-auth: true
             final: true
     CustomMenu:
       license: Apache-2.0
@@ -42,5 +42,5 @@ runtimeManifest:
             #COMMERCE_ACCESS_TOKEN: $COMMERCE_ACCESS_TOKEN
             #COMMERCE_ACCESS_TOKEN_SECRET: $COMMERCE_ACCESS_TOKEN_SECRET
           annotations:
-            require-adobe-auth: false
+            require-adobe-auth: true
             final: true
