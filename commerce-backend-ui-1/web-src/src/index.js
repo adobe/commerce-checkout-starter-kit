@@ -33,9 +33,9 @@ try {
 }
 
 /**
- *
- * @param runtime
- * @param ims
+ * Renders the main application into the DOM.
+ * @param {object} runtime Adobe I/O runtime object
+ * @param {object} ims IMS context object
  */
 function renderApp(runtime, ims) {
   const client = createRoot(document.getElementById('root'));

@@ -51,6 +51,7 @@ export const TaxClassesPage = (props) => {
 
   /**
    * Render empty state when there are no items in the table
+   * @returns {React.ReactElement} An illustrated message indicating no data is available.
    */
   function renderEmptyState() {
     return (

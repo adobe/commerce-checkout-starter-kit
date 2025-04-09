@@ -10,12 +10,14 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 /**
+ * Calls a backend Adobe I/O Runtime action with the given operation and payload.
  *
- * @param props
- * @param action
- * @param operation
- * @param method
- * @param payload
+ * @param {object} props Component props containing IMS information
+ * @param {string} action The action key from the config file
+ * @param {string} operation The specific operation name for the backend to execute
+ * @param {string} method The HTTP method to be passed to the backend
+ * @param {object|null} payload The optional request payload
+ * @returns {Promise<object>} The parsed JSON response from the backend
  */
 export async function callAction(props, action, operation, method = 'GET', payload = null) {
   const actions = require('./config.json');

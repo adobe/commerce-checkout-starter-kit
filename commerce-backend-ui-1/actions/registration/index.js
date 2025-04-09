@@ -12,6 +12,8 @@ governing permissions and limitations under the License.
 
 /**
  * Extension Registration Component
+ *
+ * @returns {Promise<{statusCode: number, body: object}>} The HTTP response with status code and body
  */
 async function main() {
   const extensionId = 'oope_tax_management';

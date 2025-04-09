@@ -17,7 +17,11 @@ import ExtensionRegistration from './ExtensionRegistration';
 
 /**
  * Main application component
- * @param props The component props
+ *
+ * @param {object} props The component props
+ * @param {object} props.runtime Adobe I/O runtime object
+ * @param {object} props.ims IMS context object
+ * @returns {React.ReactElement} The rendered app component
  */
 function App(props) {
   // use exc runtime event handlers
@@ -45,17 +49,21 @@ function App(props) {
   // Methods
 
   /**
-   * error handler on UI rendering failure
-   * @param e
-   * @param componentStack
+   * Error handler on UI rendering failure
+   *
+   * @param {Error} e The error thrown during rendering
+   * @param {string} componentStack Stack trace of where the error occurred
+   * @returns {void}
    */
   function onError(e, componentStack) {}
 
   /**
-   * component to show if UI fails rendering
-   * @param root0
-   * @param root0.componentStack
-   * @param root0.error
+   * Component to show if UI fails rendering
+   *
+   * @param {object} root0 Props passed to the fallback component
+   * @param {string} root0.componentStack Stack trace of the component
+   * @param {Error} root0.error The error thrown
+   * @returns {React.ReactElement} The fallback UI
    */
   function fallbackComponent({ componentStack, error }) {
     return (

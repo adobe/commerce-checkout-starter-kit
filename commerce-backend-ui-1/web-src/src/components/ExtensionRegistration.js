@@ -9,13 +9,16 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
+import React from 'react';
 import { register } from '@adobe/uix-guest';
 import { MainPage } from './MainPage';
 
 /**
  * Extension Registration Component
- * @param props The component props
- * @returns {JSX.Element}
+ * @param {object} props The component props
+ * @param {object} props.runtime Adobe I/O runtime object
+ * @param {object} props.ims IMS context object
+ * @returns {React.ReactElement} The rendered React component
  */
 export default function ExtensionRegistration(props) {
   init().catch(console.error);

@@ -13,12 +13,11 @@ governing permissions and limitations under the License.
 /* This file exposes some common utilities for your actions */
 
 /**
- *
  * Returns a log ready string of the action input parameters.
  * The `Authorization` header content will be replaced by '<hidden>'.
  *
  * @param {object} params action input parameters.
- * @returns {string}
+ * @returns {string} the stringified parameters.
  */
 function stringParameters(params) {
   // hide authorization token without overriding params
@@ -55,15 +54,14 @@ function getMissingKeys(obj, required) {
 }
 
 /**
- *
  * Returns the list of missing keys giving an object and its required keys.
  * A parameter is missing if its value is undefined or ''.
  * A value of 0 or null is not considered as missing.
  *
  * @param {object} params action input parameters.
- * @param {Array} requiredHeaders list of required input headers.
  * @param {Array} requiredParams list of required input parameters.
  *        Each element can be multi level deep using a '.' separator e.g. 'myRequiredObj.myRequiredKey'.
+ * @param {Array} requiredHeaders list of required input headers.
  * @returns {string} if the return value is not null, then it holds an error message describing the missing inputs.
  */
 function checkMissingRequestInputs(params, requiredParams = [], requiredHeaders = []) {

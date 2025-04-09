@@ -21,9 +21,9 @@ const actionMap = {
 };
 
 /**
- * Main function to handle the commerce actions
- * @param params
- * @returns {Promise<{statusCode: number, body: *}>}
+ * Main function to handle the commerce actions.
+ * @param {object} params The input parameters passed by Adobe I/O Runtime, including headers and query/body values.
+ * @returns {Promise<{statusCode: number, body: object}>} The HTTP response with status code and body.
  */
 async function main(params) {
   const logger = Core.Logger('main', { level: params.LOG_LEVEL || 'debug' });
