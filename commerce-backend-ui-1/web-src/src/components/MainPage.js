@@ -23,7 +23,7 @@ export const MainPage = (props) => {
   const tabs = [
     {
       id: '1',
-      name: 'Taxes',
+      name: 'Tax Class',
       children: <TaxClassesPage runtime={props.runtime} ims={props.ims} />,
     },
   ];

@@ -63,11 +63,11 @@ export const TaxClassesPage = (props) => {
   return (
     <Flex direction="column" marginX={20}>
       <Flex direction="row" justifyContent="space-between" alignItems="center" gap="size-200" marginX={5}>
-        <Heading level={1}>Product Tax Classes</Heading>
+        <Heading level={1}>Manage Tax Classes</Heading>
 
         <DialogTrigger type="modal">
           <Button variant="accent" isDisabled={isLoadingCustomTaxCodes}>
-            Add New Product Tax Class
+            Add New Tax Class
           </Button>
           {(close) => (
             <TaxClassDialog taxClass={null} customTaxCodes={customTaxCodes} onSave={handleSave} close={close} />
@@ -94,6 +94,7 @@ export const TaxClassesPage = (props) => {
                 #
               </Column>
               <Column>Commerce ID</Column>
+              <Column>Class Type</Column>
               <Column>Class Name</Column>
               <Column>Custom Tax Code</Column>
               <Column>Actions</Column>
@@ -106,6 +107,7 @@ export const TaxClassesPage = (props) => {
                     <Text UNSAFE_style={{ color: 'grey' }}>{item.rowNumber}</Text>
                   </Cell>
                   <Cell>{item.id}</Cell>
+                  <Cell>{item.classType}</Cell>
                   <Cell>{item.className}</Cell>
                   <Cell>{item.customTaxCode ? `${item.customTaxCode} (${item.customTaxLabel})` : ''}</Cell>
                   <Cell>

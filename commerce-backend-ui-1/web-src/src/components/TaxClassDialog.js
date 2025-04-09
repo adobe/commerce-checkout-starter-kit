@@ -25,7 +25,9 @@ import {
 } from '@adobe/react-spectrum';
 
 export const TaxClassDialog = ({ taxClass, customTaxCodes = [], onSave, close }) => {
+  const isEdit = Boolean(taxClass);
   const [className, setClassName] = useState(taxClass?.className || '');
+  const [classType, setClassType] = useState(taxClass?.classType || 'PRODUCT');
   const [selectedTaxCode, setSelectedTaxCode] = useState(taxClass?.customTaxCode || '');
   const [formError, setFormError] = useState(null);
 
@@ -46,6 +48,7 @@ export const TaxClassDialog = ({ taxClass, customTaxCodes = [], onSave, close })
       className: className.trim(),
       customTaxCode: selectedCode.taxCode,
       customTaxLabel: selectedCode.name,
+      classType,
     };
 
     setFormError(null);
@@ -55,7 +58,7 @@ export const TaxClassDialog = ({ taxClass, customTaxCodes = [], onSave, close })
 
   return (
     <Dialog>
-      <Heading>{taxClass ? 'Edit Product Tax Class' : 'Add Product Tax Class'}</Heading>
+      <Heading>{isEdit ? 'Edit Tax Class' : 'Add New Tax Class'}</Heading>
       <Divider />
       <Content>
         {formError && (
@@ -65,6 +68,17 @@ export const TaxClassDialog = ({ taxClass, customTaxCodes = [], onSave, close })
         )}
         <Form>
           <TextField label="Class Name" value={className} onChange={setClassName} isRequired />
+          <Picker
+            label="Class Type"
+            selectedKey={classType}
+            onSelectionChange={setClassType}
+            isDisabled={isEdit}
+            isRequired
+          >
+            <Item key="PRODUCT">PRODUCT</Item>
+            <Item key="SHIPPING">SHIPPING</Item>
+            <Item key="CUSTOMER">CUSTOMER</Item>
+          </Picker>
           <Picker
             label="Custom Tax Code"
             selectedKey={selectedTaxCode}

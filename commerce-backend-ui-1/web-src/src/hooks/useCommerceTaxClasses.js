@@ -23,9 +23,6 @@ export const useCommerceTaxClasses = (props) => {
       const queryParams = new URLSearchParams({
         'searchCriteria[currentPage]': 1,
         'searchCriteria[pageSize]': 100,
-        'searchCriteria[filterGroups][0][filters][0][field]': 'class_type',
-        'searchCriteria[filterGroups][0][filters][0][value]': 'PRODUCT',
-        'searchCriteria[filterGroups][0][filters][0][conditionType]': 'eq',
       }).toString();
 
       const response = await callAction(props, 'CustomMenu/commerce-rest-api', `taxClasses/search?${queryParams}`);
@@ -37,6 +34,7 @@ export const useCommerceTaxClasses = (props) => {
       const taxClasses = response.message?.items.map((item, index) => ({
         rowNumber: index + 1,
         id: item.class_id,
+        classType: item.class_type,
         className: item.class_name,
         customTaxCode: item.custom_attributes?.find((attr) => attr.attribute_code === 'tax_code')?.value || '',
         customTaxLabel: item.custom_attributes?.find((attr) => attr.attribute_code === 'tax_label')?.value || '',
@@ -63,7 +61,7 @@ export const createOrUpdateCommerceTaxClass = async (props, newTaxClass) => {
     taxClass: {
       class_id: newTaxClass?.id,
       class_name: newTaxClass.className,
-      class_type: 'PRODUCT',
+      class_type: newTaxClass.classType, // only create request uses class_type
       custom_attributes: [
         {
           attribute_code: 'tax_code',
