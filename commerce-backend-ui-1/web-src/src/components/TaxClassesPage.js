@@ -116,8 +116,6 @@ export const TaxClassesPage = (props) => {
                       <Button variant="secondary" style="outline">
                         Edit
                       </Button>
-                      {/* React Spectrum TableView does not automatically update rows when child props change,
-                          so mount it only after isLoadingCustomTaxCodes is completed. */}
                       {(close) => (
                         <TaxClassDialog
                           taxClass={item}
