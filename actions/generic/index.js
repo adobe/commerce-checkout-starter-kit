@@ -27,7 +27,8 @@ const { errorResponse, getBearerToken, stringParameters, checkMissingRequestInpu
 
 /**
  * Main function that will be executed by Adobe I/O Runtime
- * @param params
+ * @param {object} params input parameters
+ * @returns {Promise<{statusCode: number, body: *}>}
  */
 async function main(params) {
   // create a Logger

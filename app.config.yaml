@@ -100,3 +100,11 @@ application:
             event_codes:
               - com.adobe.commerce.observer.checkout_oope.sales_order_creditmemo_save_after
         runtime_action: commerce-checkout-starter-kit/consume
+
+extensions:
+  commerce/backend-ui/1:
+    $include: commerce-backend-ui-1/ext.config.yaml
+
+productDependencies:
+  - code: COMMC
+    minVersion: 2.4.4

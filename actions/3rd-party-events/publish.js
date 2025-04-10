@@ -73,7 +73,6 @@ async function main(params) {
     });
 
     const { imsOrgId, apiKey, accessToken } = await resolveCredentials(params);
-    console.log(imsOrgId, apiKey, accessToken);
     const eventsClient = await Events.init(imsOrgId, apiKey, accessToken);
     await eventsClient.publishEvent(cloudEvent);
 
