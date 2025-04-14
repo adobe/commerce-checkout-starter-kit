@@ -10,6 +10,12 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
+
+const { Core } = require('@adobe/aio-sdk');
+const { HTTP_OK } = require('../../lib/http');
+const { webhookErrorResponse, webhookVerify } = require('../../lib/adobe-commerce');
+
+
 const TAX_RATES = Object.freeze({
   EXCLUDING_TAX: [
     { code: 'state_tax', rate: 4.5, title: 'State Tax' },
@@ -19,82 +25,106 @@ const TAX_RATES = Object.freeze({
 });
 
 /**
- * @param {object} params include the parameters received in the runtime action
- * @returns {object} success status and error message
+ *
+ * @param {object} params - method params includes environment and request data
+ * @returns {object} - response with success status and result
  */
-async function collectTaxes(params) {
+async function main(params) {
+  const logger = Core.Logger('webhook-collect-taxes', { level: params.LOG_LEVEL || 'info' });
+  logger.info('Starting webhook');
+
+  try {
+    const { success, error } = webhookVerify(params);
+    if (!success) {
+      return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
+    }
+    const operations = [];
+
+    params.oopQuote.items.forEach((item, index) => {
+      operations.push(...calculateTaxOperations(item, index));
+    });
+
+    logger.info(`Successful request: ${HTTP_OK}`);
+
+    return {
+      statusCode: HTTP_OK,
+      body: JSON.stringify(operations),
+    };
+  } catch (error) {
+    logger.error(error);
+    return webhookErrorResponse(`Server error: ${error.message}`);
+  }
+}
+
+function calculateTaxOperations(item, index) {
+  const taxesToApply = item.is_tax_included ? TAX_RATES.INCLUDING_TAX : TAX_RATES.EXCLUDING_TAX;
+
   const operations = [];
 
-  for (let i = 0; i < params.oopQuote.items.length; i++) {
-    const item = params.oopQuote.items[i];
-    const taxesToApply = item.is_tax_included ? TAX_RATES.INCLUDING_TAX : TAX_RATES.EXCLUDING_TAX;
+  const discountAmount = Math.min(item.unit_price * item.quantity, item.discount_amount);
+  let taxableAmount = item.unit_price * item.quantity - discountAmount;
+  let itemTaxAmount = 0.0;
+  let discountCompensationTaxAmount = 0.0;
 
-    // discount is applied before tax (Apply Tax After Discount = NO)
-    const discountAmount = Math.min(item.unit_price * item.quantity, item.discount_amount);
-    let taxableAmount = item.unit_price * item.quantity - discountAmount;
-    let itemTaxAmount = 0.0;
-    let discountCompensationTaxAmount = 0.0;
+  taxesToApply.forEach((tax) => {
+    let taxAmount = 0;
+    let hiddenTax = 0;
 
-    taxesToApply.forEach((tax) => {
-      let taxAmount = 0;
-      let hiddenTax = 0;
-      if (item.is_tax_included) {
-        // Reverse tax calculation when tax is included in price
-        taxAmount = taxableAmount - taxableAmount / (1 + tax.rate / 100);
-        // Hidden tax calculation assumes discount is applied before tax
-        hiddenTax = discountAmount - discountAmount / (1 + tax.rate / 100);
-        discountCompensationTaxAmount += hiddenTax;
-      } else {
-        // Standard tax calculation when tax is excluded
-        taxAmount = taxableAmount * (tax.rate / 100);
-      }
-      taxAmount = Math.round(taxAmount * 100) / 100;
+    if (item.is_tax_included) {
+      taxAmount = taxableAmount - taxableAmount / (1 + tax.rate / 100);
+      hiddenTax = discountAmount - discountAmount / (1 + tax.rate / 100);
+      discountCompensationTaxAmount += hiddenTax;
+    } else {
+      taxAmount = taxableAmount * (tax.rate / 100);
+    }
 
-      itemTaxAmount += taxAmount;
+    taxAmount = Math.round(taxAmount * 100) / 100;
+    itemTaxAmount += taxAmount;
 
-      operations.push({
-        op: 'add',
-        path: `oopQuote/items/${i}/tax_breakdown`,
-        value: {
-          data: {
-            code: tax.code,
-            rate: tax.rate,
-            amount: taxAmount,
-            title: tax.title,
-            tax_rate_key: `${tax.code}-${tax.rate}`,
-          },
-        },
-        instance: 'Magento\\OutOfProcessTaxManagement\\Api\\Data\\OopQuoteItemTaxBreakdownInterface',
-      });
-    });
+    operations.push(createTaxBreakdownOperation(index, tax, taxAmount));
+  });
 
-    itemTaxAmount = Math.round(itemTaxAmount * 100) / 100;
-    discountCompensationTaxAmount = Math.round(discountCompensationTaxAmount * 100) / 100;
+  itemTaxAmount = Math.round(itemTaxAmount * 100) / 100;
+  discountCompensationTaxAmount = Math.round(discountCompensationTaxAmount * 100) / 100;
 
-    // Final tax rate is calculated based on the item net price
-    const netPrice = item.is_tax_included ? taxableAmount - itemTaxAmount : taxableAmount;
-    const itemTaxRate = netPrice > 0 ? Math.round((itemTaxAmount / netPrice) * 10000) / 100 : 0;
+  const netPrice = item.is_tax_included ? taxableAmount - itemTaxAmount : taxableAmount;
+  const itemTaxRate = netPrice > 0 ? Math.round((itemTaxAmount / netPrice) * 10000) / 100 : 0;
 
-    operations.push({
-      op: 'replace',
-      path: `oopQuote/items/${i}/tax`,
-      value: {
-        data: {
-          rate: itemTaxRate,
-          amount: itemTaxAmount,
-          discount_compensation_amount: discountCompensationTaxAmount,
-        },
-      },
-      instance: 'Magento\\OutOfProcessTaxManagement\\Api\\Data\\OopQuoteItemTaxInterface',
-    });
-  }
+  operations.push(createTaxSummaryOperation(index, itemTaxRate, itemTaxAmount, discountCompensationTaxAmount));
 
+  return operations;
+}
+
+function createTaxBreakdownOperation(index, tax, taxAmount) {
   return {
-    success: true,
-    body: operations,
+    op: 'add',
+    path: `oopQuote/items/${index}/tax_breakdown`,
+    value: {
+      data: {
+        code: tax.code,
+        rate: tax.rate,
+        amount: taxAmount,
+        title: tax.title,
+        tax_rate_key: `${tax.code}-${tax.rate}`,
+      },
+    },
+    instance: 'Magento\\OutOfProcessTaxManagement\\Api\\Data\\OopQuoteItemTaxBreakdownInterface',
   };
 }
 
-module.exports = {
-  collectTaxes,
-};
+function createTaxSummaryOperation(index, itemTaxRate, itemTaxAmount, discountCompensationTaxAmount) {
+  return {
+    op: 'replace',
+    path: `oopQuote/items/${index}/tax`,
+    value: {
+      data: {
+        rate: itemTaxRate,
+        amount: itemTaxAmount,
+        discount_compensation_amount: discountCompensationTaxAmount,
+      },
+    },
+    instance: 'Magento\\OutOfProcessTaxManagement\\Api\\Data\\OopQuoteItemTaxInterface',
+  };
+}
+
+exports.main = main;
