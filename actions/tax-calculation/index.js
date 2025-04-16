@@ -10,7 +10,6 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-
 const { Core } = require('@adobe/aio-sdk');
 const { HTTP_OK } = require('../../lib/http');
 const { webhookErrorResponse, webhookVerify } = require('../../lib/adobe-commerce');
@@ -39,7 +38,7 @@ async function main(params) {
     }
 
     let payload = params;
-    if(params.__ow_body) {
+    if (params.__ow_body) {
       // in the case when "raw-http: true" the body needs to be decoded and converted to JSON
       const body = JSON.parse(atob(params.__ow_body));
       payload = body;
@@ -53,7 +52,7 @@ async function main(params) {
     });
 
     logger.info(`Successful request: ${HTTP_OK}`);
-    logger.info('Tax calculation response : ', JSON.stringify(operations, null, 2 ));
+    logger.info('Tax calculation response : ', JSON.stringify(operations, null, 2));
 
     return {
       statusCode: HTTP_OK,
@@ -103,7 +102,6 @@ function calculateTaxOperations(item, index) {
 
   return operations;
 }
-
 
 function obtainTaxRates(item) {
   // Replace this example with external tax service containing the tax rates
