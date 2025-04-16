@@ -15,7 +15,6 @@ const { Core } = require('@adobe/aio-sdk');
 const { HTTP_OK } = require('../../lib/http');
 const { webhookErrorResponse, webhookVerify } = require('../../lib/adobe-commerce');
 
-
 const TAX_RATES = Object.freeze({
   EXCLUDING_TAX: [
     { code: 'state_tax', rate: 4.5, title: 'State Tax' },
@@ -38,13 +37,26 @@ async function main(params) {
     if (!success) {
       return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
     }
+
+    let payload = params;
+    if(params.__ow_body) {
+      // in the case when "raw-http: true" the body needs to be decoded and converted to JSON
+      const body = JSON.parse(atob(params.__ow_body));
+      payload = body;
+    }
+    logger.info('Received request : ', payload);
+
+    // if the "raw-http: false" then the request can be used directly from params
+    // const { payload = {} } = params;
+
     const operations = [];
 
-    params.oopQuote.items.forEach((item, index) => {
+    payload.oopQuote.items.forEach((item, index) => {
       operations.push(...calculateTaxOperations(item, index));
     });
 
     logger.info(`Successful request: ${HTTP_OK}`);
+    logger.info('Tax calculation response : ', JSON.stringify(operations, null, 2 ));
 
     return {
       statusCode: HTTP_OK,
@@ -57,20 +69,21 @@ async function main(params) {
 }
 
 function calculateTaxOperations(item, index) {
-  const taxesToApply = item.is_tax_included ? TAX_RATES.INCLUDING_TAX : TAX_RATES.EXCLUDING_TAX;
+  // Here will be placed the call to external tax service to obtain the corresponding tax rates to apply
+  const taxesToApply = obtainTaxRates(item);
 
   const operations = [];
 
   const discountAmount = Math.min(item.unit_price * item.quantity, item.discount_amount);
-  let taxableAmount = item.unit_price * item.quantity - discountAmount;
+  const taxableAmount = item.unit_price * item.quantity - discountAmount;
   let itemTaxAmount = 0.0;
   let discountCompensationTaxAmount = 0.0;
 
   taxesToApply.forEach((tax) => {
     let taxAmount = 0;
-    let hiddenTax = 0;
 
     if (item.is_tax_included) {
+      let hiddenTax = 0;
       taxAmount = taxableAmount - taxableAmount / (1 + tax.rate / 100);
       hiddenTax = discountAmount - discountAmount / (1 + tax.rate / 100);
       discountCompensationTaxAmount += hiddenTax;
@@ -93,6 +106,12 @@ function calculateTaxOperations(item, index) {
   operations.push(createTaxSummaryOperation(index, itemTaxRate, itemTaxAmount, discountCompensationTaxAmount));
 
   return operations;
+}
+
+
+function obtainTaxRates(item) {
+  // Replace this example with real tax service containing the tax rates
+  return item.is_tax_included ? TAX_RATES.INCLUDING_TAX : TAX_RATES.EXCLUDING_TAX;
 }
 
 function createTaxBreakdownOperation(index, tax, taxAmount) {
