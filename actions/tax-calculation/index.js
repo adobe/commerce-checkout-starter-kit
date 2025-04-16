@@ -46,9 +46,6 @@ async function main(params) {
     }
     logger.info('Received request : ', payload);
 
-    // if the "raw-http: false" then the request can be used directly from params
-    // const { payload = {} } = params;
-
     const operations = [];
 
     payload.oopQuote.items.forEach((item, index) => {
@@ -69,7 +66,6 @@ async function main(params) {
 }
 
 function calculateTaxOperations(item, index) {
-  // Here will be placed the call to external tax service to obtain the corresponding tax rates to apply
   const taxesToApply = obtainTaxRates(item);
 
   const operations = [];
@@ -110,7 +106,7 @@ function calculateTaxOperations(item, index) {
 
 
 function obtainTaxRates(item) {
-  // Replace this example with real tax service containing the tax rates
+  // Replace this example with external tax service containing the tax rates
   return item.is_tax_included ? TAX_RATES.INCLUDING_TAX : TAX_RATES.EXCLUDING_TAX;
 }
 
