@@ -48,6 +48,17 @@ application:
               require-adobe-auth: false
               raw-http: true
               final: true
+          tax-calculation:
+            function: actions/tax-calculation/index.js
+            web: 'yes'
+            runtime: nodejs:22
+            inputs:
+              LOG_LEVEL: debug
+              COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
+            annotations:
+              require-adobe-auth: false
+              raw-http: true
+              final: true
           consume:
             function: actions/commerce-events/consume.js
             web: 'no'
