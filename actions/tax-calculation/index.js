@@ -119,8 +119,8 @@ function createTaxBreakdownOperation(index, tax, taxAmount) {
         amount: taxAmount,
         title: tax.title,
         tax_rate_key: `${tax.code}-${tax.rate}`,
-      }
-    }
+      },
+    },
   };
 }
 
@@ -133,8 +133,8 @@ function createTaxSummaryOperation(index, itemTaxRate, itemTaxAmount, discountCo
         rate: itemTaxRate,
         amount: itemTaxAmount,
         discount_compensation_amount: discountCompensationTaxAmount,
-      }
-    }
+      },
+    },
   };
 }
 
