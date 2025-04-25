@@ -121,6 +121,7 @@ function createTaxBreakdownOperation(index, tax, taxAmount) {
         tax_rate_key: `${tax.code}-${tax.rate}`,
       },
     },
+    instance: 'Magento\\OutOfProcessTaxManagement\\Api\\Data\\OopQuoteItemTaxBreakdownInterface',
   };
 }
 
@@ -135,6 +136,7 @@ function createTaxSummaryOperation(index, itemTaxRate, itemTaxAmount, discountCo
         discount_compensation_amount: discountCompensationTaxAmount,
       },
     },
+    instance: 'Magento\\OutOfProcessTaxManagement\\Api\\Data\\OopQuoteItemTaxInterface',
   };
 }
 
