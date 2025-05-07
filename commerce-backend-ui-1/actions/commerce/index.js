@@ -60,5 +60,3 @@ async function main(params) {
 }
 
 exports.main = main;
-
-main(process.env).then(console.log);
