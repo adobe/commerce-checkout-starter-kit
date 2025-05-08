@@ -31,6 +31,7 @@ async function main(params) {
 
     let payload = params;
     if (params.__ow_body) {
+      // in the case when "raw-http: true" the body needs to be decoded and converted to JSON
       payload = JSON.parse(atob(params.__ow_body));
     }
 
