@@ -29,11 +29,16 @@ async function main(params) {
       return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
     }
 
-    const { payment_additional_information: paymentInfo, payment_method: paymentMethod } = params;
+    let payload = params;
+    if (params.__ow_body) {
+      payload = JSON.parse(atob(params.__ow_body));
+    }
+
+    const { additional_information: paymentInfo, method: paymentMethod } = payload.data.order.payment;
 
     logger.info(`Payment method ${paymentMethod} with additional info.`, paymentInfo);
 
-    const supportedPaymentMethods = JSON.parse(params.COMMERCE_PAYMENT_METHOD_CODES);
+    const supportedPaymentMethods = JSON.parse(payload.COMMERCE_PAYMENT_METHOD_CODES);
     if (!supportedPaymentMethods.includes(paymentMethod)) {
       // The validation of this payment method is not implemented by this action, ideally the webhook subscription
       // has to be constrained to the payment method code implemented by this app so this should never happen.
