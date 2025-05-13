@@ -39,7 +39,7 @@ async function main(params) {
 
     logger.info(`Payment method ${paymentMethod} with additional info.`, paymentInfo);
 
-    const supportedPaymentMethods = JSON.parse(payload.COMMERCE_PAYMENT_METHOD_CODES);
+    const supportedPaymentMethods = JSON.parse(params.COMMERCE_PAYMENT_METHOD_CODES);
     if (!supportedPaymentMethods.includes(paymentMethod)) {
       // The validation of this payment method is not implemented by this action, ideally the webhook subscription
       // has to be constrained to the payment method code implemented by this app so this should never happen.
