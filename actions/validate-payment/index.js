@@ -35,7 +35,7 @@ async function main(params) {
       payload = JSON.parse(atob(params.__ow_body));
     }
 
-    const { additional_information: paymentInfo, method: paymentMethod } = payload.data.order.payment;
+    const { payment_method: paymentMethod, payment_additional_information: paymentInfo } = payload;
 
     logger.info(`Payment method ${paymentMethod} with additional info.`, paymentInfo);
 
