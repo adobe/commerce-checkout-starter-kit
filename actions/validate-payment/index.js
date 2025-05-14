@@ -29,13 +29,10 @@ async function main(params) {
       return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
     }
 
-    let payload = params;
-    if (params.__ow_body) {
-      // in the case when "raw-http: true" the body needs to be decoded and converted to JSON
-      payload = JSON.parse(atob(params.__ow_body));
-    }
+    // in the case when "raw-http: true" the body needs to be decoded and converted to JSON
+    const body = JSON.parse(atob(params.__ow_body));
 
-    const { payment_method: paymentMethod, payment_additional_information: paymentInfo } = payload;
+    const { payment_method: paymentMethod, payment_additional_information: paymentInfo } = body;
 
     logger.info(`Payment method ${paymentMethod} with additional info.`, paymentInfo);
 
