@@ -9,7 +9,7 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-import React from 'react';
+import React, { useEffect, useState } from 'react'
 import { register } from '@adobe/uix-guest';
 import { MainPage } from './MainPage';
 
@@ -21,15 +21,33 @@ import { MainPage } from './MainPage';
  * @returns {React.ReactElement} The rendered React component
  */
 export default function ExtensionRegistration(props) {
-  init().catch(console.error);
-  return <MainPage runtime={props.runtime} ims={props.ims} />;
+
+  // Commerce PaaS requires Admin UI SDK 3.0 to retrieve IMS token and orgId from guestConnection
+  // See https://developer.adobe.com/commerce/extensibility/admin-ui-sdk/extension-points/#shared-contexts
+  const [guestConnection, setGuestConnection] = useState(null);
+  useEffect(() => {
+    (async () => {
+      const extensionId = 'oope_tax_management';
+
+      const guestConnection = await register({
+        id: extensionId,
+        methods: {},
+      });
+
+      setGuestConnection(guestConnection);
+    })();
+  }, []);
+
+  if (!guestConnection) {
+    console.log('Guest connection is not ready yet.');
+    return null; // Return null if guestConnection is not ready
+  }
+
+  console.log('Guest connection is ready.', guestConnection);
+  console.log('Guest connection is ready, sharedContext.', guestConnection?.sharedContext);
+  setTimeout(() => {
+    console.log('Delayed check of sharedContext:', guestConnection?.sharedContext);
+  }, 500);
+
+  return <MainPage runtime={props.runtime} ims={props.ims} guestConnection={guestConnection} />;
 }
-
-const init = async () => {
-  const extensionId = 'oope_tax_management';
-
-  await register({
-    id: extensionId,
-    methods: {},
-  });
-};

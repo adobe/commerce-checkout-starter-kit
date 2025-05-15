@@ -24,12 +24,16 @@ export async function callAction(props, action, operation, method = 'GET', paylo
   // eslint-disable-next-line node/no-missing-require,node/no-unpublished-require
   const actions = require('./config.json');
 
+  const imsOrg = props.ims.org ?? props.imsOrg;
+  const imsToken = props.ims.token ?? props.imsToken;
+  console.log('callAction', props, imsOrg, imsToken);
+
   const res = await fetch(actions[action], {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-gw-ims-org-id': props.ims.org,
-      authorization: `Bearer ${props.ims.token}`,
+      'x-gw-ims-org-id': imsOrg,
+      authorization: `Bearer ${imsToken}`,
     },
     body: JSON.stringify({
       operation,
