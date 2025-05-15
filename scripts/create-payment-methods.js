@@ -16,8 +16,8 @@ const yaml = require('js-yaml');
 
 /**
  * Creates all the payment methods defined in the payment-methods.yaml file in the configured Adobe Commerce instance
- * @param configFilePath
- * @returns array of strings
+ * @param {string} configFilePath path to the payment-methods.yaml file
+ * @returns {string[]} array of created payment method codes
  */
 async function main(configFilePath) {
   console.info('Reading payment configuration file...');

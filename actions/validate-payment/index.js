@@ -17,8 +17,8 @@ const { webhookSuccessResponse, webhookErrorResponse, webhookVerify } = require(
  * This action validates the payment information before the order is placed.
  * It has to be configured as Commerce Webhook in the Adobe Commerce Admin.
  *
- * @param params the input parameters
- * @returns {Promise<{body: {op: string}, statusCode: number}>}
+ * @param {object} params input parameters
+ * @returns {Promise<{statusCode: number, body: {op: string}}>} the response object
  * @see https://developer.adobe.com/commerce/extensibility/webhooks
  */
 async function main(params) {
