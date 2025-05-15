@@ -48,6 +48,12 @@
         "react/jsx-uses-react": "warn",
         "react/jsx-uses-vars": "warn"
       }
+    },
+    {
+      "files": ["**/*.test.js"],
+      "rules": {
+        "jsdoc/require-jsdoc": "off"
+      }
     }
   ]
 }

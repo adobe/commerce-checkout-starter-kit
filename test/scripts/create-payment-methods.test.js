@@ -35,11 +35,6 @@ describe('create-payment-methods', () => {
   });
 });
 
-/**
- *
- * @param response1
- * @param response2
- */
 function mockAdobeCommerceClient(response1, response2) {
   jest.mock('../../lib/adobe-commerce', () => ({
     ...jest.requireActual('../../lib/adobe-commerce'),

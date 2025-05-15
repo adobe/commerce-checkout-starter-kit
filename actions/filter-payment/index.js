@@ -20,7 +20,7 @@ const { HTTP_OK } = require('../../lib/http');
  * It has to be configured as Commerce Webhook in the Adobe Commerce Admin.
  *
  * @param {object} params the input parameters
- * @returns {Promise<object>} the response object
+ * @returns {Promise<{statusCode: number, body: {op: string}}>} the response object
  * @see https://developer.adobe.com/commerce/extensibility/webhooks
  */
 async function main(params) {

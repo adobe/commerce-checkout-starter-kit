@@ -23,9 +23,12 @@ const TAX_RATES = Object.freeze({
 });
 
 /**
+ * This action calculates the tax for the given request.
+ * It has to be configured as Commerce Webhook in the Adobe Commerce Admin.
  *
  * @param {object} params - method params includes environment and request data
- * @returns {object} - response with success status and result
+ * @returns {Promise<{statusCode: number, body: {op: string}}>} the response object
+ * @see https://developer.adobe.com/commerce/extensibility/webhooks
  */
 async function main(params) {
   const logger = Core.Logger('webhook-collect-taxes', { level: params.LOG_LEVEL || 'info' });
@@ -64,6 +67,12 @@ async function main(params) {
   }
 }
 
+/**
+ * Calculates the tax operations for the given item.
+ * @param {object} item the item to calculate the tax operations for
+ * @param {number} index the index of the item in the quote
+ * @returns {{op: string, path: string, value: object, instance: string}[]} the tax operations
+ */
 function calculateTaxOperations(item, index) {
   const taxesToApply = obtainTaxRates(item);
 
@@ -103,11 +112,25 @@ function calculateTaxOperations(item, index) {
   return operations;
 }
 
+/**
+ * Resolves the tax rates for the given item.
+ * @param {object} item the item to resolve the tax rates for
+ * @returns {{code: string, rate: number, title: string}[]} the tax rates
+ * @see https://developer.adobe.com/commerce/extensibility/webhooks/responses/#responses
+ */
 function obtainTaxRates(item) {
   // Replace this example with external tax service containing the tax rates
   return item.is_tax_included ? TAX_RATES.INCLUDING_TAX : TAX_RATES.EXCLUDING_TAX;
 }
 
+/**
+ * Creates a tax breakdown operation for the given item.
+ * @param {number} index operation index
+ * @param {object} tax operation tax
+ * @param {number} taxAmount operation tax amount
+ * @returns {{op: string, path: string, value: object, instance: string}} the response operation
+ * @see https://developer.adobe.com/commerce/extensibility/webhooks/responses/#add-operation
+ */
 function createTaxBreakdownOperation(index, tax, taxAmount) {
   return {
     op: 'add',
@@ -125,6 +148,15 @@ function createTaxBreakdownOperation(index, tax, taxAmount) {
   };
 }
 
+/**
+ * Creates a tax summary operation for the given item.
+ * @param {number} index operation index
+ * @param {number} itemTaxRate operation item tax rate
+ * @param {number} itemTaxAmount operation item tax amount
+ * @param {number} discountCompensationTaxAmount operation discount compensation tax amount
+ * @returns {{op: string, path: string, value: object, instance: string}} the response operation
+ * @see https://developer.adobe.com/commerce/extensibility/webhooks/responses/#replace-operation
+ */
 function createTaxSummaryOperation(index, itemTaxRate, itemTaxAmount, discountCompensationTaxAmount) {
   return {
     op: 'replace',
