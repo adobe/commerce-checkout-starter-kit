@@ -9,66 +9,66 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-import { Item, TabList, TabPanels, Tabs } from '@adobe/react-spectrum';
-import React, { useEffect, useState } from 'react';
+import { Flex, Item, ProgressCircle, TabList, TabPanels, Tabs, View } from '@adobe/react-spectrum';
+import { attach } from '@adobe/uix-guest';
+import { useState } from 'react';
 import { TaxClassesPage } from './TaxClassesPage';
 
 export const MainPage = (props) => {
   const [selectedTab, setSelectedTab] = useState('1');
   const [imsToken, setImsToken] = useState(null);
   const [imsOrgId, setImsOrgId] = useState(null);
-
-  console.log('[MainPage] guestConnection:', props.guestConnection);
-
-  useEffect(() => {
-    const context = props.guestConnection?.sharedContext;
-    console.log('[sharedContext.onChange] context:', context);
-    if (!context) return;
-    console.log('[sharedContext.onChange] context O:', context);
-
-    const handleContextChange = (ctx) => {
-      const token = ctx.get('imsToken');
-      const orgId = ctx.get('imsOrgId');
-      console.log('[sharedContext.onChange] imsToken:', token);
-      console.log('[sharedContext.onChange] imsOrgId:', orgId);
-
-      // Update local state
-      setImsToken(token);
-      setImsOrgId(orgId);
-    };
-
-    // Trigger once with current values
-    handleContextChange(context);
-
-    // Subscribe to future changes
-    context.onChange(handleContextChange);
-  }, [props.guestConnection?.sharedContext]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const onSelectionTabChange = (selectedTabKey) => {
     setSelectedTab(selectedTabKey);
   };
 
+  const getGuestConnection = async () => {
+    return await attach({
+      id: 'oope_tax_management',
+    });
+  };
+
+  getGuestConnection().then((guestConnection) => {
+    // Commerce PaaS requires Admin UI SDK 3.0+ to access IMS info via sharedContext.
+    // See https://developer.adobe.com/commerce/extensibility/admin-ui-sdk/extension-points/#shared-contexts
+    // When running inside Experience Cloud Shell, IMS token and orgId can be accessed via props.ims.
+    const imsToken = guestConnection?.sharedContext?.get('imsToken') ?? props.ims.token;
+    const imsOrgId = guestConnection?.sharedContext?.get('imsOrgId') ?? props.ims.org;
+
+    setImsToken(imsToken);
+    setImsOrgId(imsOrgId);
+    setIsLoading(false);
+  });
+
   const tabs = [
     {
       id: '1',
       name: 'Tax Class',
-      children: <TaxClassesPage runtime={props.runtime} ims={props.ims}
-                                imsToken={imsToken} imsOrgId={imsOrgId}
-                                sharedContext={props.guestConnection?.sharedContext} />,
+      children: <TaxClassesPage runtime={props.runtime} imsToken={imsToken} imsOrgId={imsOrgId} />,
     },
   ];
 
   return (
-    <Tabs
-      aria-label="Commerce data"
-      items={tabs}
-      orientation="horizontal"
-      isEmphasized={true}
-      selectedKey={selectedTab}
-      onSelectionChange={onSelectionTabChange}
-    >
-      <TabList marginX={20}>{(item) => <Item key={item.id}>{item.name}</Item>}</TabList>
-      <TabPanels>{(item) => <Item key={item.id}>{item.children}</Item>}</TabPanels>
-    </Tabs>
+    <View>
+      {isLoading ? (
+        <Flex alignItems="center" justifyContent="center" height="100vh">
+          <ProgressCircle size="L" aria-label="Loading…" isIndeterminate />
+        </Flex>
+      ) : (
+        <Tabs
+          aria-label="Commerce data"
+          items={tabs}
+          orientation="horizontal"
+          isEmphasized={true}
+          selectedKey={selectedTab}
+          onSelectionChange={onSelectionTabChange}
+        >
+          <TabList marginX={20}>{(item) => <Item key={item.id}>{item.name}</Item>}</TabList>
+          <TabPanels>{(item) => <Item key={item.id}>{item.children}</Item>}</TabPanels>
+        </Tabs>
+      )}
+    </View>
   );
 };
