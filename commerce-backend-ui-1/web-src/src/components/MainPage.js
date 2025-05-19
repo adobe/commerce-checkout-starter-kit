@@ -11,7 +11,7 @@ governing permissions and limitations under the License.
 */
 import { Flex, Item, ProgressCircle, TabList, TabPanels, Tabs, View } from '@adobe/react-spectrum';
 import { attach } from '@adobe/uix-guest';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TaxClassesPage } from './TaxClassesPage';
 
 export const MainPage = (props) => {
@@ -24,23 +24,24 @@ export const MainPage = (props) => {
     setSelectedTab(selectedTabKey);
   };
 
-  const getGuestConnection = async () => {
-    return await attach({
-      id: 'oope_tax_management',
-    });
-  };
+  useEffect(() => {
+    const loadImsInfo = async () => {
+      try {
+        const guestConnection = await attach({ id: 'oope_tax_management' });
+        const imsToken = guestConnection?.sharedContext?.get('imsToken') ?? props.ims?.token;
+        const imsOrgId = guestConnection?.sharedContext?.get('imsOrgId') ?? props.ims?.org;
 
-  getGuestConnection().then((guestConnection) => {
-    // Commerce PaaS requires Admin UI SDK 3.0+ to access IMS info via sharedContext.
-    // See https://developer.adobe.com/commerce/extensibility/admin-ui-sdk/extension-points/#shared-contexts
-    // When running inside Experience Cloud Shell, IMS token and orgId can be accessed via props.ims.
-    const imsToken = guestConnection?.sharedContext?.get('imsToken') ?? props.ims.token;
-    const imsOrgId = guestConnection?.sharedContext?.get('imsOrgId') ?? props.ims.org;
+        setImsToken(imsToken);
+        setImsOrgId(imsOrgId);
+      } catch (error) {
+        console.error('Error retrieving IMS info:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    setImsToken(imsToken);
-    setImsOrgId(imsOrgId);
-    setIsLoading(false);
-  });
+    loadImsInfo();
+  }, []);
 
   const tabs = [
     {
