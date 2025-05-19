@@ -12,6 +12,7 @@ governing permissions and limitations under the License.
 import React, { useEffect } from 'react';
 import { register } from '@adobe/uix-guest';
 import { MainPage } from './MainPage';
+import { TAX_EXTENSION_ID } from '../constants/extension';
 
 /**
  * Extension Registration Component
@@ -21,18 +22,16 @@ import { MainPage } from './MainPage';
  * @returns {React.ReactElement} The rendered React component
  */
 export default function ExtensionRegistration(props) {
+  const registerExtension = async () => {
+    await register({
+      id: TAX_EXTENSION_ID,
+      methods: {},
+    });
+  };
 
   useEffect(() => {
-    (async () => {
-      const extensionId = 'oope_tax_management'
-
-      await register({
-        id: extensionId,
-        methods: {
-        }
-      })
-    })()
-  }, [])
+    registerExtension().catch(console.error);
+  }, []);
 
   return <MainPage runtime={props.runtime} ims={props.ims} />;
 }
