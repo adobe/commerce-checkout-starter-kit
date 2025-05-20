@@ -8,7 +8,7 @@
     "@adobe/eslint-config-aio-lib-config": "^4.0.0",
     "@adobe/exc-app": "^1.4.11",
     "@adobe/react-spectrum": "^3.40.1",
-    "@adobe/uix-guest": "^1.0.1",
+    "@adobe/uix-guest": "^0.10.5",
     "cloudevents": "^4.0.2",
     "core-js": "^3.41.0",
     "eslint-config-prettier": "^9.1.0",
