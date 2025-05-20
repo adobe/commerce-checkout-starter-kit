@@ -28,8 +28,8 @@ export async function callAction(props, action, operation, method = 'GET', paylo
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-gw-ims-org-id': props.ims.org,
-      authorization: `Bearer ${props.ims.token}`,
+      'x-gw-ims-org-id': props.imsOrgId,
+      authorization: `Bearer ${props.imsToken}`,
     },
     body: JSON.stringify({
       operation,

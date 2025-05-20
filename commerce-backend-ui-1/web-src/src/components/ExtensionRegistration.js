@@ -9,9 +9,10 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-import React from 'react';
+import React, { useEffect } from 'react';
 import { register } from '@adobe/uix-guest';
 import { MainPage } from './MainPage';
+import { TAX_EXTENSION_ID } from '../constants/extension';
 
 /**
  * Extension Registration Component
@@ -21,15 +22,16 @@ import { MainPage } from './MainPage';
  * @returns {React.ReactElement} The rendered React component
  */
 export default function ExtensionRegistration(props) {
-  init().catch(console.error);
+  const registerExtension = async () => {
+    await register({
+      id: TAX_EXTENSION_ID,
+      methods: {},
+    });
+  };
+
+  useEffect(() => {
+    registerExtension().catch(console.error);
+  }, []);
+
   return <MainPage runtime={props.runtime} ims={props.ims} />;
 }
-
-const init = async () => {
-  const extensionId = 'oope_tax_management';
-
-  await register({
-    id: extensionId,
-    methods: {},
-  });
-};
