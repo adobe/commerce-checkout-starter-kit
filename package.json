@@ -51,7 +51,8 @@
     "create-payment-methods": "node -e \"require('./scripts/create-payment-methods').main('payment-methods.yaml')\"",
     "create-tax-integrations": "node -e \"require('./scripts/create-tax-integrations').main('tax-integrations.yaml')\"",
     "create-shipping-carriers": "node -e \"require('./scripts/create-shipping-carriers').main('shipping-carriers.yaml')\"",
-    "get-shipping-carriers": "node -e \"require('./scripts/get-shipping-carriers').main()\""
+    "get-shipping-carriers": "node -e \"require('./scripts/get-shipping-carriers').main()\"",
+    "sync-oauth-credentials": "node -e \"require('./scripts/sync-oauth-credentials').main()\""
   },
   "engines": {
     "node": ">=22"
