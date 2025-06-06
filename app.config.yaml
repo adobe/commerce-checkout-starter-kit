@@ -1,4 +1,6 @@
 application:
+  hooks:
+    pre-app-build: ./hooks/pre-app-build.js
   actions: actions
   runtimeManifest:
     packages:
