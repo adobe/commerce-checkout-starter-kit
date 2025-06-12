@@ -31,8 +31,7 @@ const TAX_RATES = Object.freeze({
  * @see https://developer.adobe.com/commerce/extensibility/webhooks
  */
 async function main(params) {
-  const logger = Core.Logger('webhook-collect-taxes', { level: params.LOG_LEVEL || 'info' });
-  logger.info('Starting webhook');
+  const logger = Core.Logger('tax-calculation', { level: params.LOG_LEVEL || 'info' });
 
   try {
     const { success, error } = webhookVerify(params);
@@ -40,21 +39,16 @@ async function main(params) {
       return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
     }
 
-    let payload = params;
-    if (params.__ow_body) {
-      // in the case when "raw-http: true" the body needs to be decoded and converted to JSON
-      const body = JSON.parse(atob(params.__ow_body));
-      payload = body;
-    }
-    logger.info('Received request : ', payload);
+    // in the case when "raw-http: true" the body needs to be decoded and converted to JSON
+    const body = JSON.parse(atob(params.__ow_body));
+    logger.debug('Received request: ', body);
 
     const operations = [];
 
-    payload.oopQuote.items.forEach((item, index) => {
+    body.oopQuote.items.forEach((item, index) => {
       operations.push(...calculateTaxOperations(item, index));
     });
 
-    logger.info(`Successful request: ${HTTP_OK}`);
     logger.info('Tax calculation response : ', JSON.stringify(operations, null, 2));
 
     return {
@@ -78,6 +72,7 @@ function calculateTaxOperations(item, index) {
 
   const operations = [];
 
+  // This sample assumes that discount is applied before tax (Apply Tax After Discount = NO)
   const discountAmount = Math.min(item.unit_price * item.quantity, item.discount_amount);
   const taxableAmount = item.unit_price * item.quantity - discountAmount;
   let itemTaxAmount = 0.0;
@@ -87,9 +82,10 @@ function calculateTaxOperations(item, index) {
     let taxAmount = 0;
 
     if (item.is_tax_included) {
-      let hiddenTax = 0;
+      // Reverse tax calculation when tax is included in price
       taxAmount = taxableAmount - taxableAmount / (1 + tax.rate / 100);
-      hiddenTax = discountAmount - discountAmount / (1 + tax.rate / 100);
+      // Hidden tax calculation assumes discount is applied before tax
+      const hiddenTax = discountAmount - discountAmount / (1 + tax.rate / 100);
       discountCompensationTaxAmount += hiddenTax;
     } else {
       taxAmount = taxableAmount * (tax.rate / 100);
