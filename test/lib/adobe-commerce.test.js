@@ -10,67 +10,84 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-jest.mock('../../lib/adobe-auth');
-jest.mock('got');
+jest.mock('@adobe/aio-lib-ims', () => ({
+  context: jest.requireActual('@adobe/aio-lib-ims').context,
+  getToken: jest.fn(),
+}));
 
 const { getAdobeCommerceClient, webhookVerify } = require('../../lib/adobe-commerce');
-const { resolveCredentials } = require('../../lib/adobe-auth');
-const got = require('got');
+const { getToken } = require('@adobe/aio-lib-ims');
 const crypto = require('crypto');
+// eslint-disable-next-line node/no-unpublished-require
+const nock = require('nock');
 
 describe('getAdobeCommerceClient', () => {
-  const params = {
-    COMMERCE_BASE_URL: 'https://example.com',
-    OAUTH_CLIENT_ID: 'test-client-id',
-    OAUTH_CLIENT_SECRET: JSON.stringify({ secret: 'test-client-secret' }),
-    OAUTH_TECHNICAL_ACCOUNT_ID: 'test-technical-account-id',
-    OAUTH_TECHNICAL_ACCOUNT_EMAIL: 'test-email@example.com',
-    OAUTH_IMS_ORG_ID: 'test-org-id',
-    OAUTH_SCOPES: JSON.stringify(['scope1', 'scope2']),
-    AIO_CLI_ENV: 'prod',
-    LOG_LEVEL: 'debug',
-  };
-
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  test('should initialize the Commerce client with IMS options', async () => {
-    resolveCredentials.mockResolvedValue({
-      apiKey: params.OAUTH_CLIENT_ID,
-      imsOrgId: params.OAUTH_IMS_ORG_ID,
-      accessToken: 'mock-access-token',
+  describe('getAdobeCommerceClient', () => {
+    const sharedParams = {
+      COMMERCE_BASE_URL: 'http://mycommerce.com',
+      LOG_LEVEL: 'debug',
+    };
+    test('with IMS auth', async () => {
+      const params = {
+        ...sharedParams,
+        OAUTH_CLIENT_ID: 'test-client-id',
+        OAUTH_CLIENT_SECRETS: JSON.stringify(['supersecret']),
+        OAUTH_TECHNICAL_ACCOUNT_ID: 'test-technical-account-id',
+        OAUTH_TECHNICAL_ACCOUNT_EMAIL: 'test-email@example.com',
+        OAUTH_IMS_ORG_ID: 'test-org-id',
+        OAUTH_SCOPES: JSON.stringify(['scope1', 'scope2']),
+      };
+      getToken.mockResolvedValue('supersecrettoken');
+      const scope = nock(params.COMMERCE_BASE_URL)
+        .get('/V1/testauth')
+        .matchHeader('Content-Type', 'application/json')
+        .matchHeader('x-ims-org-id', params.OAUTH_IMS_ORG_ID)
+        .matchHeader('x-api-key', params.OAUTH_CLIENT_ID)
+        .matchHeader('Authorization', 'Bearer supersecrettoken')
+        .reply(200);
+
+      const client = await getAdobeCommerceClient(params);
+      expect(getToken).toHaveBeenCalled();
+
+      const { success } = await client.get('testauth');
+      expect(success).toBeTruthy();
+      scope.done();
     });
-    got.extend.mockReturnValue({
-      extend: jest.fn().mockResolvedValue(
-        jest.fn().mockReturnValue({
-          json: jest.fn().mockReturnValue({}),
-        })
-      ),
+
+    test('with Commerce integration auth', async () => {
+      const params = {
+        ...sharedParams,
+        COMMERCE_CONSUMER_KEY: 'test-consumer-key',
+        COMMERCE_CONSUMER_SECRET: 'test-consumer-secret',
+        COMMERCE_ACCESS_TOKEN: 'test-access-token',
+        COMMERCE_ACCESS_TOKEN_SECRET: 'test-access-token-secret',
+      };
+
+      const scope = nock(params.COMMERCE_BASE_URL)
+        .get('/V1/testauth')
+        .matchHeader('Content-Type', 'application/json')
+        .matchHeader(
+          'Authorization',
+          /^OAuth oauth_consumer_key="test-consumer-key", oauth_nonce="[^"]+", oauth_signature="[^"]+", oauth_signature_method="HMAC-SHA256", oauth_timestamp="[^"]+", oauth_token="test-access-token", oauth_version="1\.0"$/
+        )
+        .reply(200);
+
+      const client = await getAdobeCommerceClient(params);
+
+      const { success } = await client.get('testauth');
+      expect(success).toBeTruthy();
+      scope.done();
     });
 
-    const client = await getAdobeCommerceClient(params);
-
-    expect(resolveCredentials).toHaveBeenCalledWith(params);
-    expect(resolveCredentials).toHaveBeenCalledTimes(1);
-    expect(got.extend).toHaveBeenCalledTimes(1);
-
-    expect(client).toHaveProperty('createOopePaymentMethod');
-    expect(client).toHaveProperty('getOopePaymentMethod');
-    expect(client).toHaveProperty('getOopePaymentMethods');
-
-    const createPaymentMethod = await client.createOopePaymentMethod();
-    expect(createPaymentMethod.success).toBeTruthy();
-    const getPaymentMethod = await client.getOopePaymentMethod();
-    expect(getPaymentMethod.success).toBeTruthy();
-    const getPaymentMethods = await client.getOopePaymentMethods();
-    expect(getPaymentMethods.success).toBeTruthy();
-  });
-
-  test('should handle errors when initializing the Commerce client', async () => {
-    resolveCredentials.mockRejectedValue(new Error('Failed to get token'));
-
-    await expect(getAdobeCommerceClient(params)).rejects.toThrow('Failed to get token');
+    test('throws when missing auth method', async () => {
+      await expect(getAdobeCommerceClient(sharedParams)).rejects.toThrow(
+        "Can't resolve authentication options for the given params."
+      );
+    });
   });
 });
 
