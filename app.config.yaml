@@ -4,9 +4,17 @@ application:
   actions: actions
   runtimeManifest:
     packages:
+      # Do not change the action `commerce-checkout-starter-kit/info` as it is used by tracking purposes
       commerce-checkout-starter-kit:
         license: Apache-2.0
         actions:
+          info:
+            function: actions/commerce-checkout-starter-kit-info/index.js
+            web: 'yes'
+            runtime: nodejs:22
+            annotations:
+              require-adobe-auth: true
+              final: true
           generic:
             function: actions/generic/index.js
             web: 'yes'
