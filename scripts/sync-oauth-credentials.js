@@ -25,7 +25,10 @@ async function main() {
     const envVars = dotenv.parse(fs.readFileSync(envPath, 'utf8'));
     const imsContext = await resolveImsS2SContext();
     if (!imsContext) {
-      logger.warn('IMS server 2 server OAuth credentials are not configured. Did you run `aio app use`?');
+      logger.warn(
+        'Unable to locate an IMS context with OAuth Server-to-Server credentials. Please use `aio app use` to ' +
+          'configure a project workspace that has OAuth Server-to-Server credentials enabled.'
+      );
       return;
     }
 
