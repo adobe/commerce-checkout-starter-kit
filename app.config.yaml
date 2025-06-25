@@ -24,6 +24,7 @@ application:
             annotations:
               require-adobe-auth: true
               final: true
+          # https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/payment-use-cases/
           validate-payment:
             function: actions/validate-payment/index.js
             web: 'yes'
@@ -47,6 +48,7 @@ application:
               require-adobe-auth: false
               raw-http: true
               final: true
+          # https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/shipping-use-cases/
           shipping-methods:
             function: actions/shipping-methods/index.js
             web: 'yes'
@@ -58,8 +60,9 @@ application:
               require-adobe-auth: false
               raw-http: true
               final: true
-          tax-calculation:
-            function: actions/tax-calculation/index.js
+          # https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/tax-use-cases/
+          collect-taxes:
+            function: actions/collect-taxes/index.js
             web: 'yes'
             runtime: nodejs:22
             inputs:
@@ -69,6 +72,7 @@ application:
               require-adobe-auth: false
               raw-http: true
               final: true
+          # https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/use-cases/
           consume:
             function: actions/commerce-events/consume.js
             web: 'no'

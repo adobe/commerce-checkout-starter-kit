@@ -31,7 +31,7 @@ const TAX_RATES = Object.freeze({
  * @see https://developer.adobe.com/commerce/extensibility/webhooks
  */
 async function main(params) {
-  const logger = Core.Logger('tax-calculation', { level: params.LOG_LEVEL || 'info' });
+  const logger = Core.Logger('collect-taxes', { level: params.LOG_LEVEL || 'info' });
 
   try {
     const { success, error } = webhookVerify(params);
