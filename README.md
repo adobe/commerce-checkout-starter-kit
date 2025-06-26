@@ -221,7 +221,7 @@ _List all webhook methods and their corresponding actions required for the appli
 
 Create the webhooks with the following App Builder actions:
 
-1. `collect-taxes`
+1. `collect-taxes`: This action collects taxes for the cart.
 
    - For SaaS, register your action to `plugin.magento.out_of_process_tax_management.api.oop_tax_collection.collect_taxes` webhook method in **System > Webhooks > Webhooks Subscriptions**.
    - For PaaS, please refer to `webhooks.xml`. Replace the app builder URL with your action after deploying the App Builder application.
