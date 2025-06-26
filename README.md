@@ -10,13 +10,13 @@ For more details, please refer to the [Adobe Commerce checkout starter kit docum
 
 ---
 
-# Template: <project-name>
+# Template: `<project-name>`
 
 The following is an example app installation guide. For more details, please refer to the [App submission guidelines](https://developer.adobe.com/commerce/extensibility/app-development/app-submission-guidelines/).
 
 ## Prerequisites
 
-You must install or have access to the following prerequisites to develop with <project-name>:
+You must install or have access to the following prerequisites to develop with `<project-name>`:
 
 - Adobe Commerce as a Cloud Service (SaaS) or Adobe Commerce version `2.4.5` or higher (PaaS).
 
@@ -36,7 +36,7 @@ You must install or have access to the following prerequisites to develop with <
 
 ### Install Adobe Commerce Modules (PaaS only)
 
-- Install the required modules for <project-name>:
+- Install the required modules for `<project-name>`:
 
   ```bash
   composer require magento/module-out-of-process-payment-methods --with-dependencies
