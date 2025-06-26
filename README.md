@@ -214,7 +214,7 @@ npm run create-tax-integrations
 
 #### Create Webhooks
 
-After deploying your actions, [create the webhooks]((https://developer.adobe.com/commerce/extensibility/webhooks/create-webhooks/)) with the following App Builder actions:
+After deploying your App Builder actions, [create the webhooks]((https://developer.adobe.com/commerce/extensibility/webhooks/create-webhooks/)) with the following actions:
 
 _List all webhook methods and their corresponding actions required for the application._
 
