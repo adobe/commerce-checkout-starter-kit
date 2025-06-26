@@ -214,12 +214,9 @@ npm run create-tax-integrations
 
 #### Create Webhooks
 
-After deploying your actions, you need to create a webhook for your application.
-Refer to [Create Webhooks](https://developer.adobe.com/commerce/extensibility/webhooks/create-webhooks/) how to create webhook.
+After deploying your actions, [create the webhooks]((https://developer.adobe.com/commerce/extensibility/webhooks/create-webhooks/)) with the following App Builder actions:
 
 _List all webhook methods and their corresponding actions required for the application._
-
-Create the webhooks with the following App Builder actions:
 
 1. `collect-taxes`: This action collects taxes for the cart.
 
