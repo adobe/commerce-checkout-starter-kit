@@ -44,7 +44,7 @@ You must install or have access to the following prerequisites to develop with `
   composer require magento/module-out-of-process-tax-management --with-dependencies
   ```
 
-- For Commerce Webhook, refer to [Install Adobe Commerce Webhooks](https://developer.adobe.com/commerce/extensibility/webhooks/installation/)
+- For Commerce Webhook, refer to the [Install Adobe Commerce Webhooks](https://developer.adobe.com/commerce/extensibility/webhooks/installation/)
 
 - (If using Eventing) Update Commerce Eventing module to version `1.10.0` or higher:
 
@@ -167,6 +167,10 @@ To create OAuth credentials for App Builder authentication:
    ```
 
 ## Configuration
+
+### Configure `<project-name>`
+
+_Describe any credentials required for the app._
 
 ### Configure Payment Method
 
