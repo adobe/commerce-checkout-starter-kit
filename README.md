@@ -36,7 +36,7 @@ You must install or have access to the following prerequisites to develop with `
 
 ### Install Adobe Commerce Modules (PaaS only)
 
-_List the required Adobe Commerce modules for the project._
+_List only necessary modules for the project._
 
 - Install the required modules for `<project-name>`:
 
