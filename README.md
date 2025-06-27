@@ -36,6 +36,8 @@ You must install or have access to the following prerequisites to develop with `
 
 ### Install Adobe Commerce Modules (PaaS only)
 
+_List the required Adobe Commerce modules for the project._
+
 - Install the required modules for `<project-name>`:
 
   ```bash
@@ -57,7 +59,6 @@ You must install or have access to the following prerequisites to develop with `
 
   ```bash
   composer require "magento/commerce-backend-sdk": ">=3.0"
-  composer update magento/commerce-backend-sdk
   ```
 
 ## Initialize App Builder project
