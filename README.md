@@ -12,7 +12,9 @@ For more details, please refer to the [Adobe Commerce checkout starter kit docum
 
 # Template: `<project-name>`
 
-The following is an example app installation guide. For more details, please refer to the [App submission guidelines](https://developer.adobe.com/commerce/extensibility/app-development/app-submission-guidelines/).
+_The following is an example app installation guide. For more details, please refer to the [App submission guidelines](https://developer.adobe.com/commerce/extensibility/app-development/app-submission-guidelines/)._
+
+_Note that this template could be outdated. Make sure refer to the latest information in the [Adobe Commerce checkout starter kit documentation](https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/)._
 
 ## Prerequisites
 
