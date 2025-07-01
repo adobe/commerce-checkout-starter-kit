@@ -156,7 +156,7 @@ To create OAuth credentials for App Builder authentication:
 
 1. On the **User Role** tab, assign the necessary API integration permissions and save the user.
 
-### Option 2: Authenticate with Commerce Integration
+### Option 2: Authenticate with Commerce Integration (PaaS only)
 
 1. Create a new Adobe Commerce Integration by following the [systems integration](https://experienceleague.adobe.com/en/docs/commerce-admin/systems/integrations) guide.
 
