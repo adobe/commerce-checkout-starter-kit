@@ -96,6 +96,7 @@ _List only necessary modules for the project._
     - I/O Management API
     - (If using Eventing) I/O Events
     - (If using Eventing) Adobe I/O Events for Adobe Commerce
+    - (If connecting to Adobe Commerce as a Cloud Service) Adobe Commerce as a Cloud Service
 
 1.  Copy the environment variables from the `env.dist` to a local `.env` file. We will complete the required variables in the upcoming sections.
 
