@@ -63,26 +63,27 @@ _List only necessary modules for the project._
   composer require "magento/commerce-backend-sdk": ">=3.0"
   ```
 
+### Create an App Builder project in Developer Console
+
+1. Log in to the [Adobe Developer Console](https://console.adobe.io/) and select the desired organization from the dropdown menu in the top-right corner.
+
+1. Click **Create new project from template**.
+
+1. Select **App Builder**. The **Set up templated project** page displays.
+
+1. Specify a project title and app name. Mark the **Include Runtime with each workspace** checkbox.
+
 ## Initialize App Builder project
 
 1.  Navigate to the downloaded code and run:
 
     ```bash
     npm install
-    aio app init
-    ```
-
-1.  After selecting the organization, create or select an App Builder project during initialization. This project can be found in the [Adobe Developer Console](https://console.adobe.io/).
-
-    ```bash
-    ? Select Org: <your-ims-org>
-
-    ? Select a Project, or press + to create new:
-    ? > Do you wish to create a new Project? Yes
-    Enter Project details:
-    ? Name: <your-project-name>
-    ? Title: <your-project-title>
-    ? Description: <your-project-description>
+    aio login
+    aio console org select
+    aio console project select
+    aio console workspace select
+    aio app use --merge
     ```
 
 1.  Add required services to your project:
@@ -119,15 +120,7 @@ _List only necessary modules for the project._
 
     - This script is also configured as a pre-app-build hook and will auto-sync when a build is triggered.
 
-    - If the credential is empty, make sure you have added the `I/O Management API` and your `.env` is synced with the Developer Console Project as follows:
-
-      ```bash
-      aio login -f
-      aio console org select
-      aio console project select
-      aio console workspace select
-      aio app use --merge
-      ```
+    - If the credential is empty, make sure you have added the `I/O Management API` and your `.env` is synced with the Developer Console Project.
 
 ## Connect to Adobe Commerce
 
@@ -275,22 +268,20 @@ To configures the Commerce event provider for your Commerce instance:
    COMMERCE_ADOBE_IO_EVENTS_ENVIRONMENT_ID=
    ```
 
-2. Run the following script to configure the Commerce Event module to your Commerce. This uses the commerce event provider `dx_commerce_events` defined in `events.config.yaml`:
+1. Run the following script to configure the Commerce Event module to your Commerce. This uses the commerce event provider `dx_commerce_events` defined in `events.config.yaml`:
 
    ```bash
    npm run configure-commerce-events
    ```
+
+Once this step is done, [deploy the application](#deploy-your-application) to register the events to your App Builder application.
 
 ## Deploy Your Application
 
 Once all configuration steps are complete, deploy the application:
 
 ```bash
-# Deploy the application
-aio app deploy -e application
-
-# If you want to deploy the Admin UI SDK:
-aio app deploy -e commerce/backend-ui/1
+aio app deploy --force-build --force-deploy
 ```
 
 ## Validation
