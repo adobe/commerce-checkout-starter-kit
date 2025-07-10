@@ -58,7 +58,7 @@ async function main(workspaceFile) {
 
   const eventProvidersSpec = yaml.load(fs.readFileSync(eventProvidersPath, 'utf8'));
   const commerceProviderSpec = eventProvidersSpec?.event_providers.find(
-    (providerSpec) => providerSpec.provider_metadata === 'dx_commerce_events' && providerSpec.label === provider.label
+    (providerSpec) => providerSpec.provider_metadata === 'dx_commerce_events'
   );
   if (!commerceProviderSpec) {
     logger.warn(

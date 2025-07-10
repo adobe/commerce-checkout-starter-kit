@@ -117,6 +117,7 @@ application:
             annotations:
               require-adobe-auth: true
               final: true
+  # https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/configure/#configure-eventing
   events:
     registrations:
       Event registration for 3rd party system:
@@ -140,4 +141,4 @@ extensions:
 
 productDependencies:
   - code: COMMC
-    minVersion: 2.4.4
+    minVersion: 2.4.5
