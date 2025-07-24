@@ -22,6 +22,8 @@ const { resolveCredentials } = require('../lib/adobe-auth');
 const logger = Core.Logger('configure-commerce-events', { level: process.env.LOG_LEVEL || 'info' });
 
 const eventProvidersPath = `${process.env.INIT_CWD}/events.config.yaml`;
+const appConfigPath = `${process.env.INIT_CWD}/app.config.yaml`;
+const EVENT_PREFIX = process.env.EVENT_PREFIX;
 
 /**
  * Configure the commerce event provider in the commerce instance, and subscribe to the events.
@@ -56,10 +58,42 @@ async function main(workspaceFile) {
     return;
   }
 
+  if (!fs.existsSync(appConfigPath)) {
+    logger.warn(
+      `Application configuration file not found at ${appConfigPath}, commerce eventing reconciliation will be skipped`
+    );
+    return;
+  }
+
+  if (!EVENT_PREFIX) {
+    logger.error('EVENT_PREFIX is required but is missing or empty from the .env file.');
+    return;
+  }
+
   const eventProvidersSpec = yaml.load(fs.readFileSync(eventProvidersPath, 'utf8'));
   const commerceProviderSpec = eventProvidersSpec?.event_providers.find(
     (providerSpec) => providerSpec.provider_metadata === 'dx_commerce_events'
   );
+  const appConfigEventProviderSpec = yaml.load(fs.readFileSync(appConfigPath, 'utf8'));
+  const commerceEventConsumerInfo =
+    appConfigEventProviderSpec?.application?.events?.registrations['Commerce events consumer'];
+
+  if (commerceEventConsumerInfo && Array.isArray(commerceEventConsumerInfo.events_of_interest)) {
+    commerceEventConsumerInfo.events_of_interest.forEach((event) => {
+      if (event.provider_metadata === 'dx_commerce_events' && Array.isArray(event.event_codes)) {
+        event.event_codes = event.event_codes.map((code) => {
+          return code.replace(
+            /^com\.adobe\.commerce(?:\.(.*?))?\.observer/,
+            `com.adobe.commerce.${EVENT_PREFIX}.observer`
+          );
+        });
+
+        fs.writeFileSync(appConfigPath, yaml.dump(appConfigEventProviderSpec, { lineWidth: -1 }));
+        logger.debug(`Updated event_code with ${EVENT_PREFIX} for dx_commerce_events`);
+      }
+    });
+  }
+
   if (!commerceProviderSpec) {
     logger.warn(
       `Cannot find the matched commerce provider spec for provider ID ${provider.id} at ${eventProvidersPath}. ` +
@@ -78,6 +112,10 @@ async function main(workspaceFile) {
     return;
   }
 
+  if (provider.label.split('-')[0].trim() !== commerceProviderSpec.label) {
+    logger.warn(`Event Provider configured is incorrect please execute "npm run configure-events"`);
+    return;
+  }
   commerceProviderSpec.id = provider.id;
   commerceProviderSpec.instance_id = provider.instance_id;
 
@@ -101,6 +139,8 @@ async function main(workspaceFile) {
  */
 async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
   const commerceClient = await getAdobeCommerceClient(process.env);
+  const workspaceConfig = await readWorkspaceConfig(workspaceFile);
+
   const res = await commerceClient.getEventProviders();
   if (!res.success) {
     return {
@@ -111,36 +151,28 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
   }
 
   const existingProviders = res.message;
-  if (existingProviders.length > 0) {
-    // eslint-disable-next-line camelcase
-    const matchedProvider = existingProviders.find(({ provider_id }) => provider_id === eventProviderSpec.id);
-    if (!matchedProvider) {
-      const warnMessage =
-        `Commerce is already configured with a different provider ID. \n` +
-        `Expected: ${eventProviderSpec.id}, but found: ${existingProviders[0].provider_id}. \n` +
-        `Please ensure the provider ID in your .env file matches the expected ID, or unsubscribe the incorrectly set provider in commerce.`;
-      return { success: false, message: warnMessage, details: { subscriptions: [] } };
-    }
+  const isNonDefaultProviderAdded = existingProviders.some((provider) => provider.provider_id === eventProviderSpec.id);
 
-    logger.info(`Commerce is already configured with provider id: ${eventProviderSpec.id}.`);
-  } else {
-    const result = await configureCommerceEventProvider(
-      eventProviderSpec.id,
-      eventProviderSpec.instance_id,
-      workspaceFile
-    );
-    if (!result.success) {
-      return {
-        success: false,
-        message: 'Failed to configure eventing in commerce: ' + result.body.message,
-        details: { subscriptions: [] },
-      };
-    }
+  if (!isNonDefaultProviderAdded) {
+    await addCommerceEventProvider(eventProviderSpec.id, eventProviderSpec.instance_id, workspaceConfig);
+  }
 
-    logger.info(`The event provider ${eventProviderSpec.id} configured in Commerce.`);
+  const result = await configureCommerceEventing(workspaceConfig);
+
+  if (!result.success) {
+    return {
+      success: false,
+      message: 'Failed to configure eventing in commerce: ' + result.body.message,
+      details: { subscriptions: [] },
+    };
   }
 
   const subscriptionSpec = eventProviderSpec.subscription ?? [];
+  subscriptionSpec.forEach((item) => {
+    item.event.provider_id = eventProviderSpec.id;
+    item.event.name = EVENT_PREFIX + '.' + item.event.name;
+  });
+
   const results = await ensureCommerceEventSubscriptions(subscriptionSpec);
 
   return {
@@ -153,12 +185,11 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
 
   /**
    * Configures eventing in the commerce instance with the given event provider.
-   * @param {string} providerId The event provider id to configure.
-   * @param {string} instanceId The instance id to identify commerce instance.
-   * @param {string} workspaceFile The workspace file path.
+   *
+   * @param {object} workspaceConfig The workspace configuration object.
    * @returns {Promise<object>} The result of the configuration.
    */
-  async function configureCommerceEventProvider(providerId, instanceId, workspaceFile) {
+  async function configureCommerceEventing(workspaceConfig) {
     const merchantId = process.env.COMMERCE_ADOBE_IO_EVENTS_MERCHANT_ID;
     if (!merchantId) {
       logger.warn('Cannot find COMMERCE_ADOBE_IO_EVENTS_MERCHANT_ID environment variable, the value will be empty.');
@@ -168,9 +199,7 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
       logger.warn('Cannot find COMMERCE_ADOBE_IO_EVENTS_ENVIRONMENT_ID environment variable, the value will be empty');
     }
 
-    const workspaceConfig = await readWorkspaceConfig(workspaceFile);
-
-    return await commerceClient.configureEventing(providerId, instanceId, merchantId, environmentId, workspaceConfig);
+    return await commerceClient.configureEventing(merchantId, environmentId, workspaceConfig);
   }
 
   /**
@@ -194,11 +223,31 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
             logger.error('Failed to subscribe event in Commerce: ' + result.body.message);
           }
         } else {
-          logger.info(`Subscribed to event ${event.event.name} in Commerce.`);
+          logger.info(`Subscribed to event "${event.event.name}" in Commerce.`);
         }
         return { event, result };
       })
     );
+  }
+
+  /**
+   * Adds the non-default event provider to the commerce instance.
+   *
+   * @param {string} providerId - provider id
+   * @param {string} instanceId - instance id
+   * @param {object} workspaceConfiguration - workspace configuration
+   */
+  async function addCommerceEventProvider(providerId, instanceId, workspaceConfiguration) {
+    await commerceClient.addEventProvider({
+      eventProvider: {
+        provider_id: providerId,
+        instance_id: instanceId,
+        label: eventProviderSpec.label,
+        description: eventProviderSpec.description,
+        workspace_configuration: JSON.stringify(workspaceConfiguration),
+      },
+    });
+    logger.info(`Added non-default provider with id "${providerId}" and instance id "${instanceId}" to the Commerce.`);
   }
 }
 
