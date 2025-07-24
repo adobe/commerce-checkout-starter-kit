@@ -268,6 +268,12 @@ To configures the Commerce event provider for your Commerce instance:
    COMMERCE_ADOBE_IO_EVENTS_ENVIRONMENT_ID=
    ```
 
+1. Also set the value for **EVENT_PREFIX** in the .env file. When multiple applications are involved, each having their own event provider, the **EVENT_PREFIX** variable distinguishes between them during event subscription. This allows each application to subscribe to the same event using a unique alias.
+
+    ```env
+    EVENT_PREFIX=
+    ```
+
 1. Run the following script to configure the Commerce Event module to your Commerce. This uses the commerce event provider `dx_commerce_events` defined in `events.config.yaml`:
 
    ```bash
