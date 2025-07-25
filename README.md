@@ -268,7 +268,7 @@ To configures the Commerce event provider for your Commerce instance:
    COMMERCE_ADOBE_IO_EVENTS_ENVIRONMENT_ID=
    ```
 
-1. Also set the value for **EVENT_PREFIX** in the .env file. When multiple applications are involved, each having their own event provider, the **EVENT_PREFIX** variable distinguishes between them during event subscription. This allows each application to subscribe to the same event using a unique alias.
+1. Also set the value for **EVENT_PREFIX** in the .env file. When multiple applications are involved, each having their own event provider, the **EVENT_PREFIX** variable distinguishes between them during event subscription. This allows each application to subscribe to the same event using a unique alias. It must be lowercase alphanumeric characters without spaces.
 
    ```env
    EVENT_PREFIX=
