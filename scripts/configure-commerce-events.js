@@ -65,8 +65,10 @@ async function main(workspaceFile) {
     return;
   }
 
-  if (!EVENT_PREFIX) {
-    logger.error('EVENT_PREFIX is required but is missing or empty from the .env file.');
+  if (!EVENT_PREFIX || !/^[a-z0-9_]+$/.test(EVENT_PREFIX)) {
+    logger.error(
+      'EVENT_PREFIX is required, must be lowercase alphanumeric, may include underscores, and contain no spaces.'
+    );
     return;
   }
 
@@ -83,8 +85,8 @@ async function main(workspaceFile) {
       if (event.provider_metadata === 'dx_commerce_events' && Array.isArray(event.event_codes)) {
         event.event_codes = event.event_codes.map((code) => {
           return code.replace(
-            /^com\.adobe\.commerce(?:\.(.*?))?\.observer/,
-            `com.adobe.commerce.${EVENT_PREFIX}.observer`
+            /^com\.adobe\.commerce(?:\.(.*?))?\.(observer|plugin)/,
+            `com.adobe.commerce.${EVENT_PREFIX}.$2`
           );
         });
 
