@@ -22,8 +22,6 @@ const { resolveCredentials } = require('../lib/adobe-auth');
 const logger = Core.Logger('configure-commerce-events', { level: process.env.LOG_LEVEL || 'info' });
 
 const eventProvidersPath = `${process.env.INIT_CWD}/events.config.yaml`;
-const appConfigPath = `${process.env.INIT_CWD}/app.config.yaml`;
-const EVENT_PREFIX = process.env.EVENT_PREFIX;
 
 /**
  * Configure the commerce event provider in the commerce instance, and subscribe to the events.
@@ -58,44 +56,10 @@ async function main(workspaceFile) {
     return;
   }
 
-  if (!fs.existsSync(appConfigPath)) {
-    logger.warn(
-      `Application configuration file not found at ${appConfigPath}, commerce eventing reconciliation will be skipped`
-    );
-    return;
-  }
-
-  if (!EVENT_PREFIX || !/^[a-z0-9_]+$/.test(EVENT_PREFIX)) {
-    logger.error(
-      'EVENT_PREFIX is required, must be lowercase alphanumeric, may include underscores, and contain no spaces.'
-    );
-    return;
-  }
-
   const eventProvidersSpec = yaml.load(fs.readFileSync(eventProvidersPath, 'utf8'));
   const commerceProviderSpec = eventProvidersSpec?.event_providers.find(
     (providerSpec) => providerSpec.provider_metadata === 'dx_commerce_events'
   );
-  const appConfigEventProviderSpec = yaml.load(fs.readFileSync(appConfigPath, 'utf8'));
-  const commerceEventConsumerInfo =
-    appConfigEventProviderSpec?.application?.events?.registrations['Commerce events consumer'];
-
-  if (commerceEventConsumerInfo && Array.isArray(commerceEventConsumerInfo.events_of_interest)) {
-    commerceEventConsumerInfo.events_of_interest.forEach((event) => {
-      if (event.provider_metadata === 'dx_commerce_events' && Array.isArray(event.event_codes)) {
-        event.event_codes = event.event_codes.map((code) => {
-          return code.replace(
-            /^com\.adobe\.commerce(?:\.(.*?))?\.(observer|plugin)/,
-            `com.adobe.commerce.${EVENT_PREFIX}.$2`
-          );
-        });
-
-        fs.writeFileSync(appConfigPath, yaml.dump(appConfigEventProviderSpec, { lineWidth: -1 }));
-        logger.debug(`Updated event_code with ${EVENT_PREFIX} for dx_commerce_events`);
-      }
-    });
-  }
-
   if (!commerceProviderSpec) {
     logger.warn(
       `Cannot find the matched commerce provider spec for provider ID ${provider.id} at ${eventProvidersPath}. ` +
@@ -114,10 +78,6 @@ async function main(workspaceFile) {
     return;
   }
 
-  if (provider.label.split('-')[0].trim() !== commerceProviderSpec.label) {
-    logger.warn(`Event Provider configured is incorrect please execute "npm run configure-events"`);
-    return;
-  }
   commerceProviderSpec.id = provider.id;
   commerceProviderSpec.instance_id = provider.instance_id;
 
@@ -141,25 +101,24 @@ async function main(workspaceFile) {
  */
 async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
   const commerceClient = await getAdobeCommerceClient(process.env);
-  const workspaceConfig = await readWorkspaceConfig(workspaceFile);
-
   const res = await commerceClient.getEventProviders();
   if (!res.success) {
     return {
       success: false,
-      message: 'Failed to fetch event providers due to API error: ' + res.body.message,
+      message: 'Failed to fetch event providers due to API error: ' + res.message,
       details: { subscriptions: [] },
     };
   }
 
   const existingProviders = res.message;
   const isNonDefaultProviderAdded = existingProviders.some((provider) => provider.provider_id === eventProviderSpec.id);
+  const workspaceConfig = await readWorkspaceConfig(workspaceFile);
 
   if (!isNonDefaultProviderAdded) {
     await addCommerceEventProvider(eventProviderSpec.id, eventProviderSpec.instance_id, workspaceConfig);
   }
 
-  const result = await configureCommerceEventing(workspaceConfig);
+  const result = await configureCommerceEventingConfig();
 
   if (!result.success) {
     return {
@@ -170,10 +129,25 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
   }
 
   const subscriptionSpec = eventProviderSpec.subscription ?? [];
-  subscriptionSpec.forEach((item) => {
-    item.event.provider_id = eventProviderSpec.id;
-    item.event.name = EVENT_PREFIX + '.' + item.event.name;
-  });
+  for (const subscription of subscriptionSpec) {
+    subscription.event.provider_id = eventProviderSpec.id;
+    if (subscription.event && subscription.event.name) {
+      const match = subscription.event.name.match(/^([^.]+)\.(observer|plugin)/);
+      if (match) {
+        const prefix = match[1];
+        if (!/^[a-z0-9_]+$/.test(prefix)) {
+          logger.error(
+            `Invalid prefix "${prefix}" in event name "${subscription.event.name}". Prefix must be lowercase, alphanumeric, and may include underscores (e.g. test_app, testapp, test_app123).`
+          );
+          return {
+            success: false,
+            message: `Invalid prefix "${prefix}" in event name "${subscription.event.name}".`,
+            details: { subscriptions: [] },
+          };
+        }
+      }
+    }
+  }
 
   const results = await ensureCommerceEventSubscriptions(subscriptionSpec);
 
@@ -186,12 +160,10 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
   };
 
   /**
-   * Configures eventing in the commerce instance with the given event provider.
-   *
-   * @param {object} workspaceConfig The workspace configuration object.
+   * Configures eventing in the commerce instance.
    * @returns {Promise<object>} The result of the configuration.
    */
-  async function configureCommerceEventing(workspaceConfig) {
+  async function configureCommerceEventingConfig() {
     const merchantId = process.env.COMMERCE_ADOBE_IO_EVENTS_MERCHANT_ID;
     if (!merchantId) {
       logger.warn('Cannot find COMMERCE_ADOBE_IO_EVENTS_MERCHANT_ID environment variable, the value will be empty.');
@@ -225,7 +197,7 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
             logger.error('Failed to subscribe event in Commerce: ' + result.body.message);
           }
         } else {
-          logger.info(`Subscribed to event "${event.event.name}" in Commerce.`);
+          logger.info(`Subscribed to event ${event.event.name} in Commerce.`);
         }
         return { event, result };
       })
