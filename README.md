@@ -246,8 +246,9 @@ _List all webhook methods and their corresponding actions required for the appli
 ### Configure Eventing
 
 Commerce Eventing `1.12.1` and higher now supports multi-event-provider functionality. This enables multiple App Builder based Commerce extensions to connect to the same Adobe Commerce instance using isolated event providers. This isolation:
-  - Prevents one application from overriding the event provider registered by another application.
-  - Ensures that event subscriptions created by one application do not interfere with those created by another.
+
+- Prevents one application from overriding the event provider registered by another application.
+- Ensures that event subscriptions created by one application do not interfere with those created by another.
 
 Follow the steps below to configure eventing for your application:
 
@@ -265,35 +266,35 @@ This scripts populates the `AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING` env
 
 1. Update your `events.config.yaml` and `app.config.yaml` file to set the prefix to your application name. The prefix must be lowercase, alphanumeric, and may include underscores. Ensure that the same prefix is also used in your `app.config.yaml` file.
 
-      - Example:
-        - `test_app.observer.checkout_oope.sales_order_creditmemo_save_after`
-        - `testapp.observer.checkout_oope.sales_order_creditmemo_save_after`
-        - `testapp123.observer.checkout_oope.sales_order_creditmemo_save_after`
+   - Example:
+     - `test_app.observer.checkout_oope.sales_order_creditmemo_save_after`
+     - `testapp.observer.checkout_oope.sales_order_creditmemo_save_after`
+     - `testapp123.observer.checkout_oope.sales_order_creditmemo_save_after`
 
-      `events.config.yaml`
+   `events.config.yaml`
 
-      ```yaml
-      label: Commerce events provider
-      subscription:
-        - event:
-            # Set the prefix to your application name (lowercase, alphanumeric, underscores allowed).
-            # This prefix must match the one used in app.config.yaml to ensure uniqueness across providers.
-            name: <your_application_name>.observer.checkout_oope.sales_order_creditmemo_save_after
-            parent: observer.sales_order_creditmemo_save_after
-      ```
+   ```yaml
+   label: Commerce events provider
+   subscription:
+     - event:
+         # Set the prefix to your application name (lowercase, alphanumeric, underscores allowed).
+         # This prefix must match the one used in app.config.yaml to ensure uniqueness across providers.
+         name: <your_application_name>.observer.checkout_oope.sales_order_creditmemo_save_after
+         parent: observer.sales_order_creditmemo_save_after
+   ```
 
-      `app.config.yaml`
+   `app.config.yaml`
 
-      ```yaml
-      Commerce events consumer:
-        description: Consumes events from Adobe Commerce
-        events_of_interest:
-          - provider_metadata: dx_commerce_events
-            event_codes:
-              # com.adobe.commerce.<your-application-name>.<commerce-event-code>
-              - com.adobe.commerce.<your-application-name>.observer.checkout_oope.sales_order_creditmemo_save_after
-        runtime_action: commerce-checkout
-      ```    
+   ```yaml
+   Commerce events consumer:
+     description: Consumes events from Adobe Commerce
+     events_of_interest:
+       - provider_metadata: dx_commerce_events
+         event_codes:
+           # com.adobe.commerce.<your-application-name>.<commerce-event-code>
+           - com.adobe.commerce.<your-application-name>.observer.checkout_oope.sales_order_creditmemo_save_after
+     runtime_action: commerce-checkout
+   ```
 
 2. Update your `.env` file with the Commerce event provider metadata in **Stores > Configuration > Adobe Services > Adobe I/O Events > Commerce events**:
 
