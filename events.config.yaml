@@ -21,7 +21,7 @@ event_providers:
           # Set the prefix to your application name (lowercase, alphanumeric, underscores allowed).
           # This prefix must match the one used in app.config.yaml to ensure uniqueness across providers.
           # <your-application-name>.<commerce-event-code> eg: your-application-name = app_one
-          name: app_one.observer.checkout_oope.sales_order_creditmemo_save_after
+          name: app_one.observer.sales_order_creditmemo_save_after
           # Original commerce event name
           parent: observer.sales_order_creditmemo_save_after
           fields:
