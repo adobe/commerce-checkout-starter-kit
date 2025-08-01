@@ -111,10 +111,19 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
   }
 
   const existingProviders = res.message;
-  const isNonDefaultProviderAdded = existingProviders.some((provider) => provider.provider_id === eventProviderSpec.id);
   const workspaceConfig = await readWorkspaceConfig(workspaceFile);
+  // eslint-disable-next-line camelcase
+  const matchedProvider = existingProviders.find(({ provider_id }) => provider_id === eventProviderSpec.id);
 
-  if (!isNonDefaultProviderAdded) {
+  if (matchedProvider) {
+    logger.info(
+      `Found existing event provider in the commerce instance with provider id: ${matchedProvider.provider_id}. Skipping configuration.`
+    );
+  } else if (existingProviders.length === 0) {
+    logger.info('No existing event providers found in the commerce instance. Adding the new event provider.');
+    await addCommerceEventProvider(eventProviderSpec.id, eventProviderSpec.instance_id, workspaceConfig);
+  } else {
+    logger.info('Commerce already has a different event provider set, but adding an additional event provider.');
     await addCommerceEventProvider(eventProviderSpec.id, eventProviderSpec.instance_id, workspaceConfig);
   }
 
@@ -129,25 +138,9 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
   }
 
   const subscriptionSpec = eventProviderSpec.subscription ?? [];
-  for (const subscription of subscriptionSpec) {
+  subscriptionSpec.forEach((subscription) => {
     subscription.event.provider_id = eventProviderSpec.id;
-    if (subscription.event && subscription.event.name) {
-      const match = subscription.event.name.match(/^([^.]+)\.(observer|plugin)/);
-      if (match) {
-        const prefix = match[1];
-        if (!/^[a-z0-9_]+$/.test(prefix)) {
-          logger.error(
-            `Invalid prefix "${prefix}" in event name "${subscription.event.name}". Prefix must be lowercase, alphanumeric, and may include underscores (e.g. test_app, testapp, test_app123).`
-          );
-          return {
-            success: false,
-            message: `Invalid prefix "${prefix}" in event name "${subscription.event.name}".`,
-            details: { subscriptions: [] },
-          };
-        }
-      }
-    }
-  }
+  });
 
   const results = await ensureCommerceEventSubscriptions(subscriptionSpec);
 
