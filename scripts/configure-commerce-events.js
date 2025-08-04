@@ -144,6 +144,13 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
 
   const results = await ensureCommerceEventSubscriptions(subscriptionSpec);
 
+  if (results.some((result) => !result.result.success)) {
+    return {
+      success: false,
+      message: 'Event subscription was not successful.',
+    };
+  }
+
   return {
     success: true,
     message: 'Commerce event configuration and subscription successful.',
