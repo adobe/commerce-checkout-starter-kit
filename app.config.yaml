@@ -133,7 +133,7 @@ application:
           - provider_metadata: dx_commerce_events
             event_codes:
               # com.adobe.commerce.<your-application-name>.<commerce-event-code> eg: your-application-name = app_one
-              - com.adobe.commerce.app_one.observer.sales_order_creditmemo_save_after
+              - com.adobe.commerce.checkout_starter_kit.observer.sales_order_creditmemo_save_after
         runtime_action: commerce-checkout-starter-kit/consume
 
 extensions:
