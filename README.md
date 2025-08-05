@@ -50,7 +50,7 @@ _List only necessary modules for the project._
 
 - For Commerce Webhook, refer to the [Install Adobe Commerce Webhooks](https://developer.adobe.com/commerce/extensibility/webhooks/installation/)
 
-- (If using Eventing) Update Commerce Eventing module to version `1.10.0` or higher:
+- (If using Eventing) Update Commerce Eventing module to version `1.12.1` or higher:
 
   ```bash
   composer show magento/commerce-eventing
