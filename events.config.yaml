@@ -10,7 +10,7 @@ event_providers:
       - event_code: com.3rdparty.events.test.Event1
         label: Test event 1
         description: Test event 1 for 3rd party system
-  - label: Commerce events provider app one
+  - label: Commerce events provider
     provider_metadata: dx_commerce_events
     description: Event provider for Adobe Commerce
     docs_url: https://developer.adobe.com/commerce/extensibility/events/
