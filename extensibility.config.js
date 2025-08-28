@@ -85,11 +85,7 @@ module.exports = {
             name: "checkout_starter_kit.observer.sales_order_creditmemo_save_after",
             // Original commerce event name
             parent: "observer.sales_order_creditmemo_save_after",
-            fields: [
-              {
-                name: "*"
-              }
-            ]
+            fields: "*"
           }
         }
       ]

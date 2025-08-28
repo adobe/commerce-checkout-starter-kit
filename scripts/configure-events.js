@@ -73,6 +73,13 @@ async function main() {
     event_providers: eventProviders?.map((provider) => ({
       ...provider,
       label: `${provider.label} - ${process.env.AIO_runtime_namespace}`,
+      subscription: provider.subscription?.map(sub => ({
+        ...sub,
+        event: {
+          ...sub.event,
+          fields: transformFields(sub.event.fields)
+        }
+      }))
     })),
   };
 
@@ -106,6 +113,16 @@ async function main() {
     logger.info(`Updated event provider mapping AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING in file ${envPath}`);
   }
 }
+
+/**
+ * Transform subscription event fields to API format
+ * @param {string|Array<string>} fields - Fields configuration
+ * @returns {Array<object>} API-compatible fields format
+ */
+const transformFields = fields =>
+  Array.isArray(fields)
+    ? fields.map(field => ({ name: field }))
+    : [{ name: fields }];
 
 /**
  *
