@@ -49,9 +49,9 @@
     "code:fix": "npm run format:fix && npm run lint:fix",
     "configure-events": "node -e \"require('./scripts/configure-events').main()\"",
     "configure-commerce-events": "aio console workspace download ws.json && node -e \"require('./scripts/configure-commerce-events').main('ws.json')\"; rm -f ws.json",
-    "create-payment-methods": "node -e \"require('./scripts/create-payment-methods').main('payment-methods.yaml')\"",
-    "create-tax-integrations": "node -e \"require('./scripts/create-tax-integrations').main('tax-integrations.yaml')\"",
-    "create-shipping-carriers": "node -e \"require('./scripts/create-shipping-carriers').main('shipping-carriers.yaml')\"",
+    "create-payment-methods": "node -e \"require('./scripts/create-payment-methods').main('../extensibility.config.js')\"",
+    "create-tax-integrations": "node -e \"require('./scripts/create-tax-integrations').main('../extensibility.config.js')\"",
+    "create-shipping-carriers": "node -e \"require('./scripts/create-shipping-carriers').main('../extensibility.config.js')\"",
     "get-shipping-carriers": "node -e \"require('./scripts/get-shipping-carriers').main()\"",
     "sync-oauth-credentials": "node -e \"require('./scripts/sync-oauth-credentials').main()\""
   },

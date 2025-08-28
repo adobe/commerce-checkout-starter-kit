@@ -18,19 +18,19 @@ describe('create-payment-methods', () => {
   test('payment methods created', async () => {
     mockAdobeCommerceClient({ success: true }, { success: true });
     const { main } = require('../../scripts/create-payment-methods');
-    const result = await main('test/scripts/payment-methods-test.yaml');
+    const result = await main('../test/scripts/extensibility-test.config.js');
     expect(result).toEqual(['method-1', 'method-2']);
   });
   test('only one payment methods is created', async () => {
     mockAdobeCommerceClient({ success: true }, { success: false });
     const { main } = require('../../scripts/create-payment-methods');
-    const result = await main('test/scripts/payment-methods-test.yaml');
+    const result = await main('../test/scripts/extensibility-test.config.js');
     expect(result).toEqual(['method-1']);
   });
   test('no one payment methods is created', async () => {
     mockAdobeCommerceClient({ success: false }, { success: false });
     const { main } = require('../../scripts/create-payment-methods');
-    const result = await main('test/scripts/payment-methods-test.yaml');
+    const result = await main('../test/scripts/extensibility-test.config.js');
     expect(result).toEqual([]);
   });
 });

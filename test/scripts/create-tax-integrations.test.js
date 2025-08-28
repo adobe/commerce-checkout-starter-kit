@@ -18,19 +18,19 @@ describe('create-tax-integrations', () => {
   test('tax integrations created', async () => {
     mockAdobeCommerceClient({ success: true }, { success: true });
     const { main } = require('../../scripts/create-tax-integrations');
-    const result = await main('test/scripts/tax-integrations-test.yaml');
+    const result = await main('../test/scripts/extensibility-test.config.js');
     expect(result).toEqual(['tax-integration-1', 'tax-integration-2']);
   });
   test('only one tax integrations is created', async () => {
     mockAdobeCommerceClient({ success: true }, { success: false });
     const { main } = require('../../scripts/create-tax-integrations');
-    const result = await main('test/scripts/tax-integrations-test.yaml');
+    const result = await main('../test/scripts/extensibility-test.config.js');
     expect(result).toEqual(['tax-integration-1']);
   });
   test('no one tax integrations is created', async () => {
     mockAdobeCommerceClient({ success: false }, { success: false });
     const { main } = require('../../scripts/create-tax-integrations');
-    const result = await main('test/scripts/tax-integrations-test.yaml');
+    const result = await main('../test/scripts/extensibility-test.config.js');
     expect(result).toEqual([]);
   });
 });
