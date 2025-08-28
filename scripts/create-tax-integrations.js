@@ -21,15 +21,16 @@ const logger = Core.Logger('create-tax-integrations', { level: process.env.LOG_L
  */
 async function main(configFilePath) {
   logger.info('Reading tax configuration file...');
-  const { tax_integrations: taxIntegrations } = require(configFilePath);
+  const { taxIntegrations } = require(configFilePath);
   logger.info('Creating tax integrations...');
   const createdTaxIntegrations = [];
 
   const client = await getAdobeCommerceClient(process.env);
 
-  for (const taxIntegration of taxIntegrations) {
+  for (const integration of taxIntegrations) {
+    const taxIntegration = { tax_integration: integration };
     const response = await client.createTaxIntegration(taxIntegration);
-    const taxIntegrationCode = taxIntegration.tax_integration.code;
+    const taxIntegrationCode = integration.code;
     if (response.success) {
       logger.info(`Tax integration ${taxIntegrationCode} created or updated`);
       createdTaxIntegrations.push(taxIntegrationCode);

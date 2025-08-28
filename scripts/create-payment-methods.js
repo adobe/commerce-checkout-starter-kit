@@ -19,15 +19,16 @@ const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
  */
 async function main(configFilePath) {
   console.info('Reading payment configuration file...');
-  const { methods } = require(configFilePath);
+  const { paymentMethods } = require(configFilePath);
   console.info('Creating payment methods...');
   const createdPaymentMethods = [];
 
   const client = await getAdobeCommerceClient(process.env);
 
-  for (const paymentMethod of methods) {
+  for (const method of paymentMethods) {
+    const paymentMethod = { payment_method: method };
     const response = await client.createOopePaymentMethod(paymentMethod);
-    const paymentMethodCode = paymentMethod.payment_method.code;
+    const paymentMethodCode = method.code;
     if (response.success) {
       console.info(`Payment method ${paymentMethodCode} created`);
       createdPaymentMethods.push(paymentMethodCode);

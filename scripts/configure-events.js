@@ -37,7 +37,7 @@ async function main() {
     );
     return;
   }
-  const { event_providers: eventProviders } = require(extensibilityConfigPath);
+  const { eventProviders } = require(extensibilityConfigPath);
 
   const {
     org: { id: organizationId },

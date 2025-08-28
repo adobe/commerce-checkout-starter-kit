@@ -18,15 +18,16 @@ const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
  */
 async function main(configFilePath) {
   console.info('Reading shipping configuration file...');
-  const { shipping_carriers: shippingCarriers } = require(configFilePath);
+  const { shippingCarriers } = require(configFilePath);
   console.info('Creating shipping carriers...');
   const createShippingMethods = [];
 
   const client = await getAdobeCommerceClient(process.env);
 
-  for (const shippingCarrier of shippingCarriers) {
+  for (const carrier of shippingCarriers) {
+    const shippingCarrier = { carrier };
     const response = await client.createOopeShippingCarrier(shippingCarrier);
-    const shippingCarrierCode = shippingCarrier.carrier.code;
+    const shippingCarrierCode = carrier.code;
     if (response.success) {
       console.info(`Shipping carrier ${shippingCarrierCode} created`);
       createShippingMethods.push(shippingCarrierCode);

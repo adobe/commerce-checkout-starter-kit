@@ -56,7 +56,7 @@ async function main(workspaceFile) {
     return;
   }
 
-  const { event_providers: eventProviders } = require(extensibilityConfigPath);
+  const { eventProviders } = require(extensibilityConfigPath);
   const commerceProviderSpec = eventProviders?.find(
     (providerSpec) => providerSpec.provider_metadata === 'dx_commerce_events'
   );

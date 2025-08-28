@@ -1,81 +1,59 @@
 module.exports = {
-  tax_integrations: [
+  taxIntegrations: [
     {
-      tax_integration: {
-        code: 'oop-tax-integration',
-        title: 'My tax integration',
-        active: true,
-        stores: [
-          'default'
-        ]
-      }
+      code: 'oop-tax-integration1',
+      title: 'My tax integration1',
+      active: true,
+      stores: [
+        'default'
+      ]
     }
   ],
 
-  methods: [
+  paymentMethods: [
     {
-      payment_method: {
-        code: 'method-1',
-        title: 'Method one',
-        active: true,
-        backend_integration_url: 'http://oope-payment-method.pay/event',
-        stores: [
-          'default'
-        ],
-        order_status: 'processing',
-        countries: [
-          'US'
-        ],
-        currencies: [
-          'USD'
-        ],
-        custom_config: [
-          {
-            key: 'can_refund',
-            value: true
-          }
-        ]
-      }
+      code: 'method-1',
+      title: 'Method one',
+      active: true,
+      backend_integration_url: 'http://oope-payment-method.pay/event',
+      stores: [
+        'default'
+      ],
+      order_status: 'processing',
+      countries: [
+        'US'
+      ],
+      currencies: [
+        'USD'
+      ],
+      custom_config: [
+        {
+          key: 'can_refund',
+          value: true
+        }
+      ]
     }
   ],
 
-  shipping_carriers: [
+  shippingCarriers: [
     {
-      carrier: {
-        code: 'DPS',
-        title: 'Demo Postal Service',
-        stores: [
-          'default'
-        ],
-        countries: [
-          'US',
-          'CA'
-        ],
-        sort_order: 10,
-        active: true,
-        tracking_available: true,
-        shipping_labels_available: true
-      }
-    },
-    {
-      carrier: {
-        code: 'Fedex',
-        title: 'Fedex Service',
-        stores: [
-          'default'
-        ],
-        countries: [
-          'US'
-        ],
-        sort_order: 50,
-        active: true,
-        tracking_available: false,
-        shipping_labels_available: true
-      }
+      code: 'DPS',
+      title: 'Demo Postal Service',
+      stores: [
+        'default'
+      ],
+      countries: [
+        'US',
+        'CA'
+      ],
+      sort_order: 10,
+      active: true,
+      tracking_available: true,
+      shipping_labels_available: true
     }
   ],
 
-  event_providers: [
+  eventProviders: [
     {
       // Mandatory fields of event providers: label, provider_metadata
       label: "3rd party events test",
