@@ -12,7 +12,6 @@ governing permissions and limitations under the License.
 
 require('dotenv').config();
 const { Core, Events } = require('@adobe/aio-sdk');
-const yaml = require('js-yaml');
 const fs = require('fs');
 const keyValues = require('../lib/key-values');
 const { replaceEnvVar } = require('../lib/env');
@@ -21,8 +20,7 @@ const uuid = require('uuid');
 
 const logger = Core.Logger('events-config', { level: process.env.LOG_LEVEL || 'info' });
 
-const eventProvidersPath = `${process.env.INIT_CWD}/events.config.yaml`;
-
+const extensibilityConfigPath = `${process.env.INIT_CWD}/extensibility.config.js`;
 const envPath = `${process.env.INIT_CWD}/.env`;
 
 /**
@@ -33,13 +31,13 @@ const envPath = `${process.env.INIT_CWD}/.env`;
  * @returns {Promise<void>}
  */
 async function main() {
-  if (!fs.existsSync(eventProvidersPath)) {
+  if (!fs.existsSync(extensibilityConfigPath)) {
     logger.warn(
-      `Event providers spec file not found at ${eventProvidersPath}, event providers reconciliation will be skipped`
+      `Extensibility config file not found at ${extensibilityConfigPath}, event providers reconciliation will be skipped`
     );
     return;
   }
-  const eventProvidersSpec = yaml.load(fs.readFileSync(eventProvidersPath, 'utf8'));
+  const { event_providers: eventProviders } = require(extensibilityConfigPath);
 
   const {
     org: { id: organizationId },
@@ -72,7 +70,7 @@ async function main() {
 
   logger.info(`Event providers label will be suffixed with "<label> - ${process.env.AIO_runtime_namespace}"`);
   const modifiedEventProvidersSpec = {
-    event_providers: eventProvidersSpec?.event_providers.map((provider) => ({
+    event_providers: eventProviders?.map((provider) => ({
       ...provider,
       label: `${provider.label} - ${process.env.AIO_runtime_namespace}`,
     })),
@@ -84,7 +82,7 @@ async function main() {
     modifiedEventProvidersSpec
   );
 
-  logger.info(`Event providers and metadata from ${eventProvidersPath} are in sync with the given spec.`);
+  logger.info(`Event providers and metadata from ${extensibilityConfigPath} are in sync with the given spec.`);
   if (eventsConfig.length === 0) {
     return;
   }

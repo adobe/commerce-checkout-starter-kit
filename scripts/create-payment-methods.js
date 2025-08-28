@@ -11,24 +11,21 @@ governing permissions and limitations under the License.
 */
 
 const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
-const fs = require('fs');
-const yaml = require('js-yaml');
 
 /**
- * Creates all the payment methods defined in the payment-methods.yaml file in the configured Adobe Commerce instance
- * @param {string} configFilePath path to the payment-methods.yaml file
+ * Creates all the payment methods defined in the extensibility.config.js file in the configured Adobe Commerce instance
+ * @param {string} configFilePath path to the JavaScript configuration file
  * @returns {string[]} array of created payment method codes
  */
 async function main(configFilePath) {
   console.info('Reading payment configuration file...');
-  const fileContents = fs.readFileSync(configFilePath, 'utf8');
-  const data = yaml.load(fileContents);
+  const { methods } = require(configFilePath);
   console.info('Creating payment methods...');
   const createdPaymentMethods = [];
 
   const client = await getAdobeCommerceClient(process.env);
 
-  for (const paymentMethod of data.methods) {
+  for (const paymentMethod of methods) {
     const response = await client.createOopePaymentMethod(paymentMethod);
     const paymentMethodCode = paymentMethod.payment_method.code;
     if (response.success) {

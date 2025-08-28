@@ -10,24 +10,21 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
-const fs = require('fs');
-const yaml = require('js-yaml');
 
 /**
- * Creates a shipping carrier defined in the shipping-carriers.yaml file in the configured Adobe Commerce instance
- * @param {string} configFilePath shipping-carriers.yaml file path
- * @returns  {string[]} array of strings
+ * Creates shipping carriers defined in the extensibility.config.js file in the configured Adobe Commerce instance
+ * @param {string} configFilePath path to the JavaScript configuration file
+ * @returns  {string[]} array of created shipping carrier codes
  */
 async function main(configFilePath) {
   console.info('Reading shipping configuration file...');
-  const fileContents = fs.readFileSync(configFilePath, 'utf8');
-  const data = yaml.load(fileContents);
+  const { shipping_carriers: shippingCarriers } = require(configFilePath);
   console.info('Creating shipping carriers...');
   const createShippingMethods = [];
 
   const client = await getAdobeCommerceClient(process.env);
 
-  for (const shippingCarrier of data.shipping_carriers) {
+  for (const shippingCarrier of shippingCarriers) {
     const response = await client.createOopeShippingCarrier(shippingCarrier);
     const shippingCarrierCode = shippingCarrier.carrier.code;
     if (response.success) {

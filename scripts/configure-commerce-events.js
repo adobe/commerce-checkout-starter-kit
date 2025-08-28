@@ -21,7 +21,7 @@ const { resolveCredentials } = require('../lib/adobe-auth');
 
 const logger = Core.Logger('configure-commerce-events', { level: process.env.LOG_LEVEL || 'info' });
 
-const eventProvidersPath = `${process.env.INIT_CWD}/events.config.yaml`;
+const extensibilityConfigPath = `${process.env.INIT_CWD}/extensibility.config.js`;
 
 /**
  * Configure the commerce event provider in the commerce instance, and subscribe to the events.
@@ -49,20 +49,20 @@ async function main(workspaceFile) {
     throw new Error(`The provider ID ${providerId} is not a commerce event provider.`);
   }
 
-  if (!fs.existsSync(eventProvidersPath)) {
+  if (!fs.existsSync(extensibilityConfigPath)) {
     logger.warn(
-      `Event providers spec file not found at ${eventProvidersPath}, commerce eventing reconciliation will be skipped`
+      `Extensibility config file not found at ${extensibilityConfigPath}, commerce eventing reconciliation will be skipped`
     );
     return;
   }
 
-  const eventProvidersSpec = yaml.load(fs.readFileSync(eventProvidersPath, 'utf8'));
-  const commerceProviderSpec = eventProvidersSpec?.event_providers.find(
+  const { event_providers: eventProviders } = require(extensibilityConfigPath);
+  const commerceProviderSpec = eventProviders?.find(
     (providerSpec) => providerSpec.provider_metadata === 'dx_commerce_events'
   );
   if (!commerceProviderSpec) {
     logger.warn(
-      `Cannot find the matched commerce provider spec for provider ID ${provider.id} at ${eventProvidersPath}. ` +
+      `Cannot find the matched commerce provider spec for provider ID ${provider.id} at ${extensibilityConfigPath}. ` +
         `Please update the event provider info as follows:\n`,
       yaml.dump({
         event_providers: [
