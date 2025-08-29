@@ -144,13 +144,14 @@ async function configureCommerceEvents(eventing, workspaceFile, providerData) {
     };
   }
 
-  const subscriptionSpec = eventing?.subscriptions ?? [];
-  subscriptionSpec.forEach((subscription) => {
-    subscription.event.provider_id = providerId;
-    if (subscription.event.fields) {
-      subscription.event.fields = transformFields(subscription.event.fields);
+  const subscriptionSpec = eventing?.subscriptions?.map(subscription => ({
+    ...subscription,
+    event: {
+      ...subscription.event,
+      provider_id: providerId,
+      fields: subscription.event.fields ? transformFields(subscription.event.fields) : subscription.event.fields
     }
-  });
+  })) ?? [];
 
   const results = await ensureCommerceEventSubscriptions(subscriptionSpec);
 
@@ -198,7 +199,6 @@ async function configureCommerceEvents(eventing, workspaceFile, providerData) {
       eventsSpec.map(async (event) => {
         const result = await commerceClient.subscribeEvent(event);
         if (!result.success) {
-          console.log(result);
           if (result.body.message.includes('already exists')) {
             logger.warn(
               'An event subscription with the same identifier already exists in the commerce system. ' +
@@ -242,9 +242,14 @@ async function configureCommerceEvents(eventing, workspaceFile, providerData) {
  * @returns {Array<object>} API-compatible fields format
  */
 const transformFields = fields => {
-  return Array.isArray(fields)
-    ? fields.map(field => ({ name: field }))
-    : [{ name: fields }];
+  if (typeof fields === "string") {
+    return [{ name: fields }];
+  }
+  if (Array.isArray(fields)) {
+    return fields.map(field => ({ name: field }));
+  }
+
+  throw new Error(`Invalid fields type: expected string or array, got ${typeof fields}`);
 };
 
 /**
