@@ -56,7 +56,8 @@ async function main(workspaceFile) {
     return;
   }
 
-  const { eventProviders } = require(extensibilityConfigPath);
+  const { eventing } = require(extensibilityConfigPath);
+  const eventProviders = eventing?.providers;
   const commerceProviderSpec = eventProviders?.find(
     (providerSpec) => providerSpec.provider_metadata === 'dx_commerce_events'
   );
@@ -83,7 +84,11 @@ async function main(workspaceFile) {
 
   logger.info(`Configuring commerce events for the commerce instance: ${process.env.COMMERCE_BASE_URL}.`);
 
-  const result = await configureCommerceEvents(commerceProviderSpec, workspaceFile);
+  const result = await configureCommerceEvents(eventing, workspaceFile, {
+    providerId: provider.id,
+    instanceId: provider.instance_id,
+    providerSpec: commerceProviderSpec
+  });
   if (result.success) {
     logger.info('Commerce event configuration and subscription successful.');
   } else {
@@ -95,11 +100,13 @@ async function main(workspaceFile) {
  * Configures eventing in the commerce instance. If the commerce is already configured with a given event provider
  * but the event provider is different from the one provided, the configuration will halt and a warning will be logged.
  *
- * @param {object} eventProviderSpec The commerce event provider specification.
+ * @param {object} eventing The eventing configuration containing providers and subscriptions.
  * @param {string} workspaceFile The workspace file path.
+ * @param {object} providerData The provider data including providerId, instanceId, and providerSpec.
  * @returns {Promise<{success: boolean, message: string, details: {subscriptions: Array<object>}}>} The result of the configuration.
  */
-async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
+async function configureCommerceEvents(eventing, workspaceFile, providerData) {
+  const { providerId, instanceId, providerSpec: eventProviderSpec } = providerData;
   const commerceClient = await getAdobeCommerceClient(process.env);
   const res = await commerceClient.getEventProviders();
   if (!res.success) {
@@ -113,7 +120,7 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
   const existingProviders = res.message;
   const workspaceConfig = await readWorkspaceConfig(workspaceFile);
   // eslint-disable-next-line camelcase
-  const matchedProvider = existingProviders.find(({ provider_id }) => provider_id === eventProviderSpec.id);
+  const matchedProvider = existingProviders.find(({ provider_id }) => provider_id === providerId);
 
   if (matchedProvider) {
     logger.info(
@@ -121,10 +128,10 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
     );
   } else if (existingProviders.length === 0) {
     logger.info('No existing event providers found in the commerce instance. Adding the new event provider.');
-    await addCommerceEventProvider(eventProviderSpec.id, eventProviderSpec.instance_id, workspaceConfig);
+    await addCommerceEventProvider(providerId, instanceId, workspaceConfig);
   } else {
     logger.info('Commerce already has a different event provider set, but adding an additional event provider.');
-    await addCommerceEventProvider(eventProviderSpec.id, eventProviderSpec.instance_id, workspaceConfig);
+    await addCommerceEventProvider(providerId, instanceId, workspaceConfig);
   }
 
   const result = await configureCommerceEventingConfig();
@@ -137,10 +144,14 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
     };
   }
 
-  const subscriptionSpec = eventProviderSpec.subscription ?? [];
-  subscriptionSpec.forEach((subscription) => {
-    subscription.event.provider_id = eventProviderSpec.id;
-  });
+  const subscriptionSpec = eventing?.subscriptions?.map(subscription => ({
+    ...subscription,
+    event: {
+      ...subscription.event,
+      provider_id: providerId,
+      fields: subscription.event.fields ? transformFields(subscription.event.fields) : subscription.event.fields
+    }
+  })) ?? [];
 
   const results = await ensureCommerceEventSubscriptions(subscriptionSpec);
 
@@ -224,6 +235,22 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
     logger.info(`Added non-default provider with id "${providerId}" and instance id "${instanceId}" to the Commerce.`);
   }
 }
+
+/**
+ * Transform subscription event fields to API format
+ * @param {string|Array<string>} fields - Fields configuration
+ * @returns {Array<object>} API-compatible fields format
+ */
+const transformFields = fields => {
+  if (typeof fields === "string") {
+    return [{ name: fields }];
+  }
+  if (Array.isArray(fields)) {
+    return fields.map(field => ({ name: field }));
+  }
+
+  throw new Error(`Invalid fields type: expected string or array, got ${typeof fields}`);
+};
 
 /**
  * Reads the workspace configuration from the given file path.

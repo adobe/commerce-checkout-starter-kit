@@ -37,7 +37,9 @@ async function main() {
     );
     return;
   }
-  const { eventProviders } = require(extensibilityConfigPath);
+  const { eventing } = require(extensibilityConfigPath);
+  const eventProviders = eventing?.providers;
+  const subscriptions = eventing?.subscriptions;
 
   const {
     org: { id: organizationId },
@@ -73,13 +75,15 @@ async function main() {
     event_providers: eventProviders?.map((provider) => ({
       ...provider,
       label: `${provider.label} - ${process.env.AIO_runtime_namespace}`,
-      subscription: provider.subscription?.map(sub => ({
-        ...sub,
-        event: {
-          ...sub.event,
-          fields: transformFields(sub.event.fields)
-        }
-      }))
+      subscription: provider.provider_metadata === 'dx_commerce_events' 
+        ? subscriptions?.map(sub => ({
+          ...sub,
+          event: {
+            ...sub.event,
+            fields: transformFields(sub.event.fields)
+          }
+        }))
+        : undefined
     })),
   };
 
