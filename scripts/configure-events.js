@@ -63,7 +63,7 @@ async function main() {
   if (!clientId) {
     logger.warn(
       'SERVICE_API_KEY environment variable not found. Event provider reconciliation will be skipped. ' +
-        'Please run "aio app use" to configure the project.'
+      'Please run "aio app use" to configure the project.'
     );
     return;
   }
@@ -72,10 +72,13 @@ async function main() {
 
   logger.info(`Event providers label will be suffixed with "<label> - ${process.env.AIO_runtime_namespace}"`);
   const modifiedEventProvidersSpec = {
-    event_providers: eventProvidersSpec?.event_providers.map((provider) => ({
-      ...provider,
-      label: `${provider.label} - ${process.env.AIO_runtime_namespace}`,
-    })),
+    event_providers: eventProvidersSpec?.event_providers.map((provider) => {
+      const namespace = process.env.AIO_runtime_namespace;
+      return {
+        ...provider,
+        label: provider.label.includes(namespace) ? provider.label : `${provider.label} - ${namespace}`,
+      };
+    }),
   };
 
   const eventsConfig = await configureEvents(
@@ -202,23 +205,26 @@ async function configureEvents(
    * @returns {Promise<object>} the event metadata
    */
   async function ensureEventMetadata(provider, eventmetadata, spec) {
+    if(spec.sample_event_template){
+      spec.sample_event_template = btoa(spec.sample_event_template);
+    }
     // eslint-disable-next-line camelcase
     const existing = eventmetadata.find(({ event_code }) => event_code === spec.event_code);
     if (existing) {
       if (existing.label === spec.label && existing.description === spec.description) {
         logger.debug(`Found event metadata in provider ${provider.label} (${provider.id})`, existing);
-        return existing;
-      }
 
-      const updated = await eventsApi.updateEventMetadataForProvider(
-        organizationId,
-        projectId,
-        workspaceId,
-        provider.id,
-        spec
-      );
-      logger.debug(`Updated event metadata in provider ${provider.label} (${provider.id})`, updated);
-      return updated;
+        const updated = await eventsApi.updateEventMetadataForProvider(
+          organizationId,
+          projectId,
+          workspaceId,
+          provider.id,
+          spec.event_code,
+          spec
+        );
+        logger.debug(`Updated event metadata in provider ${provider.label} (${provider.id})`, updated);
+        return updated;
+      }
     }
 
     const created = await eventsApi.createEventMetadataForProvider(
