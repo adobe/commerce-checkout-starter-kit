@@ -57,5 +57,8 @@
   },
   "engines": {
     "node": ">=22"
+  },
+  "overrides": {
+    "dockerode": "4.0.9"
   }
 }
