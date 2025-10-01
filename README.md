@@ -93,7 +93,6 @@ _List only necessary modules for the project._
     ```
 
     Select the following from the list:
-
     - I/O Management API
     - (If using Eventing) I/O Events
     - (If using Eventing) Adobe I/O Events for Adobe Commerce
@@ -220,7 +219,6 @@ After deploying your App Builder actions, [create the webhooks](https://develope
 _List all webhook methods and their corresponding actions required for the application._
 
 1. `collect-taxes`: This action collects taxes for the cart.
-
    - For SaaS, register your action to `plugin.magento.out_of_process_tax_management.api.oop_tax_collection.collect_taxes` webhook method in **System > Webhooks > Webhooks Subscriptions**.
    - For PaaS, please refer to `webhooks.xml`. Replace the app builder URL with your action after deploying the App Builder application.
 
