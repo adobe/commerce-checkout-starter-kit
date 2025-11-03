@@ -46,11 +46,15 @@ export async function main(params) {
 
     const adobeCommerce = await getAdobeCommerceClient(params);
 
-    const content = await actionMap[method.toUpperCase()](adobeCommerce, operation, payload);
-    return {
-      statusCode: 200,
-      body: content || { success: true },
-    };
+    const response = await actionMap[method.toUpperCase()](adobeCommerce, operation, payload);
+    if (response.ok) {
+      return {
+        statusCode: 200,
+        body: (await response.json()) || { success: true },
+      };
+    } else {
+      return errorResponse(response.statusCode, await response.text(), logger);
+    }
   } catch (error) {
     // log any server errors
     logger.error('Commerce action error:', error);

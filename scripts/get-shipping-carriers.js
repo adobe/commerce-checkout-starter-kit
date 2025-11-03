@@ -19,14 +19,15 @@ export async function main() {
   const client = await getAdobeCommerceClient(process.env);
   const response = await client.getOopeShippingCarriers();
   console.info('Fetching shipping carriers...');
-  if (response.success) {
+  if (response.ok) {
+    const body = await response.json();
     console.info(
-      `Total ${response.message.length} shipping carriers fetched: ${response.message
+      `Total ${body.length} shipping carriers fetched: ${body
         .map((carrier) => '\n' + JSON.stringify(carrier, null, 2))
         .join('')}`
     );
   } else {
-    console.error(`Failed to retrieve shipping carriers` + response.message);
+    console.error(`Failed to retrieve shipping carriers: ${response.text()}`);
   }
 }
 

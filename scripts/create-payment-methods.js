@@ -31,11 +31,11 @@ export async function main(configFilePath) {
   for (const paymentMethod of data.methods) {
     const response = await client.createOopePaymentMethod(paymentMethod);
     const paymentMethodCode = paymentMethod.payment_method.code;
-    if (response.success) {
+    if (response.ok) {
       console.info(`Payment method ${paymentMethodCode} created`);
       createdPaymentMethods.push(paymentMethodCode);
     } else {
-      console.error(`Failed to create payment method ${paymentMethodCode}: ` + response.message);
+      console.error(`Failed to create payment method ${paymentMethodCode}: ${await response.text()}`);
     }
   }
   return createdPaymentMethods;

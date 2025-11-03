@@ -86,7 +86,7 @@ async function main(workspaceFile) {
   logger.info(`Configuring commerce events for the commerce instance: ${process.env.COMMERCE_BASE_URL}.`);
 
   const result = await configureCommerceEvents(commerceProviderSpec, workspaceFile);
-  if (result.success) {
+  if (result.ok) {
     logger.info('Commerce event configuration and subscription successful.');
   } else {
     logger.error('Failed to configure commerce events.', result.message);
@@ -104,10 +104,10 @@ async function main(workspaceFile) {
 async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
   const commerceClient = await getAdobeCommerceClient(process.env);
   const res = await commerceClient.getEventProviders();
-  if (!res.success) {
+  if (!res.ok) {
     return {
       success: false,
-      message: 'Failed to fetch event providers due to API error: ' + res.message,
+      message: `Failed to fetch event providers due to API error: ${await res.text()}`,
       details: { subscriptions: [] },
     };
   }
@@ -131,7 +131,7 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
 
   const result = await configureCommerceEventingConfig();
 
-  if (!result.success) {
+  if (!result.ok) {
     return {
       success: false,
       message: 'Failed to configure eventing in commerce: ' + result.body.message,
@@ -146,7 +146,7 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
 
   const results = await ensureCommerceEventSubscriptions(subscriptionSpec);
 
-  if (results.some((result) => !result.result.success)) {
+  if (results.some(({ result }) => !result.ok)) {
     return {
       success: false,
       message: 'Event subscription was not successful.',
@@ -189,14 +189,15 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
     return Promise.all(
       eventsSpec.map(async (event) => {
         const result = await commerceClient.subscribeEvent(event);
-        if (!result.success) {
-          if (result.body.message.includes('already exists')) {
+        if (!result.ok) {
+          const body = await result.json();
+          if (body.message.includes('already exists')) {
             logger.warn(
               'An event subscription with the same identifier already exists in the commerce system. ' +
                 'If you intend to update this subscription, please unsubscribe the existing one first. '
             );
           } else {
-            logger.error('Failed to subscribe event in Commerce: ' + result.body.message);
+            logger.error('Failed to subscribe event in Commerce: ' + body.message);
           }
         } else {
           logger.info(`Subscribed to event ${event.event.name} in Commerce.`);

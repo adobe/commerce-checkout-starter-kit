@@ -37,7 +37,8 @@
       {
         "allowModules": ["vitest"]
       }
-    ]
+    ],
+    "node/no-missing-require": ["error", { "allowModules": ["@adobe/aio-commerce-sdk"] }]
   },
   "overrides": [
     {
