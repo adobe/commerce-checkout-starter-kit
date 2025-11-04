@@ -10,31 +10,31 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-jest.mock('@adobe/aio-sdk', () => ({
-  ...jest.requireActual('@adobe/aio-sdk'),
+import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { Events } from '@adobe/aio-sdk';
+import { configureEvents } from '../../scripts/configure-events.js';
+
+vi.mock('@adobe/aio-sdk', async () => ({
+  ...(await vi.importActual('@adobe/aio-sdk')),
   Events: {
-    init: jest.fn(),
+    init: vi.fn(),
   },
 }));
 
-const { Events } = require('@adobe/aio-sdk');
-
 const mockEvents = {
-  getAllProviders: jest.fn(),
-  getAllEventMetadataForProvider: jest.fn(),
-  createProvider: jest.fn(),
-  updateProvider: jest.fn(),
-  createEventMetadataForProvider: jest.fn(),
-  updateEventMetadataForProvider: jest.fn(),
+  getAllProviders: vi.fn(),
+  getAllEventMetadataForProvider: vi.fn(),
+  createProvider: vi.fn(),
+  updateProvider: vi.fn(),
+  createEventMetadataForProvider: vi.fn(),
+  updateEventMetadataForProvider: vi.fn(),
 };
 
 Events.init.mockReturnValue(mockEvents);
 
-const { configureEvents } = require('../../scripts/configure-events');
-
 beforeEach(() => {
   Events.init.mockClear(); // only clears calls stats
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });
 
 const project = { organizationId: 'orgId', projectId: 'projectId', workspaceId: 'workspaceId' };

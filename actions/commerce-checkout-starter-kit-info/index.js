@@ -10,7 +10,7 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const { HTTP_OK } = require('../../lib/http');
+import { HTTP_OK } from '../../lib/http.js';
 
 /**
  * Please DO NOT DELETE this action; future functionalities planned for upcoming starter kit releases may stop working.
@@ -18,8 +18,6 @@ const { HTTP_OK } = require('../../lib/http');
  * @param {object} params action input parameters.
  * @returns {object} returns a response object
  */
-function main(params) {
+export function main(params) {
   return { statusCode: HTTP_OK };
 }
-
-exports.main = main;

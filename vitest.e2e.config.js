@@ -1,5 +1,5 @@
 /*
-Copyright 2024 Adobe. All rights reserved.
+Copyright 2025 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -10,13 +10,13 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const handlers = {};
+import { defineConfig } from 'vitest/config';
 
-/**
- * Get the handler for the given event code
- * @param {string} eventCode the commerce-events event code
- * @returns {Function} The handler function
- */
-export function getHandler(eventCode) {
-  return handlers[eventCode];
-}
+export default defineConfig({
+  test: {
+    environment: 'node',
+    include: ['e2e/**/*.e2e.test.js'],
+    testTimeout: 30000,
+    hookTimeout: 30000,
+  },
+});

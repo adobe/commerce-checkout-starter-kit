@@ -10,13 +10,13 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const { Core, Events } = require('@adobe/aio-sdk');
-const uuid = require('uuid');
-const { CloudEvent } = require('cloudevents');
-const { errorResponse } = require('../utils');
-const { resolveCredentials } = require('../../lib/adobe-auth');
-const { HTTP_OK, HTTP_INTERNAL_ERROR } = require('../../lib/http');
-const keyValues = require('../../lib/key-values');
+import { Core, Events } from '@adobe/aio-sdk';
+import { v4 as uuidv4 } from 'uuid';
+import { CloudEvent } from 'cloudevents';
+import { errorResponse } from '../utils.js';
+import { resolveCredentials } from '../../lib/adobe-auth.js';
+import { HTTP_OK, HTTP_INTERNAL_ERROR } from '../../lib/http.js';
+import * as keyValues from '../../lib/key-values.js';
 
 /**
  * This is a web action to publish 3rd party events to an already created event provider in Adobe Events.
@@ -26,7 +26,7 @@ const keyValues = require('../../lib/key-values');
  * @param {object} params action input parameters.
  * @returns {Promise<object>} the response object
  */
-async function main(params) {
+export async function main(params) {
   const logger = Core.Logger('3rd-party-events/publish', { level: params.LOG_LEVEL || 'info' });
 
   try {
@@ -65,7 +65,7 @@ async function main(params) {
 
     // Publish event
     const cloudEvent = new CloudEvent({
-      id: uuid.v4(),
+      id: uuidv4(),
       source: 'urn:uuid:' + providerId,
       datacontenttype: 'application/json',
       type,
@@ -109,5 +109,3 @@ function validateCustomAuthRequest(params) {
 
   return undefined;
 }
-
-exports.main = main;

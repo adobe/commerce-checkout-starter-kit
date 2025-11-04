@@ -10,11 +10,16 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const fs = require('fs');
-const path = require('path');
-const { replaceEnvVar } = require('../../lib/env');
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { replaceEnvVar } from '../../lib/env.js';
 
-jest.mock('fs');
+vi.mock('fs');
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 describe('replaceEnvVar', () => {
   const mockEnvPath = path.resolve(__dirname, '/.env');

@@ -10,14 +10,11 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-jest.setTimeout(30 * 1000); // 30 seconds
-const waitForExpect = require('wait-for-expect');
+import { describe, test, expect } from 'vitest';
+import waitForExpect from 'wait-for-expect';
+import { Core, State } from '@adobe/aio-sdk';
 
-const {
-  Core: { Config },
-  State,
-} = require('@adobe/aio-sdk');
-const fetch = require('node-fetch');
+const { Config } = Core;
 
 // get action url
 const namespace = Config.get('runtime.namespace');

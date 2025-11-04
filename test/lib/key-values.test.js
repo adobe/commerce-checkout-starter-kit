@@ -10,7 +10,8 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const { encode, decode } = require('../../lib/key-values');
+import { describe, it, expect } from 'vitest';
+import { encode, decode } from '../../lib/key-values.js';
 
 describe('key-values', () => {
   describe('encode', () => {

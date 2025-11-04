@@ -10,7 +10,8 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const utils = require('./../actions/utils.js');
+import { describe, test, expect, vi } from 'vitest';
+import * as utils from '../actions/utils.js';
 
 test('interface', () => {
   expect(typeof utils.errorResponse).toBe('function');
@@ -32,7 +33,7 @@ describe('errorResponse', () => {
 
   test('(400, errorMessage, logger)', () => {
     const logger = {
-      info: jest.fn(),
+      info: vi.fn(),
     };
     const res = utils.errorResponse(400, 'errorMessage', logger);
     expect(logger.info).toHaveBeenCalledWith('400: errorMessage');

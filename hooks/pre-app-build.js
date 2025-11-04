@@ -10,10 +10,11 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const { Core } = require('@adobe/aio-sdk');
+import { Core } from '@adobe/aio-sdk';
+import { main as syncOAuthCredentials } from '../scripts/sync-oauth-credentials.js';
 const logger = Core.Logger('hooks/pre-app-build', { level: process.env.LOG_LEVEL || 'info' });
 
-module.exports = () => {
-  require('../scripts/sync-oauth-credentials').main();
+export default () => {
+  syncOAuthCredentials();
   logger.info('Done');
 };

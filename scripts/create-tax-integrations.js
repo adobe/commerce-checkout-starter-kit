@@ -10,10 +10,10 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
-const fs = require('fs');
-const yaml = require('js-yaml');
-const { Core } = require('@adobe/aio-sdk');
+import { getAdobeCommerceClient } from '../lib/adobe-commerce.js';
+import fs from 'fs';
+import yaml from 'js-yaml';
+import { Core } from '@adobe/aio-sdk';
 const logger = Core.Logger('create-tax-integrations', { level: process.env.LOG_LEVEL || 'info' });
 
 /**
@@ -21,7 +21,7 @@ const logger = Core.Logger('create-tax-integrations', { level: process.env.LOG_L
  * @param {string} configFilePath - The file path to the YAML configuration file
  * @returns {Promise<string[]>} An array of created tax integration codes
  */
-async function main(configFilePath) {
+export async function main(configFilePath) {
   logger.info('Reading tax configuration file...');
   const fileContents = fs.readFileSync(configFilePath, 'utf8');
   const data = yaml.load(fileContents);
@@ -60,5 +60,3 @@ function formatErrorMessage(response) {
 
   return msg;
 }
-
-module.exports = { main };

@@ -10,9 +10,9 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const { Core } = require('@adobe/aio-sdk');
-const { HTTP_OK } = require('../../lib/http');
-const { webhookErrorResponse, webhookVerify } = require('../../lib/adobe-commerce');
+import { Core } from '@adobe/aio-sdk';
+import { HTTP_OK } from '../../lib/http.js';
+import { webhookErrorResponse, webhookVerify } from '../../lib/adobe-commerce.js';
 
 const TAX_RATES = Object.freeze({
   EXCLUDING_TAX: [
@@ -30,7 +30,7 @@ const TAX_RATES = Object.freeze({
  * @returns {Promise<{statusCode: number, body: {op: string}}>} the response object
  * @see https://developer.adobe.com/commerce/extensibility/webhooks
  */
-async function main(params) {
+export async function main(params) {
   const logger = Core.Logger('collect-taxes', { level: params.LOG_LEVEL || 'info' });
 
   try {
@@ -167,5 +167,3 @@ function createTaxSummaryOperation(index, itemTaxRate, itemTaxAmount, discountCo
     instance: 'Magento\\OutOfProcessTaxManagement\\Api\\Data\\OopQuoteItemTaxInterface',
   };
 }
-
-exports.main = main;

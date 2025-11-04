@@ -10,26 +10,29 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
+import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { main } from '../../scripts/create-tax-integrations.js';
+import { getAdobeCommerceClient } from '../../lib/adobe-commerce.js';
+
+vi.mock('../../lib/adobe-commerce.js');
+
 describe('create-tax-integrations', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('tax integrations created', async () => {
     mockAdobeCommerceClient({ success: true }, { success: true });
-    const { main } = require('../../scripts/create-tax-integrations');
     const result = await main('test/scripts/tax-integrations-test.yaml');
     expect(result).toEqual(['tax-integration-1', 'tax-integration-2']);
   });
   test('only one tax integrations is created', async () => {
     mockAdobeCommerceClient({ success: true }, { success: false });
-    const { main } = require('../../scripts/create-tax-integrations');
     const result = await main('test/scripts/tax-integrations-test.yaml');
     expect(result).toEqual(['tax-integration-1']);
   });
   test('no one tax integrations is created', async () => {
     mockAdobeCommerceClient({ success: false }, { success: false });
-    const { main } = require('../../scripts/create-tax-integrations');
     const result = await main('test/scripts/tax-integrations-test.yaml');
     expect(result).toEqual([]);
   });
@@ -41,12 +44,7 @@ describe('create-tax-integrations', () => {
  * @param {object} response2 The response for the second tax integration request
  */
 function mockAdobeCommerceClient(response1, response2) {
-  jest.mock('../../lib/adobe-commerce', () => ({
-    ...jest.requireActual('../../lib/adobe-commerce'),
-    getAdobeCommerceClient: jest.fn(),
-  }));
-  const { getAdobeCommerceClient } = require('../../lib/adobe-commerce');
   getAdobeCommerceClient.mockResolvedValue({
-    createTaxIntegration: jest.fn().mockResolvedValueOnce(response1).mockResolvedValueOnce(response2),
+    createTaxIntegration: vi.fn().mockResolvedValueOnce(response1).mockResolvedValueOnce(response2),
   });
 }

@@ -21,16 +21,15 @@ governing permissions and limitations under the License.
  *   - Make sure to validate these changes against your security requirements before deploying the action
  */
 
-const fetch = require('node-fetch');
-const { Core } = require('@adobe/aio-sdk');
-const { errorResponse, getBearerToken, stringParameters, checkMissingRequestInputs } = require('../utils');
+import { Core } from '@adobe/aio-sdk';
+import { errorResponse, getBearerToken, stringParameters, checkMissingRequestInputs } from '../utils.js';
 
 /**
  * Main function that will be executed by Adobe I/O Runtime
  * @param {object} params input parameters
  * @returns {Promise<{statusCode: number, body: object}>} response object
  */
-async function main(params) {
+export async function main(params) {
   // create a Logger
   const logger = Core.Logger('main', { level: params.LOG_LEVEL || 'info' });
 
@@ -80,5 +79,3 @@ async function main(params) {
     return errorResponse(500, 'server error', logger);
   }
 }
-
-exports.main = main;

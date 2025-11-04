@@ -10,20 +10,20 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-jest.mock('@adobe/aio-lib-ims', () => ({
-  context: jest.requireActual('@adobe/aio-lib-ims').context,
-  getToken: jest.fn(),
-}));
+import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { getAdobeCommerceClient, webhookVerify } from '../../lib/adobe-commerce.js';
+import { getToken } from '@adobe/aio-lib-ims';
+import crypto from 'crypto';
+import nock from 'nock';
 
-const { getAdobeCommerceClient, webhookVerify } = require('../../lib/adobe-commerce');
-const { getToken } = require('@adobe/aio-lib-ims');
-const crypto = require('crypto');
-// eslint-disable-next-line node/no-unpublished-require
-const nock = require('nock');
+vi.mock('@adobe/aio-lib-ims', async () => ({
+  context: (await vi.importActual('@adobe/aio-lib-ims')).context,
+  getToken: vi.fn(),
+}));
 
 describe('getAdobeCommerceClient', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('getAdobeCommerceClient', () => {
