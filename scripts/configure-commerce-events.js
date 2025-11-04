@@ -239,3 +239,10 @@ async function readWorkspaceConfig(filePath) {
 }
 
 export { main, configureCommerceEvents };
+
+// Run if called directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const workspaceFile = process.argv[2];
+  main(workspaceFile).catch(console.error);
+}
+

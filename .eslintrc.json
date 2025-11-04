@@ -65,7 +65,8 @@
     {
       "files": ["**/*.test.js", "**/*.e2e.test.js", "vitest.setup.js"],
       "rules": {
-        "jsdoc/require-jsdoc": "off"
+        "jsdoc/require-jsdoc": "off",
+        "node/no-unsupported-features/es-syntax": "off"
       }
     }
   ]

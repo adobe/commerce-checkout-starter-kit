@@ -12,14 +12,24 @@ governing permissions and limitations under the License.
 
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { getAdobeCommerceClient, webhookVerify } from '../../lib/adobe-commerce.js';
-import { getToken } from '@adobe/aio-lib-ims';
 import crypto from 'crypto';
 import nock from 'nock';
 
-vi.mock('@adobe/aio-lib-ims', async () => ({
-  context: (await vi.importActual('@adobe/aio-lib-ims')).context,
-  getToken: vi.fn(),
-}));
+vi.mock('@adobe/aio-lib-ims', async () => {
+  const actual = await vi.importActual('@adobe/aio-lib-ims');
+  const mockGetToken = vi.fn();
+  return {
+    default: {
+      context: actual.context,
+      getToken: mockGetToken,
+    },
+    context: actual.context,
+    getToken: mockGetToken,
+  };
+});
+
+// Get the mocked module to access mockGetToken
+const { getToken: mockGetToken } = await import('@adobe/aio-lib-ims');
 
 describe('getAdobeCommerceClient', () => {
   beforeEach(() => {
@@ -41,7 +51,7 @@ describe('getAdobeCommerceClient', () => {
         OAUTH_IMS_ORG_ID: 'test-org-id',
         OAUTH_SCOPES: JSON.stringify(['scope1', 'scope2']),
       };
-      getToken.mockResolvedValue('supersecrettoken');
+      mockGetToken.mockResolvedValue('supersecrettoken');
       const scope = nock(params.COMMERCE_BASE_URL)
         .get('/V1/testauth')
         .matchHeader('Content-Type', 'application/json')
@@ -51,7 +61,7 @@ describe('getAdobeCommerceClient', () => {
         .reply(200);
 
       const client = await getAdobeCommerceClient(params);
-      expect(getToken).toHaveBeenCalled();
+      expect(mockGetToken).toHaveBeenCalled();
 
       const { success } = await client.get('testauth');
       expect(success).toBeTruthy();

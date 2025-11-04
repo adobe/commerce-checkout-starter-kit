@@ -39,3 +39,9 @@ export async function main(configFilePath) {
   }
   return createShippingMethods;
 }
+
+// Run if called directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const configFile = process.argv[2] || 'shipping-carriers.yaml';
+  main(configFile).catch(console.error);
+}

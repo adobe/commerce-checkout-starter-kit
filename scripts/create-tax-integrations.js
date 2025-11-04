@@ -43,6 +43,12 @@ export async function main(configFilePath) {
   return createdTaxIntegrations;
 }
 
+// Run if called directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const configFile = process.argv[2] || 'tax-integrations.yaml';
+  main(configFile).catch(console.error);
+}
+
 /**
  * Formats an error message by interpolating placeholder values from the response
  * @param {object} response - The response object returned from the API

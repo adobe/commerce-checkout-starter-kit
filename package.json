@@ -49,13 +49,13 @@
     "format:fix": "npm run format:check -- --write",
     "code:check": "npm run format:check && npm run lint:check",
     "code:fix": "npm run format:fix && npm run lint:fix",
-    "configure-events": "node -e \"import('./scripts/configure-events.js').then(m => m.main())\"",
-    "configure-commerce-events": "aio console workspace download ws.json && node -e \"import('./scripts/configure-commerce-events.js').then(m => m.main('ws.json'))\"; rm -f ws.json",
-    "create-payment-methods": "node -e \"import('./scripts/create-payment-methods.js').then(m => m.main('payment-methods.yaml'))\"",
-    "create-tax-integrations": "node -e \"import('./scripts/create-tax-integrations.js').then(m => m.main('tax-integrations.yaml'))\"",
-    "create-shipping-carriers": "node -e \"import('./scripts/create-shipping-carriers.js').then(m => m.main('shipping-carriers.yaml'))\"",
-    "get-shipping-carriers": "node -e \"import('./scripts/get-shipping-carriers.js').then(m => m.main())\"",
-    "sync-oauth-credentials": "node -e \"import('./scripts/sync-oauth-credentials.js').then(m => m.main())\""
+    "configure-events": "node scripts/configure-events.js",
+    "configure-commerce-events": "aio console workspace download ws.json && node scripts/configure-commerce-events.js ws.json; rm -f ws.json",
+    "create-payment-methods": "node scripts/create-payment-methods.js payment-methods.yaml",
+    "create-tax-integrations": "node scripts/create-tax-integrations.js tax-integrations.yaml",
+    "create-shipping-carriers": "node scripts/create-shipping-carriers.js shipping-carriers.yaml",
+    "get-shipping-carriers": "node scripts/get-shipping-carriers.js",
+    "sync-oauth-credentials": "node scripts/sync-oauth-credentials.js"
   },
   "engines": {
     "node": ">=22"
