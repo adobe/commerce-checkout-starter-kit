@@ -68,6 +68,12 @@
         "jsdoc/require-jsdoc": "off",
         "node/no-unsupported-features/es-syntax": "off"
       }
+    },
+    {
+      "files": ["hooks/**/*.js"],
+      "rules": {
+        "node/shebang": "off"
+      }
     }
   ]
 }

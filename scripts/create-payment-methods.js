@@ -46,4 +46,3 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const configFile = process.argv[2] || 'payment-methods.yaml';
   main(configFile).catch(console.error);
 }
-
