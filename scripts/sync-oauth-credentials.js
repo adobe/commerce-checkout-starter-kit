@@ -2,7 +2,9 @@ import fs from 'fs';
 import { Core } from '@adobe/aio-sdk';
 import { replaceEnvVar, resolveEnvPath } from '../lib/env.js';
 import dotenv from 'dotenv';
-import { context } from '@adobe/aio-lib-ims';
+import aioIms from '@adobe/aio-lib-ims';
+
+const { context } = aioIms;
 
 const keyMap = {
   client_id: 'OAUTH_CLIENT_ID',
