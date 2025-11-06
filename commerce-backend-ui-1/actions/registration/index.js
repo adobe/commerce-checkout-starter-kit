@@ -15,7 +15,7 @@ governing permissions and limitations under the License.
  *
  * @returns {Promise<{statusCode: number, body: object}>} The HTTP response with status code and body
  */
-async function main() {
+export async function main() {
   const extensionId = 'oope_tax_management';
 
   return {
@@ -43,5 +43,3 @@ async function main() {
     },
   };
 }
-
-exports.main = main;

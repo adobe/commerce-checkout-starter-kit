@@ -9,16 +9,16 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
-const fs = require('fs');
-const yaml = require('js-yaml');
+import { getAdobeCommerceClient } from '../lib/adobe-commerce.js';
+import fs from 'fs';
+import yaml from 'js-yaml';
 
 /**
  * Creates a shipping carrier defined in the shipping-carriers.yaml file in the configured Adobe Commerce instance
  * @param {string} configFilePath shipping-carriers.yaml file path
  * @returns  {string[]} array of strings
  */
-async function main(configFilePath) {
+export async function main(configFilePath) {
   console.info('Reading shipping configuration file...');
   const fileContents = fs.readFileSync(configFilePath, 'utf8');
   const data = yaml.load(fileContents);
@@ -40,4 +40,8 @@ async function main(configFilePath) {
   return createShippingMethods;
 }
 
-module.exports = { main };
+// Run if called directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const configFile = process.argv[2] || 'shipping-carriers.yaml';
+  main(configFile).catch(console.error);
+}

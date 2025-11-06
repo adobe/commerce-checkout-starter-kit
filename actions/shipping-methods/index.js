@@ -10,9 +10,9 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const { Core } = require('@adobe/aio-sdk');
-const { webhookErrorResponse, webhookVerify } = require('../../lib/adobe-commerce');
-const { HTTP_OK } = require('../../lib/http');
+import { Core } from '@adobe/aio-sdk';
+import { webhookErrorResponse, webhookVerify } from '../../lib/adobe-commerce.js';
+import { HTTP_OK } from '../../lib/http.js';
 
 /**
  * This action returns the list of out-of-process shipping methods for the given request.
@@ -22,7 +22,7 @@ const { HTTP_OK } = require('../../lib/http');
  * @returns {Promise<{statusCode: number, body: {op: string}}>} the response object
  * @see https://developer.adobe.com/commerce/extensibility/webhooks
  */
-async function main(params) {
+export async function main(params) {
   const logger = Core.Logger('shipping-methods', { level: params.LOG_LEVEL || 'info' });
   try {
     const { success, error } = webhookVerify(params);
@@ -199,5 +199,3 @@ function createShippingOperation(carrierData) {
     value: carrierData,
   };
 }
-
-exports.main = main;

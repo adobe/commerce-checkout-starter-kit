@@ -10,20 +10,30 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-jest.mock('@adobe/aio-lib-ims', () => ({
-  context: jest.requireActual('@adobe/aio-lib-ims').context,
-  getToken: jest.fn(),
-}));
+import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { getAdobeCommerceClient, webhookVerify } from '../../lib/adobe-commerce.js';
+import crypto from 'crypto';
+import nock from 'nock';
 
-const { getAdobeCommerceClient, webhookVerify } = require('../../lib/adobe-commerce');
-const { getToken } = require('@adobe/aio-lib-ims');
-const crypto = require('crypto');
-// eslint-disable-next-line node/no-unpublished-require
-const nock = require('nock');
+vi.mock('@adobe/aio-lib-ims', async () => {
+  const actual = await vi.importActual('@adobe/aio-lib-ims');
+  const mockGetToken = vi.fn();
+  return {
+    default: {
+      context: actual.context,
+      getToken: mockGetToken,
+    },
+    context: actual.context,
+    getToken: mockGetToken,
+  };
+});
+
+// Get the mocked module to access mockGetToken
+const { getToken: mockGetToken } = await import('@adobe/aio-lib-ims');
 
 describe('getAdobeCommerceClient', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('getAdobeCommerceClient', () => {
@@ -41,7 +51,7 @@ describe('getAdobeCommerceClient', () => {
         OAUTH_IMS_ORG_ID: 'test-org-id',
         OAUTH_SCOPES: JSON.stringify(['scope1', 'scope2']),
       };
-      getToken.mockResolvedValue('supersecrettoken');
+      mockGetToken.mockResolvedValue('supersecrettoken');
       const scope = nock(params.COMMERCE_BASE_URL)
         .get('/V1/testauth')
         .matchHeader('Content-Type', 'application/json')
@@ -51,7 +61,7 @@ describe('getAdobeCommerceClient', () => {
         .reply(200);
 
       const client = await getAdobeCommerceClient(params);
-      expect(getToken).toHaveBeenCalled();
+      expect(mockGetToken).toHaveBeenCalled();
 
       const { success } = await client.get('testauth');
       expect(success).toBeTruthy();

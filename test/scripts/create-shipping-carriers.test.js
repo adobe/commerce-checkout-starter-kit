@@ -10,26 +10,29 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
+import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { main } from '../../scripts/create-shipping-carriers.js';
+import { getAdobeCommerceClient } from '../../lib/adobe-commerce.js';
+
+vi.mock('../../lib/adobe-commerce.js');
+
 describe('create-shipping-carriers', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('shipping carriers created', async () => {
     mockAdobeCommerceClient({ success: true }, { success: true });
-    const { main } = require('../../scripts/create-shipping-carriers');
     const result = await main('test/scripts/shipping-carriers-test.yaml');
     expect(result).toEqual(['carrier-1', 'carrier-2']);
   });
   test('only one shipping carrier is created', async () => {
     mockAdobeCommerceClient({ success: true }, { success: false });
-    const { main } = require('../../scripts/create-shipping-carriers');
     const result = await main('test/scripts/shipping-carriers-test.yaml');
     expect(result).toEqual(['carrier-1']);
   });
   test('no shipping carrier is created', async () => {
     mockAdobeCommerceClient({ success: false }, { success: false });
-    const { main } = require('../../scripts/create-shipping-carriers');
     const result = await main('test/scripts/shipping-carriers-test.yaml');
     expect(result).toEqual([]);
   });
@@ -43,12 +46,7 @@ describe('create-shipping-carriers', () => {
  * @param {object} response2 The response to be returned by the second call to `createOopeShippingCarrier`.
  */
 function mockAdobeCommerceClient(response1, response2) {
-  jest.mock('../../lib/adobe-commerce', () => ({
-    ...jest.requireActual('../../lib/adobe-commerce'),
-    getAdobeCommerceClient: jest.fn(),
-  }));
-  const { getAdobeCommerceClient } = require('../../lib/adobe-commerce');
   getAdobeCommerceClient.mockResolvedValue({
-    createOopeShippingCarrier: jest.fn().mockResolvedValueOnce(response1).mockResolvedValueOnce(response2),
+    createOopeShippingCarrier: vi.fn().mockResolvedValueOnce(response1).mockResolvedValueOnce(response2),
   });
 }

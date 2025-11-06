@@ -10,14 +10,16 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-require('dotenv').config();
-const { Core, Events } = require('@adobe/aio-sdk');
-const yaml = require('js-yaml');
-const fs = require('fs');
-const keyValues = require('../lib/key-values');
-const { replaceEnvVar } = require('../lib/env');
-const { resolveCredentials } = require('../lib/adobe-auth');
-const uuid = require('uuid');
+import dotenv from 'dotenv';
+import { Core, Events } from '@adobe/aio-sdk';
+import yaml from 'js-yaml';
+import fs from 'fs';
+import * as keyValues from '../lib/key-values.js';
+import { replaceEnvVar } from '../lib/env.js';
+import { resolveCredentials } from '../lib/adobe-auth.js';
+import { v4 as uuidv4 } from 'uuid';
+
+dotenv.config();
 
 const logger = Core.Logger('events-config', { level: process.env.LOG_LEVEL || 'info' });
 
@@ -185,7 +187,7 @@ async function configureEvents(
     }
 
     if (spec.provider_metadata === 'dx_commerce_events') {
-      spec.instance_id = uuid.v4();
+      spec.instance_id = uuidv4();
     }
 
     const created = await eventsApi.createProvider(organizationId, projectId, workspaceId, spec);
@@ -233,4 +235,9 @@ async function configureEvents(
   }
 }
 
-module.exports = { main, configureEvents };
+export { main, configureEvents };
+
+// Run if called directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch(console.error);
+}

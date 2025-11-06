@@ -18,7 +18,7 @@ governing permissions and limitations under the License.
  * @param {object} params action input parameters.
  * @returns {string} the stringified parameters.
  */
-function stringParameters(params) {
+export function stringParameters(params) {
   // hide authorization token without overriding params
   let headers = params.__ow_headers || {};
   if (headers.authorization) {
@@ -64,7 +64,7 @@ function getMissingKeys(obj, required) {
  * @param {Array} requiredHeaders list of required input headers.
  * @returns {string} if the return value is not null, then it holds an error message describing the missing inputs.
  */
-function checkMissingRequestInputs(params, requiredParams = [], requiredHeaders = []) {
+export function checkMissingRequestInputs(params, requiredParams = [], requiredHeaders = []) {
   let errorMessage = null;
 
   // input headers are always lowercase
@@ -96,7 +96,7 @@ function checkMissingRequestInputs(params, requiredParams = [], requiredHeaders 
  * @param {object} params action input parameters.
  * @returns {string|undefined} the token string or undefined if not set in request headers.
  */
-function getBearerToken(params) {
+export function getBearerToken(params) {
   if (
     params.__ow_headers &&
     params.__ow_headers.authorization &&
@@ -118,7 +118,7 @@ function getBearerToken(params) {
  *        e.g. `new require('@adobe/aio-sdk').Core.Logger('name')`
  * @returns {object} the error object, ready to be returned from the action main's function.
  */
-function errorResponse(statusCode, message, logger) {
+export function errorResponse(statusCode, message, logger) {
   if (logger && typeof logger.info === 'function') {
     logger.info(`${statusCode}: ${message}`);
   }
@@ -131,10 +131,3 @@ function errorResponse(statusCode, message, logger) {
     },
   };
 }
-
-module.exports = {
-  errorResponse,
-  getBearerToken,
-  stringParameters,
-  checkMissingRequestInputs,
-};

@@ -9,9 +9,9 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-const { Core } = require('@adobe/aio-sdk');
-const { errorResponse, checkMissingRequestInputs } = require('../utils');
-const { getAdobeCommerceClient } = require('../../../lib/adobe-commerce');
+import { Core } from '@adobe/aio-sdk';
+import { errorResponse, checkMissingRequestInputs } from '../utils.js';
+import { getAdobeCommerceClient } from '../../../lib/adobe-commerce.js';
 
 const actionMap = {
   POST: (adobeCommerce, operation, payload) => {
@@ -25,7 +25,7 @@ const actionMap = {
  * @param {object} params The input parameters passed by Adobe I/O Runtime, including headers and query/body values.
  * @returns {Promise<{statusCode: number, body: object}>} The HTTP response with status code and body.
  */
-async function main(params) {
+export async function main(params) {
   const logger = Core.Logger('main', { level: params.LOG_LEVEL || 'debug' });
 
   try {
@@ -58,5 +58,3 @@ async function main(params) {
     return errorResponse(500, error, logger);
   }
 }
-
-exports.main = main;

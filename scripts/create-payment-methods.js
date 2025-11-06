@@ -10,16 +10,16 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
-const fs = require('fs');
-const yaml = require('js-yaml');
+import { getAdobeCommerceClient } from '../lib/adobe-commerce.js';
+import fs from 'fs';
+import yaml from 'js-yaml';
 
 /**
  * Creates all the payment methods defined in the payment-methods.yaml file in the configured Adobe Commerce instance
  * @param {string} configFilePath path to the payment-methods.yaml file
  * @returns {string[]} array of created payment method codes
  */
-async function main(configFilePath) {
+export async function main(configFilePath) {
   console.info('Reading payment configuration file...');
   const fileContents = fs.readFileSync(configFilePath, 'utf8');
   const data = yaml.load(fileContents);
@@ -41,4 +41,8 @@ async function main(configFilePath) {
   return createdPaymentMethods;
 }
 
-module.exports = { main };
+// Run if called directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const configFile = process.argv[2] || 'payment-methods.yaml';
+  main(configFile).catch(console.error);
+}

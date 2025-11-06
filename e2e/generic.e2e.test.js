@@ -10,8 +10,10 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const { Config } = require('@adobe/aio-sdk').Core;
-const fetch = require('node-fetch');
+import { test, expect } from 'vitest';
+import { Core } from '@adobe/aio-sdk';
+
+const { Config } = Core;
 
 // get action url
 const namespace = Config.get('runtime.namespace');

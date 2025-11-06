@@ -10,14 +10,16 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-require('dotenv').config();
-const { Core, Events } = require('@adobe/aio-sdk');
-const yaml = require('js-yaml');
-const fs = require('fs');
-const keyValues = require('../lib/key-values');
-const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
-const path = require('path');
-const { resolveCredentials } = require('../lib/adobe-auth');
+import dotenv from 'dotenv';
+import { Core, Events } from '@adobe/aio-sdk';
+import yaml from 'js-yaml';
+import fs from 'fs';
+import * as keyValues from '../lib/key-values.js';
+import { getAdobeCommerceClient } from '../lib/adobe-commerce.js';
+import path from 'path';
+import { resolveCredentials } from '../lib/adobe-auth.js';
+
+dotenv.config();
 
 const logger = Core.Logger('configure-commerce-events', { level: process.env.LOG_LEVEL || 'info' });
 
@@ -228,11 +230,18 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
 /**
  * Reads the workspace configuration from the given file path.
  * @param {string} filePath the file path
- * @returns {object} the workspace configuration
+ * @returns {Promise<object>} the workspace configuration
  */
-function readWorkspaceConfig(filePath) {
+async function readWorkspaceConfig(filePath) {
   const absolutePath = path.isAbsolute(filePath) ? filePath : `${process.env.INIT_CWD}/${filePath}`;
-  return require(absolutePath);
+  const fileContent = fs.readFileSync(absolutePath, 'utf8');
+  return JSON.parse(fileContent);
 }
 
-module.exports = { main, configureCommerceEvents };
+export { main, configureCommerceEvents };
+
+// Run if called directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const workspaceFile = process.argv[2];
+  main(workspaceFile).catch(console.error);
+}

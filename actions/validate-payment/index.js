@@ -10,8 +10,8 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const { Core } = require('@adobe/aio-sdk');
-const { webhookSuccessResponse, webhookErrorResponse, webhookVerify } = require('../../lib/adobe-commerce');
+import { Core } from '@adobe/aio-sdk';
+import { webhookSuccessResponse, webhookErrorResponse, webhookVerify } from '../../lib/adobe-commerce.js';
 
 /**
  * This action validates the payment information before the order is placed.
@@ -21,7 +21,7 @@ const { webhookSuccessResponse, webhookErrorResponse, webhookVerify } = require(
  * @returns {Promise<{statusCode: number, body: {op: string}}>} the response object
  * @see https://developer.adobe.com/commerce/extensibility/webhooks
  */
-async function main(params) {
+export async function main(params) {
   const logger = Core.Logger('validate-payment', { level: params.LOG_LEVEL || 'info' });
   try {
     const { success, error } = webhookVerify(params);
@@ -59,5 +59,3 @@ async function main(params) {
     return webhookErrorResponse(`Server error: ${error.message}`);
   }
 }
-
-exports.main = main;

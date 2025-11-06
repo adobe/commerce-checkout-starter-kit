@@ -10,38 +10,36 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
+import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { main } from '../../scripts/create-payment-methods.js';
+import { getAdobeCommerceClient } from '../../lib/adobe-commerce.js';
+
+vi.mock('../../lib/adobe-commerce.js');
+
 describe('create-payment-methods', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   test('payment methods created', async () => {
     mockAdobeCommerceClient({ success: true }, { success: true });
-    const { main } = require('../../scripts/create-payment-methods');
     const result = await main('test/scripts/payment-methods-test.yaml');
     expect(result).toEqual(['method-1', 'method-2']);
   });
   test('only one payment methods is created', async () => {
     mockAdobeCommerceClient({ success: true }, { success: false });
-    const { main } = require('../../scripts/create-payment-methods');
     const result = await main('test/scripts/payment-methods-test.yaml');
     expect(result).toEqual(['method-1']);
   });
   test('no one payment methods is created', async () => {
     mockAdobeCommerceClient({ success: false }, { success: false });
-    const { main } = require('../../scripts/create-payment-methods');
     const result = await main('test/scripts/payment-methods-test.yaml');
     expect(result).toEqual([]);
   });
 });
 
 function mockAdobeCommerceClient(response1, response2) {
-  jest.mock('../../lib/adobe-commerce', () => ({
-    ...jest.requireActual('../../lib/adobe-commerce'),
-    getAdobeCommerceClient: jest.fn(),
-  }));
-  const { getAdobeCommerceClient } = require('../../lib/adobe-commerce');
   getAdobeCommerceClient.mockResolvedValue({
-    createOopePaymentMethod: jest.fn().mockResolvedValueOnce(response1).mockResolvedValueOnce(response2),
+    createOopePaymentMethod: vi.fn().mockResolvedValueOnce(response1).mockResolvedValueOnce(response2),
   });
 }

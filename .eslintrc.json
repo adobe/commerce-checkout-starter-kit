@@ -1,7 +1,7 @@
 {
   "parser": "@babel/eslint-parser",
   "plugins": ["react"],
-  "extends": ["@adobe/eslint-config-aio-lib-config", "prettier"],
+  "extends": ["@adobe/eslint-config-aio-lib-config", "prettier", "plugin:vitest-globals/recommended"],
   "parserOptions": {
     "ecmaVersion": 2021,
     "sourceType": "module",
@@ -25,6 +25,18 @@
       {
         "allowModules": ["dotenv", "js-yaml", "wait-for-expect"]
       }
+    ],
+    "node/no-unpublished-import": [
+      "error",
+      {
+        "allowModules": ["dotenv", "wait-for-expect", "nock", "vitest"]
+      }
+    ],
+    "node/no-missing-import": [
+      "error",
+      {
+        "allowModules": ["vitest"]
+      }
     ]
   },
   "overrides": [
@@ -45,14 +57,22 @@
       "rules": {
         "node/no-unsupported-features/es-syntax": "off",
         "no-unused-vars": "off",
+        "no-undef": "off",
         "react/jsx-uses-react": "warn",
         "react/jsx-uses-vars": "warn"
       }
     },
     {
-      "files": ["**/*.test.js"],
+      "files": ["**/*.test.js", "**/*.e2e.test.js", "vitest.setup.js"],
       "rules": {
-        "jsdoc/require-jsdoc": "off"
+        "jsdoc/require-jsdoc": "off",
+        "node/no-unsupported-features/es-syntax": "off"
+      }
+    },
+    {
+      "files": ["hooks/**/*.js"],
+      "rules": {
+        "node/shebang": "off"
       }
     }
   ]

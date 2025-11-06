@@ -10,12 +10,12 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const { getAdobeCommerceClient } = require('../lib/adobe-commerce');
+import { getAdobeCommerceClient } from '../lib/adobe-commerce.js';
 
 /**
  * Retrieves all shipping carrier from the configured Adobe Commerce instance
  */
-async function main() {
+export async function main() {
   const client = await getAdobeCommerceClient(process.env);
   const response = await client.getOopeShippingCarriers();
   console.info('Fetching shipping carriers...');
@@ -30,4 +30,7 @@ async function main() {
   }
 }
 
-module.exports = { main };
+// Run if called directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch(console.error);
+}

@@ -10,9 +10,9 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const { Core } = require('@adobe/aio-sdk');
-const { HTTP_OK } = require('../../lib/http');
-const { getHandler } = require('./events-handler');
+import { Core } from '@adobe/aio-sdk';
+import { HTTP_OK } from '../../lib/http.js';
+import { getHandler } from './events-handler.js';
 
 /**
  * Events consumer for Adobe Commerce Event provider. Routes the events through the appropriate handler according to
@@ -20,7 +20,7 @@ const { getHandler } = require('./events-handler');
  * @param {object} params - The input parameters for the action.
  * @returns {object} The response object
  */
-async function main(params) {
+export async function main(params) {
   const logger = Core.Logger('commerce-events/consume', { level: params.LOG_LEVEL || 'info' });
 
   // eslint-disable-next-line no-unused-vars
@@ -41,5 +41,3 @@ async function main(params) {
 
   return response;
 }
-
-exports.main = main;

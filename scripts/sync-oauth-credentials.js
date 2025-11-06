@@ -1,8 +1,10 @@
-const fs = require('fs');
-const { Core } = require('@adobe/aio-sdk');
-const { replaceEnvVar, resolveEnvPath } = require('../lib/env');
-const dotenv = require('dotenv');
-const { context } = require('@adobe/aio-lib-ims');
+import fs from 'fs';
+import { Core } from '@adobe/aio-sdk';
+import { replaceEnvVar, resolveEnvPath } from '../lib/env.js';
+import dotenv from 'dotenv';
+import aioIms from '@adobe/aio-lib-ims';
+
+const { context } = aioIms;
 
 const keyMap = {
   client_id: 'OAUTH_CLIENT_ID',
@@ -18,7 +20,7 @@ const logger = Core.Logger('scripts/sync-oauth-credentials', { level: process.en
 /**
  * Syncs OAUTH environment variables from the configured IMS context in the .env file.
  */
-async function main() {
+export async function main() {
   try {
     logger.debug('Sync OAUTH env vars from configured IMS context in .env file');
     const envPath = resolveEnvPath();
@@ -76,4 +78,7 @@ function resolveImsS2SContext() {
   return context.get(credential);
 }
 
-module.exports = { main };
+// Run if called directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch(console.error);
+}

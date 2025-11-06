@@ -10,9 +10,9 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const { Core, State } = require('@adobe/aio-sdk');
-const { errorResponse } = require('../utils');
-const { HTTP_OK, HTTP_INTERNAL_ERROR } = require('../../lib/http');
+import { Core, State } from '@adobe/aio-sdk';
+import { errorResponse } from '../utils.js';
+import { HTTP_OK, HTTP_INTERNAL_ERROR } from '../../lib/http.js';
 
 /**
  * Simple action to consume 3rd party events produced by the publisher.
@@ -21,7 +21,7 @@ const { HTTP_OK, HTTP_INTERNAL_ERROR } = require('../../lib/http');
  * @returns {Promise<object>} the response object. Note that depending on the statusCode, AdobeIO events might retry the action.
  * @see https://developer.adobe.com/events/docs/support/faq/#what-happens-if-my-webhook-is-down-why-is-my-event-registration-marked-as-unstable
  */
-async function main(params) {
+export async function main(params) {
   const logger = Core.Logger('3rd-party-events/consume', { level: params.LOG_LEVEL || 'info' });
 
   // eslint-disable-next-line no-unused-vars
@@ -41,5 +41,3 @@ async function main(params) {
     return errorResponse(HTTP_INTERNAL_ERROR, 'server error', logger);
   }
 }
-
-exports.main = main;
