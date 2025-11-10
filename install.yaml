@@ -7,3 +7,4 @@ categories:
 
 extensions:
   - extensionPointId: commerce/backend-ui/1
+  - extensionPointId: commerce/configuration/1

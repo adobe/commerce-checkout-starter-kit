@@ -146,8 +146,8 @@ extensions:
     $include: commerce-backend-ui-1/ext.config.yaml
 
   commerce/configuration/1:
-    $include: ext.config.yaml
-
+    $include: commerce-configuration-1/ext.config.yaml
+    
 productDependencies:
   - code: COMMC
     minVersion: 2.4.5

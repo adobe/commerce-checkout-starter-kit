@@ -4,6 +4,9 @@
   "type": "module",
   "private": true,
   "dependencies": {
+    "@adobe/aio-commerce-lib-api": "^0.3.0",
+    "@adobe/aio-commerce-lib-config": "^0.4.1",
+    "@adobe/aio-commerce-lib-core": "^0.5.0",
     "@adobe/aio-lib-ims": "^7.0.2",
     "@adobe/aio-lib-telemetry": "^1.1.0",
     "@adobe/aio-sdk": "^6",
