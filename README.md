@@ -109,12 +109,12 @@ _List only necessary modules for the project._
     This will generate entries:
 
     ```env
-    OAUTH_CLIENT_ID=
-    OAUTH_CLIENT_SECRETS=[""]
-    OAUTH_TECHNICAL_ACCOUNT_ID=
-    OAUTH_TECHNICAL_ACCOUNT_EMAIL=
-    OAUTH_SCOPES=[""]
-    OAUTH_IMS_ORG_ID=
+    AIO_COMMERCE_AUTH_IMS_CLIENT_ID=
+    AIO_COMMERCE_AUTH_IMS_CLIENT_SECRETS=[""]
+    AIO_COMMERCE_AUTH_IMS_TECHNICAL_ACCOUNT_ID=
+    AIO_COMMERCE_AUTH_IMS_TECHNICAL_ACCOUNT_EMAIL=
+    AIO_COMMERCE_AUTH_IMS_SCOPES=[""]
+    AIO_COMMERCE_AUTH_IMS_IMS_ORG_ID=
     ```
 
     - This script is also configured as a pre-app-build hook and will auto-sync when a build is triggered.
@@ -123,7 +123,7 @@ _List only necessary modules for the project._
 
 ## Connect to Adobe Commerce
 
-Update the `COMMERCE_BASE_URL` value in the `.env` file and complete the authentication setup:
+Update the `AIO_COMMERCE_API_BASE_URL` value in the `.env` file and complete the authentication setup:
 
 - For PaaS (On-Premise/Cloud):
   - The base URL includes your base site URL + `/rest/<store_view_code>/`
@@ -141,7 +141,7 @@ To create OAuth credentials for App Builder authentication:
 
 1. Access your IMS credentials via the [Adobe Developer Console](https://developer.adobe.com/console). Select the project and workspace, then click **OAuth Server-to-Server** in the side-navigation menu.
 
-   **Note:** You can find these credentials already in your `.env` as `OAUTH_*`.
+   **Note:** You can find these credentials already in your `.env` as `AIO_COMMERCE_AUTH_IMS_*`.
 
 1. Add a technical account with server-to-server credentials to Commerce Admin using the [Admin User Creation Guide](https://experienceleague.adobe.com/en/docs/commerce-admin/systems/user-accounts/permissions-users-all#create-a-user).
 
@@ -156,8 +156,8 @@ To create OAuth credentials for App Builder authentication:
 1. Copy the integration details to the `.env` file in the root of the project.
 
    ```env
-   COMMERCE_CONSUMER_KEY=<key>
-   COMMERCE_CONSUMER_SECRET=<secret>
+   AIO_COMMERCE_AUTH_INTEGRATION_CONSUMER_KEY=<key>
+   AIO_COMMERCE_AUTH_INTEGRATION_CONSUMER_SECRET=<secret>
    COMMERCE_ACCESS_TOKEN=<access token>
    COMMERCE_ACCESS_TOKEN_SECRET=<access token secret>
    ```

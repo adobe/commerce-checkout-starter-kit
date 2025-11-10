@@ -7,12 +7,12 @@ import aioIms from '@adobe/aio-lib-ims';
 const { context } = aioIms;
 
 const keyMap = {
-  client_id: 'OAUTH_CLIENT_ID',
-  client_secrets: 'OAUTH_CLIENT_SECRETS',
-  technical_account_email: 'OAUTH_TECHNICAL_ACCOUNT_EMAIL',
-  technical_account_id: 'OAUTH_TECHNICAL_ACCOUNT_ID',
-  scopes: 'OAUTH_SCOPES',
-  ims_org_id: 'OAUTH_IMS_ORG_ID',
+  client_id: 'AIO_COMMERCE_AUTH_IMS_CLIENT_ID',
+  client_secrets: 'AIO_COMMERCE_AUTH_IMS_CLIENT_SECRETS',
+  technical_account_email: 'AIO_COMMERCE_AUTH_IMS_TECHNICAL_ACCOUNT_EMAIL',
+  technical_account_id: 'AIO_COMMERCE_AUTH_IMS_TECHNICAL_ACCOUNT_ID',
+  scopes: 'AIO_COMMERCE_AUTH_IMS_SCOPES',
+  ims_org_id: 'AIO_COMMERCE_AUTH_IMS_IMS_ORG_ID',
 };
 
 const logger = Core.Logger('scripts/sync-oauth-credentials', { level: process.env.LOG_LEVEL || 'info' });

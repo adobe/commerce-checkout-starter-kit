@@ -83,7 +83,7 @@ async function main(workspaceFile) {
   commerceProviderSpec.id = provider.id;
   commerceProviderSpec.instance_id = provider.instance_id;
 
-  logger.info(`Configuring commerce events for the commerce instance: ${process.env.COMMERCE_BASE_URL}.`);
+  logger.info(`Configuring commerce events for the commerce instance: ${process.env.AIO_COMMERCE_API_BASE_URL}.`);
 
   const result = await configureCommerceEvents(commerceProviderSpec, workspaceFile);
   if (result.success) {
