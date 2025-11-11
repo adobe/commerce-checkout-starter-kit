@@ -1,2 +1,1 @@
-hooks:
-  pre-app-build: node_modules/@adobe/aio-commerce-lib-config/dist/cjs/hooks/pre-app-build.cjs
+{}
