@@ -158,8 +158,8 @@ To create OAuth credentials for App Builder authentication:
    ```env
    AIO_COMMERCE_AUTH_INTEGRATION_CONSUMER_KEY=<key>
    AIO_COMMERCE_AUTH_INTEGRATION_CONSUMER_SECRET=<secret>
-   COMMERCE_ACCESS_TOKEN=<access token>
-   COMMERCE_ACCESS_TOKEN_SECRET=<access token secret>
+   AIO_COMMERCE_AUTH_INTEGRATION_ACCESS_TOKEN=<access token>
+   AIO_COMMERCE_AUTH_INTEGRATION_ACCESS_TOKEN_SECRET=<access token secret>
    ```
 
 ## Configuration
