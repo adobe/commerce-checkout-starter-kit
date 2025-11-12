@@ -114,7 +114,7 @@ _List only necessary modules for the project._
     AIO_COMMERCE_AUTH_IMS_TECHNICAL_ACCOUNT_ID=
     AIO_COMMERCE_AUTH_IMS_TECHNICAL_ACCOUNT_EMAIL=
     AIO_COMMERCE_AUTH_IMS_SCOPES=[""]
-    AIO_COMMERCE_AUTH_IMS_IMS_ORG_ID=
+    AIO_COMMERCE_AUTH_IMS_ORG_ID=
     ```
 
     - This script is also configured as a pre-app-build hook and will auto-sync when a build is triggered.

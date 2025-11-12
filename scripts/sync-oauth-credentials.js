@@ -12,7 +12,7 @@ const keyMap = {
   technical_account_email: 'AIO_COMMERCE_AUTH_IMS_TECHNICAL_ACCOUNT_EMAIL',
   technical_account_id: 'AIO_COMMERCE_AUTH_IMS_TECHNICAL_ACCOUNT_ID',
   scopes: 'AIO_COMMERCE_AUTH_IMS_SCOPES',
-  ims_org_id: 'AIO_COMMERCE_AUTH_IMS_IMS_ORG_ID',
+  ims_org_id: 'AIO_COMMERCE_AUTH_IMS_ORG_ID',
 };
 
 const logger = Core.Logger('scripts/sync-oauth-credentials', { level: process.env.LOG_LEVEL || 'info' });

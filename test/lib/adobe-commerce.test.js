@@ -48,14 +48,14 @@ describe('getAdobeCommerceClient', () => {
         AIO_COMMERCE_AUTH_IMS_CLIENT_SECRETS: JSON.stringify(['supersecret']),
         AIO_COMMERCE_AUTH_IMS_TECHNICAL_ACCOUNT_ID: 'test-technical-account-id',
         AIO_COMMERCE_AUTH_IMS_TECHNICAL_ACCOUNT_EMAIL: 'test-email@example.com',
-        AIO_COMMERCE_AUTH_IMS_IMS_ORG_ID: 'test-org-id',
+        AIO_COMMERCE_AUTH_IMS_ORG_ID: 'test-org-id',
         AIO_COMMERCE_AUTH_IMS_SCOPES: JSON.stringify(['scope1', 'scope2']),
       };
       mockGetToken.mockResolvedValue('supersecrettoken');
       const scope = nock(params.AIO_COMMERCE_API_BASE_URL)
         .get('/V1/testauth')
         .matchHeader('Content-Type', 'application/json')
-        .matchHeader('x-ims-org-id', params.AIO_COMMERCE_AUTH_IMS_IMS_ORG_ID)
+        .matchHeader('x-ims-org-id', params.AIO_COMMERCE_AUTH_IMS_ORG_ID)
         .matchHeader('x-api-key', params.AIO_COMMERCE_AUTH_IMS_CLIENT_ID)
         .matchHeader('Authorization', 'Bearer supersecrettoken')
         .reply(200);
