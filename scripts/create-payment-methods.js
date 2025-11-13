@@ -35,7 +35,7 @@ export async function main(configFilePath) {
       console.info(`Payment method ${paymentMethodCode} created`);
       createdPaymentMethods.push(paymentMethodCode);
     } else {
-      console.error(`Failed to create payment method ${paymentMethodCode}: ${await response.text()}`);
+      console.error(`Failed to create payment method ${paymentMethodCode}: ${await response.json()}`);
     }
   }
   return createdPaymentMethods;

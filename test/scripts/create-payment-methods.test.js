@@ -22,17 +22,17 @@ describe('create-payment-methods', () => {
   });
 
   test('payment methods created', async () => {
-    mockAdobeCommerceClient({ success: true }, { success: true });
+    mockAdobeCommerceClient(ok({ success: true }), ok({ success: true }));
     const result = await main('test/scripts/payment-methods-test.yaml');
     expect(result).toEqual(['method-1', 'method-2']);
   });
   test('only one payment methods is created', async () => {
-    mockAdobeCommerceClient({ success: true }, { success: false });
+    mockAdobeCommerceClient(ok({ success: true }), error({ success: false }));
     const result = await main('test/scripts/payment-methods-test.yaml');
     expect(result).toEqual(['method-1']);
   });
   test('no one payment methods is created', async () => {
-    mockAdobeCommerceClient({ success: false }, { success: false });
+    mockAdobeCommerceClient(error({ success: false }), error({ success: false }));
     const result = await main('test/scripts/payment-methods-test.yaml');
     expect(result).toEqual([]);
   });
@@ -42,4 +42,18 @@ function mockAdobeCommerceClient(response1, response2) {
   getAdobeCommerceClient.mockResolvedValue({
     createOopePaymentMethod: vi.fn().mockResolvedValueOnce(response1).mockResolvedValueOnce(response2),
   });
+}
+
+function ok(json = {}) {
+  return {
+    ok: true,
+    json: () => json,
+  };
+}
+
+function error(json = {}) {
+  return {
+    ok: false,
+    json: () => json,
+  };
 }

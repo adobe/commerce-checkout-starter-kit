@@ -34,7 +34,9 @@ export async function main(configFilePath) {
       console.info(`Shipping carrier ${shippingCarrierCode} created`);
       createShippingMethods.push(shippingCarrierCode);
     } else {
-      console.error(`Failed to create shipping carrier ${shippingCarrierCode}: ${await response.text()}`);
+      console.error(
+        `Failed to create shipping carrier ${shippingCarrierCode}: ${JSON.stringify(await response.json())}`
+      );
     }
   }
   return createShippingMethods;

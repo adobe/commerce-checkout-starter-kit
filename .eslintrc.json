@@ -29,16 +29,15 @@
     "node/no-unpublished-import": [
       "error",
       {
-        "allowModules": ["dotenv", "wait-for-expect", "nock", "vitest"]
+        "allowModules": ["dotenv", "wait-for-expect", "vitest"]
       }
     ],
     "node/no-missing-import": [
       "error",
       {
-        "allowModules": ["vitest"]
+        "allowModules": ["vitest", "@adobe/aio-commerce-sdk"]
       }
-    ],
-    "node/no-missing-require": ["error", { "allowModules": ["@adobe/aio-commerce-sdk"] }]
+    ]
   },
   "overrides": [
     {
