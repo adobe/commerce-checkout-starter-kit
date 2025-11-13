@@ -33,6 +33,7 @@ application:
               LOG_LEVEL: debug
               COMMERCE_PAYMENT_METHOD_CODES: $COMMERCE_PAYMENT_METHOD_CODES
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
+              #  https://github.com/adobe/aio-lib-telemetry/blob/main/docs/usage.md#setting-the-enable_telemetry-environment-variable
               ENABLE_TELEMETRY: true
             annotations:
               require-adobe-auth: false

@@ -25,7 +25,7 @@ import { checkoutMetrics } from '../checkout-metrics.js';
  * @see https://developer.adobe.com/commerce/extensibility/webhooks
  */
 async function shippingMethods(params) {
-  const { logger, currentSpan } = getInstrumentationHelpers();
+  const { logger } = getInstrumentationHelpers();
 
   try {
     logger.info('Starting shipping methods process');
