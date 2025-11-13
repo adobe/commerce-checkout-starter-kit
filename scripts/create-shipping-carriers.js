@@ -25,7 +25,8 @@ export async function main(configFilePath) {
   console.info('Creating shipping carriers...');
   const createShippingMethods = [];
 
-  const client = await getAdobeCommerceClient(process.env);
+  const envSnapshot = { ...process.env };
+  const client = await getAdobeCommerceClient(envSnapshot);
 
   for (const shippingCarrier of data.shipping_carriers) {
     const response = await client.createOopeShippingCarrier(shippingCarrier);

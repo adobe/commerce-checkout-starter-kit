@@ -44,7 +44,9 @@ async function main(workspaceFile) {
     return;
   }
 
-  const { imsOrgId, apiKey, accessToken } = await resolveCredentials(process.env);
+  const envSnapshot = { ...process.env };
+  const { imsOrgId, apiKey, accessToken } = await resolveCredentials(envSnapshot);
+  
   const eventsApi = await Events.init(imsOrgId, apiKey, accessToken);
   const provider = await eventsApi.getProvider(providerId);
   if (provider.provider_metadata !== 'dx_commerce_events') {
@@ -102,7 +104,8 @@ async function main(workspaceFile) {
  * @returns {Promise<{success: boolean, message: string, details: {subscriptions: Array<object>}}>} The result of the configuration.
  */
 async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
-  const commerceClient = await getAdobeCommerceClient(process.env);
+  const envSnapshot = { ...process.env };
+  const commerceClient = await getAdobeCommerceClient(envSnapshot);
   const res = await commerceClient.getEventProviders();
   if (!res.success) {
     return {
