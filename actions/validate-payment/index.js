@@ -26,22 +26,15 @@ import { checkoutMetrics } from '../checkout-metrics.js';
 async function validatePayment(params) {
   const { logger, currentSpan } = getInstrumentationHelpers();
 
-  // Track total requests
-  checkoutMetrics.validatePaymentTotalCounter.add(1);
-  currentSpan.addEvent('validate-payment.start', { value: 'processing payment validation' });
-
   try {
     logger.info('Starting payment validation process');
 
     const { success, error } = webhookVerify(params);
     if (!success) {
       logger.error(`Webhook verification failed: ${error}`);
-      checkoutMetrics.validatePaymentErrorCounter.add(1);
-      currentSpan.addEvent('validate-payment.verification.failed', { error });
+      checkoutMetrics.validatePaymentCounter.add(1, { status: 'error', error_type: 'verification_failed' });
       return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
     }
-
-    currentSpan.addEvent('validate-payment.verification.success');
 
     // in the case when "raw-http: true" the body needs to be decoded and converted to JSON
     const body = JSON.parse(atob(params.__ow_body));
@@ -56,8 +49,7 @@ async function validatePayment(params) {
       // The validation of this payment method is not implemented by this action, ideally the webhook subscription
       // has to be constrained to the payment method code implemented by this app so this should never happen.
       logger.debug(`Payment method ${paymentMethod} not handled by this app.`);
-      currentSpan.addEvent('validate-payment.method-not-supported', { method: paymentMethod });
-      checkoutMetrics.validatePaymentSuccessCounter.add(1);
+      checkoutMetrics.validatePaymentCounter.add(1, { status: 'success', result: 'not_supported' });
       return webhookSuccessResponse();
     }
 
@@ -65,26 +57,19 @@ async function validatePayment(params) {
       // payment_additional_information is set using the graphql mutation setPaymentMethodOnCart
       // see https://developer.adobe.com/commerce/webapi/graphql/schema/cart/mutations/set-payment-method/#paymentmethodinput-attributes
       logger.warn('payment_additional_information not found in the request', paymentMethod);
-      checkoutMetrics.validatePaymentErrorCounter.add(1);
-      currentSpan.addEvent('validate-payment.missing-info', { method: paymentMethod });
+      checkoutMetrics.validatePaymentCounter.add(1, { status: 'error', error_type: 'missing_info' });
       return webhookErrorResponse('payment_additional_information not found in the request');
     }
 
     // Check if the payment information is valid with the payment gateway, this is vendor specific
     logger.debug('Validated payment information successfully.', paymentMethod, paymentInfo);
-    currentSpan.addEvent('validate-payment.success', { method: paymentMethod });
 
-    // Track success
-    checkoutMetrics.validatePaymentSuccessCounter.add(1);
+    checkoutMetrics.validatePaymentCounter.add(1, { status: 'success' });
 
     return webhookSuccessResponse();
   } catch (error) {
     logger.error('Error in payment validation:', error);
-    checkoutMetrics.validatePaymentErrorCounter.add(1);
-    currentSpan.addEvent('validate-payment.error', {
-      errorMessage: error.message,
-      errorStack: error.stack,
-    });
+    checkoutMetrics.validatePaymentCounter.add(1, { status: 'error', error_type: 'exception' });
     return webhookErrorResponse(`Server error: ${error.message}`);
   }
 }

@@ -35,22 +35,15 @@ const TAX_RATES = Object.freeze({
 async function collectTaxes(params) {
   const { logger, currentSpan } = getInstrumentationHelpers();
 
-  // Track total requests
-  checkoutMetrics.collectTaxesTotalCounter.add(1);
-  currentSpan.addEvent('collect-taxes.start', { value: 'processing tax calculation' });
-
   try {
     logger.info('Starting tax collection process');
 
     const { success, error } = webhookVerify(params);
     if (!success) {
       logger.error(`Webhook verification failed: ${error}`);
-      checkoutMetrics.collectTaxesErrorCounter.add(1);
-      currentSpan.addEvent('collect-taxes.verification.failed', { error });
+      checkoutMetrics.collectTaxesCounter.add(1, { status: 'error', error_type: 'verification_failed' });
       return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
     }
-
-    currentSpan.addEvent('collect-taxes.verification.success');
 
     // in the case when "raw-http: true" the body needs to be decoded and converted to JSON
     const body = JSON.parse(atob(params.__ow_body));
@@ -66,12 +59,7 @@ async function collectTaxes(params) {
 
     logger.info('Tax calculation response : ', JSON.stringify(operations, null, 2));
 
-    currentSpan.addEvent('collect-taxes.calculation.complete', {
-      operationsCount: operations.length,
-    });
-
-    // Track success
-    checkoutMetrics.collectTaxesSuccessCounter.add(1);
+    checkoutMetrics.collectTaxesCounter.add(1, { status: 'success' });
 
     return {
       statusCode: HTTP_OK,
@@ -79,11 +67,7 @@ async function collectTaxes(params) {
     };
   } catch (error) {
     logger.error('Error in tax collection:', error);
-    checkoutMetrics.collectTaxesErrorCounter.add(1);
-    currentSpan.addEvent('collect-taxes.error', {
-      errorMessage: error.message,
-      errorStack: error.stack,
-    });
+    checkoutMetrics.collectTaxesCounter.add(1, { status: 'error', error_type: 'exception' });
     return webhookErrorResponse(`Server error: ${error.message}`);
   }
 }

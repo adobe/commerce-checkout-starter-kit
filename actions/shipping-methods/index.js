@@ -27,22 +27,15 @@ import { checkoutMetrics } from '../checkout-metrics.js';
 async function shippingMethods(params) {
   const { logger, currentSpan } = getInstrumentationHelpers();
 
-  // Track total requests
-  checkoutMetrics.shippingMethodsTotalCounter.add(1);
-  currentSpan.addEvent('shipping-methods.start', { value: 'processing shipping methods' });
-
   try {
     logger.info('Starting shipping methods process');
 
     const { success, error } = webhookVerify(params);
     if (!success) {
       logger.error(`Webhook verification failed: ${error}`);
-      checkoutMetrics.shippingMethodsErrorCounter.add(1);
-      currentSpan.addEvent('shipping-methods.verification.failed', { error });
+      checkoutMetrics.shippingMethodsCounter.add(1, { status: 'error', error_type: 'verification_failed' });
       return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
     }
-
-    currentSpan.addEvent('shipping-methods.verification.success');
 
     // in the case when "raw-http: true" the body needs to be decoded and converted to JSON
     const payload = JSON.parse(atob(params.__ow_body));
@@ -199,12 +192,8 @@ async function shippingMethods(params) {
     // });
 
     logger.info(`Generated ${operations.length} shipping method operations`);
-    currentSpan.addEvent('shipping-methods.complete', {
-      operationsCount: operations.length,
-    });
 
-    // Track success
-    checkoutMetrics.shippingMethodsSuccessCounter.add(1);
+    checkoutMetrics.shippingMethodsCounter.add(1, { status: 'success' });
 
     return {
       statusCode: HTTP_OK,
@@ -212,11 +201,7 @@ async function shippingMethods(params) {
     };
   } catch (error) {
     logger.error('Error in shipping methods:', error);
-    checkoutMetrics.shippingMethodsErrorCounter.add(1);
-    currentSpan.addEvent('shipping-methods.error', {
-      errorMessage: error.message,
-      errorStack: error.stack,
-    });
+    checkoutMetrics.shippingMethodsCounter.add(1, { status: 'error', error_type: 'exception' });
     return webhookErrorResponse(`Server error: ${error.message}`);
   }
 }

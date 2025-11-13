@@ -28,22 +28,15 @@ import { checkoutMetrics } from '../checkout-metrics.js';
 async function filterPayment(params) {
   const { logger, currentSpan } = getInstrumentationHelpers();
 
-  // Track total requests
-  checkoutMetrics.filterPaymentTotalCounter.add(1);
-  currentSpan.addEvent('filter-payment.start', { value: 'processing payment filter' });
-
   try {
     logger.info('Starting payment filter process');
 
     const { success, error } = webhookVerify(params);
     if (!success) {
       logger.error(`Webhook verification failed: ${error}`);
-      checkoutMetrics.filterPaymentErrorCounter.add(1);
-      currentSpan.addEvent('filter-payment.verification.failed', { error });
+      checkoutMetrics.filterPaymentCounter.add(1, { status: 'error', error_type: 'verification_failed' });
       return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
     }
-
-    currentSpan.addEvent('filter-payment.verification.success');
 
     // in the case when "raw-http: true" the body needs to be decoded and converted to JSON
     const body = JSON.parse(atob(params.__ow_body));
@@ -70,7 +63,6 @@ async function filterPayment(params) {
       Customer.group_id === '1'
     ) {
       operations.push(createPaymentRemovalOperation('cashondelivery'));
-      currentSpan.addEvent('filter-payment.customer-group-filter', { groupId: Customer.group_id });
     }
 
     // The payment method can be filtered out based on product custom attribute values.
@@ -84,17 +76,12 @@ async function filterPayment(params) {
 
       if (country.toLowerCase() === 'china') {
         operations.push(createPaymentRemovalOperation('banktransfer'));
-        currentSpan.addEvent('filter-payment.country-filter', { country });
       }
     });
 
     logger.info(`Filtered ${operations.length} payment methods`);
-    currentSpan.addEvent('filter-payment.complete', {
-      operationsCount: operations.length,
-    });
 
-    // Track success
-    checkoutMetrics.filterPaymentSuccessCounter.add(1);
+    checkoutMetrics.filterPaymentCounter.add(1, { status: 'success' });
 
     return {
       statusCode: HTTP_OK,
@@ -102,11 +89,7 @@ async function filterPayment(params) {
     };
   } catch (error) {
     logger.error('Error in payment filter:', error);
-    checkoutMetrics.filterPaymentErrorCounter.add(1);
-    currentSpan.addEvent('filter-payment.error', {
-      errorMessage: error.message,
-      errorStack: error.stack,
-    });
+    checkoutMetrics.filterPaymentCounter.add(1, { status: 'error', error_type: 'exception' });
     return webhookErrorResponse(`Server error: ${error.message}`);
   }
 }
