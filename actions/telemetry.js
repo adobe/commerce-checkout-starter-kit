@@ -19,7 +19,7 @@ governing permissions and limitations under the License.
  * - Usage Guide: https://github.com/adobe/aio-lib-telemetry/blob/main/docs/usage.md
  * - API Reference: https://github.com/adobe/aio-lib-telemetry/blob/main/docs/api-reference/README.md
  * - OpenTelemetry Concepts: https://github.com/adobe/aio-lib-telemetry/blob/main/docs/concepts/open-telemetry.md
- *
+ * - Export data: https://github.com/adobe/aio-lib-telemetry/tree/main/docs/use-cases)
  * @see https://github.com/adobe/aio-lib-telemetry
  */
 
@@ -40,7 +40,7 @@ const telemetryConfig = defineTelemetryConfig((params, isDev) => {
       serviceName: 'commerce-checkout-starter-kit',
       instrumentations: getPresetInstrumentations('simple'),
       resource: getAioRuntimeResource(),
-      ...localCollectorConfig(),
+      ...localCollectorConfig(), // replace by your preferred telemetry exporter configuration
     },
     diagnostics: {
       logLevel: isDev ? 'debug' : 'info',

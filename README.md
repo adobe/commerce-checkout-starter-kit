@@ -274,6 +274,47 @@ To configures the Commerce event provider for your Commerce instance:
 
 Once this step is done, [deploy the application](#deploy-your-application) to register the events to your App Builder application.
 
+## Observability with OpenTelemetry
+
+This starter kit includes built-in observability using [@adobe/aio-lib-telemetry](https://github.com/adobe/aio-lib-telemetry), which provides OpenTelemetry instrumentation for App Builder actions.
+
+### What's Included
+
+The following checkout actions are instrumented with telemetry:
+
+- **collect-taxes**: Tax calculation requests
+- **filter-payment**: Payment method filtering
+- **shipping-methods**: Shipping method calculations
+- **validate-payment**: Payment validation
+
+### Configuration
+
+Telemetry is controlled via the `ENABLE_TELEMETRY` environment variable in `app.config.yaml`. It's already enabled for all checkout actions by default:
+
+```yaml
+inputs:
+  ENABLE_TELEMETRY: true
+```
+
+### Disabling Telemetry
+
+To disable telemetry for specific actions or the entire application, set `ENABLE_TELEMETRY: false` in `app.config.yaml`:
+
+```yaml
+actions:
+  collect-taxes:
+    inputs:
+      ENABLE_TELEMETRY: false
+```
+
+The current elemetry configuration is centralized in `actions/telemetry.js` and serves just as a sample. For advance use cases such as exporting collected data or additional configuration customizations, please refer to official documentaion:
+
+- [Usage Guide](https://github.com/adobe/aio-lib-telemetry/blob/main/docs/usage.md)
+- [API Reference](https://github.com/adobe/aio-lib-telemetry/blob/main/docs/api-reference/README.md)
+- [OpenTelemetry Concepts](https://github.com/adobe/aio-lib-telemetry/blob/main/docs/concepts/open-telemetry.md)
+- [Export data](https://github.com/adobe/aio-lib-telemetry/tree/main/docs/use-cases)
+
+
 ## Deploy Your Application
 
 Once all configuration steps are complete, deploy the application:
