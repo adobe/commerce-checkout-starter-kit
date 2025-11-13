@@ -57,7 +57,7 @@
     "sync-oauth-credentials": "node scripts/sync-oauth-credentials.js"
   },
   "engines": {
-    "node": "24.0.0"
+    "node": ">=22.0.0"
   },
   "overrides": {
     "dockerode": "4.0.9"
