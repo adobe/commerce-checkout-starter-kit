@@ -33,6 +33,7 @@ application:
               LOG_LEVEL: debug
               COMMERCE_PAYMENT_METHOD_CODES: $COMMERCE_PAYMENT_METHOD_CODES
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
+              ENABLE_TELEMETRY: true
             annotations:
               require-adobe-auth: false
               raw-http: true
@@ -44,6 +45,7 @@ application:
             inputs:
               LOG_LEVEL: debug
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
+              ENABLE_TELEMETRY: true
             annotations:
               require-adobe-auth: false
               raw-http: true
@@ -56,6 +58,7 @@ application:
             inputs:
               LOG_LEVEL: debug
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
+              ENABLE_TELEMETRY: true
             annotations:
               require-adobe-auth: false
               raw-http: true
@@ -68,6 +71,7 @@ application:
             inputs:
               LOG_LEVEL: debug
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
+              ENABLE_TELEMETRY: true
             annotations:
               require-adobe-auth: false
               raw-http: true

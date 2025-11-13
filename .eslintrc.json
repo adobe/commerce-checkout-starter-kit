@@ -20,6 +20,7 @@
   },
   "ignorePatterns": ["node_modules/", "dist/"],
   "rules": {
+    "jest/no-deprecated-functions": "off",
     "node/no-unpublished-require": [
       "error",
       {
@@ -40,6 +41,12 @@
     ]
   },
   "overrides": [
+    {
+      "files": ["actions/telemetry.js", "actions/checkout-metrics.js"],
+      "rules": {
+        "node/no-missing-import": "off"
+      }
+    },
     {
       "files": ["commerce-backend-ui-1/web-src/**/*.js", "commerce-backend-ui-1/web-src/**/*.jsx"],
       "parser": "@babel/eslint-parser",

@@ -10,9 +10,11 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { Core } from '@adobe/aio-sdk';
 import { webhookErrorResponse, webhookVerify } from '../../lib/adobe-commerce.js';
 import { HTTP_OK } from '../../lib/http.js';
+import { telemetryConfig, isWebhookSuccessful } from '../telemetry.js';
+import { instrumentEntrypoint, getInstrumentationHelpers } from '@adobe/aio-lib-telemetry';
+import { checkoutMetrics } from '../checkout-metrics.js';
 
 /**
  * This action returns the list of out-of-process shipping methods for the given request.
@@ -22,13 +24,25 @@ import { HTTP_OK } from '../../lib/http.js';
  * @returns {Promise<{statusCode: number, body: {op: string}}>} the response object
  * @see https://developer.adobe.com/commerce/extensibility/webhooks
  */
-export async function main(params) {
-  const logger = Core.Logger('shipping-methods', { level: params.LOG_LEVEL || 'info' });
+async function shippingMethods(params) {
+  const { logger, currentSpan } = getInstrumentationHelpers();
+
+  // Track total requests
+  checkoutMetrics.shippingMethodsTotalCounter.add(1);
+  currentSpan.addEvent('shipping-methods.start', { value: 'processing shipping methods' });
+
   try {
+    logger.info('Starting shipping methods process');
+
     const { success, error } = webhookVerify(params);
     if (!success) {
+      logger.error(`Webhook verification failed: ${error}`);
+      checkoutMetrics.shippingMethodsErrorCounter.add(1);
+      currentSpan.addEvent('shipping-methods.verification.failed', { error });
       return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
     }
+
+    currentSpan.addEvent('shipping-methods.verification.success');
 
     // in the case when "raw-http: true" the body needs to be decoded and converted to JSON
     const payload = JSON.parse(atob(params.__ow_body));
@@ -40,6 +54,8 @@ export async function main(params) {
     const { dest_country_id: destCountryId = 'US', dest_postcode: destPostcode = '12345' } = request;
 
     logger.info('Received request: ', request);
+    currentSpan.setAttribute('destination.country', destCountryId);
+    currentSpan.setAttribute('destination.postcode', destPostcode);
 
     const operations = [];
 
@@ -82,6 +98,7 @@ export async function main(params) {
           },
         })
       );
+      currentSpan.addEvent('shipping-methods.postcode-filter', { postcode: destPostcode });
     }
 
     // Based on the country we can add another shipping method
@@ -99,6 +116,7 @@ export async function main(params) {
           },
         })
       );
+      currentSpan.addEvent('shipping-methods.country-filter', { country: destCountryId });
     }
 
     // The shipping method can be added based on product custom attribute values.
@@ -106,6 +124,8 @@ export async function main(params) {
     // The additional data based on attributes or another logic can be added to the shipping method as
     // part of the additional_data key-value array
     const { all_items: cartItems = [] } = request;
+
+    currentSpan.setAttribute('cart.items.count', cartItems.length);
 
     cartItems.forEach((cartItem) => {
       const { country_origin: country = '' } = cartItem?.product?.attributes ?? {};
@@ -132,6 +152,7 @@ export async function main(params) {
             ],
           },
         });
+        currentSpan.addEvent('shipping-methods.origin-filter', { origin: country });
       }
     });
 
@@ -162,6 +183,7 @@ export async function main(params) {
           ],
         },
       });
+      currentSpan.addEvent('shipping-methods.customer-group-filter', { groupId: Customer.group_id });
     }
 
     // You can remove the shipping method based on some conditions.
@@ -176,12 +198,25 @@ export async function main(params) {
     //   },
     // });
 
+    logger.info(`Generated ${operations.length} shipping method operations`);
+    currentSpan.addEvent('shipping-methods.complete', {
+      operationsCount: operations.length,
+    });
+
+    // Track success
+    checkoutMetrics.shippingMethodsSuccessCounter.add(1);
+
     return {
       statusCode: HTTP_OK,
       body: JSON.stringify(operations),
     };
   } catch (error) {
-    logger.error(error);
+    logger.error('Error in shipping methods:', error);
+    checkoutMetrics.shippingMethodsErrorCounter.add(1);
+    currentSpan.addEvent('shipping-methods.error', {
+      errorMessage: error.message,
+      errorStack: error.stack,
+    });
     return webhookErrorResponse(`Server error: ${error.message}`);
   }
 }
@@ -199,3 +234,9 @@ function createShippingOperation(carrierData) {
     value: carrierData,
   };
 }
+
+// Export the instrumented function as main
+export const main = instrumentEntrypoint(shippingMethods, {
+  ...telemetryConfig,
+  isSuccessful: isWebhookSuccessful,
+});

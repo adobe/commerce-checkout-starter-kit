@@ -10,9 +10,11 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { Core } from '@adobe/aio-sdk';
 import { webhookErrorResponse, webhookVerify } from '../../lib/adobe-commerce.js';
 import { HTTP_OK } from '../../lib/http.js';
+import { telemetryConfig, isWebhookSuccessful } from '../telemetry.js';
+import { instrumentEntrypoint, getInstrumentationHelpers } from '@adobe/aio-lib-telemetry';
+import { checkoutMetrics } from '../checkout-metrics.js';
 
 /**
  * This action returns the list of out-of-process payment method codes
@@ -23,13 +25,25 @@ import { HTTP_OK } from '../../lib/http.js';
  * @returns {Promise<{statusCode: number, body: {op: string}}>} the response object
  * @see https://developer.adobe.com/commerce/extensibility/webhooks
  */
-export async function main(params) {
-  const logger = Core.Logger('filter-payment', { level: params.LOG_LEVEL || 'info' });
+async function filterPayment(params) {
+  const { logger, currentSpan } = getInstrumentationHelpers();
+
+  // Track total requests
+  checkoutMetrics.filterPaymentTotalCounter.add(1);
+  currentSpan.addEvent('filter-payment.start', { value: 'processing payment filter' });
+
   try {
+    logger.info('Starting payment filter process');
+
     const { success, error } = webhookVerify(params);
     if (!success) {
+      logger.error(`Webhook verification failed: ${error}`);
+      checkoutMetrics.filterPaymentErrorCounter.add(1);
+      currentSpan.addEvent('filter-payment.verification.failed', { error });
       return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
     }
+
+    currentSpan.addEvent('filter-payment.verification.success');
 
     // in the case when "raw-http: true" the body needs to be decoded and converted to JSON
     const body = JSON.parse(atob(params.__ow_body));
@@ -56,26 +70,43 @@ export async function main(params) {
       Customer.group_id === '1'
     ) {
       operations.push(createPaymentRemovalOperation('cashondelivery'));
+      currentSpan.addEvent('filter-payment.customer-group-filter', { groupId: Customer.group_id });
     }
 
     // The payment method can be filtered out based on product custom attribute values.
     // In the next example, payment method can is filtered out if any of `country_origin` attributes is equal to China
     const { items: cartItems = [] } = payload.cart;
 
+    currentSpan.setAttribute('cart.items.count', cartItems.length);
+
     cartItems.forEach((cartItem) => {
       const { country_origin: country = '' } = cartItem?.product?.attributes ?? {};
 
       if (country.toLowerCase() === 'china') {
         operations.push(createPaymentRemovalOperation('banktransfer'));
+        currentSpan.addEvent('filter-payment.country-filter', { country });
       }
     });
+
+    logger.info(`Filtered ${operations.length} payment methods`);
+    currentSpan.addEvent('filter-payment.complete', {
+      operationsCount: operations.length,
+    });
+
+    // Track success
+    checkoutMetrics.filterPaymentSuccessCounter.add(1);
 
     return {
       statusCode: HTTP_OK,
       body: JSON.stringify(operations),
     };
   } catch (error) {
-    logger.error(error);
+    logger.error('Error in payment filter:', error);
+    checkoutMetrics.filterPaymentErrorCounter.add(1);
+    currentSpan.addEvent('filter-payment.error', {
+      errorMessage: error.message,
+      errorStack: error.stack,
+    });
     return webhookErrorResponse(`Server error: ${error.message}`);
   }
 }
@@ -95,3 +126,9 @@ function createPaymentRemovalOperation(paymentCode) {
     },
   };
 }
+
+// Export the instrumented function as main
+export const main = instrumentEntrypoint(filterPayment, {
+  ...telemetryConfig,
+  isSuccessful: isWebhookSuccessful,
+});

@@ -10,9 +10,11 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { Core } from '@adobe/aio-sdk';
 import { HTTP_OK } from '../../lib/http.js';
 import { webhookErrorResponse, webhookVerify } from '../../lib/adobe-commerce.js';
+import { telemetryConfig, isWebhookSuccessful } from '../telemetry.js';
+import { instrumentEntrypoint, getInstrumentationHelpers } from '@adobe/aio-lib-telemetry';
+import { checkoutMetrics } from '../checkout-metrics.js';
 
 const TAX_RATES = Object.freeze({
   EXCLUDING_TAX: [
@@ -30,18 +32,31 @@ const TAX_RATES = Object.freeze({
  * @returns {Promise<{statusCode: number, body: {op: string}}>} the response object
  * @see https://developer.adobe.com/commerce/extensibility/webhooks
  */
-export async function main(params) {
-  const logger = Core.Logger('collect-taxes', { level: params.LOG_LEVEL || 'info' });
+async function collectTaxes(params) {
+  const { logger, currentSpan } = getInstrumentationHelpers();
+
+  // Track total requests
+  checkoutMetrics.collectTaxesTotalCounter.add(1);
+  currentSpan.addEvent('collect-taxes.start', { value: 'processing tax calculation' });
 
   try {
+    logger.info('Starting tax collection process');
+
     const { success, error } = webhookVerify(params);
     if (!success) {
+      logger.error(`Webhook verification failed: ${error}`);
+      checkoutMetrics.collectTaxesErrorCounter.add(1);
+      currentSpan.addEvent('collect-taxes.verification.failed', { error });
       return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
     }
+
+    currentSpan.addEvent('collect-taxes.verification.success');
 
     // in the case when "raw-http: true" the body needs to be decoded and converted to JSON
     const body = JSON.parse(atob(params.__ow_body));
     logger.debug('Received request: ', body);
+
+    currentSpan.setAttribute('quote.items.count', body.oopQuote?.items?.length || 0);
 
     const operations = [];
 
@@ -51,16 +66,27 @@ export async function main(params) {
 
     logger.info('Tax calculation response : ', JSON.stringify(operations, null, 2));
 
+    currentSpan.addEvent('collect-taxes.calculation.complete', {
+      operationsCount: operations.length,
+    });
+
+    // Track success
+    checkoutMetrics.collectTaxesSuccessCounter.add(1);
+
     return {
       statusCode: HTTP_OK,
       body: JSON.stringify(operations),
     };
   } catch (error) {
-    logger.error(error);
+    logger.error('Error in tax collection:', error);
+    checkoutMetrics.collectTaxesErrorCounter.add(1);
+    currentSpan.addEvent('collect-taxes.error', {
+      errorMessage: error.message,
+      errorStack: error.stack,
+    });
     return webhookErrorResponse(`Server error: ${error.message}`);
   }
 }
-
 /**
  * Calculates the tax operations for the given item.
  * @param {object} item the item to calculate the tax operations for
@@ -167,3 +193,9 @@ function createTaxSummaryOperation(index, itemTaxRate, itemTaxAmount, discountCo
     instance: 'Magento\\OutOfProcessTaxManagement\\Api\\Data\\OopQuoteItemTaxInterface',
   };
 }
+
+// Export the instrumented function as main
+export const main = instrumentEntrypoint(collectTaxes, {
+  ...telemetryConfig,
+  isSuccessful: isWebhookSuccessful,
+});
