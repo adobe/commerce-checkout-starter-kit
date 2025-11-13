@@ -11,14 +11,14 @@ application:
           info:
             function: actions/commerce-checkout-starter-kit-info/index.js
             web: 'yes'
-            runtime: nodejs:24
+            runtime: nodejs:22
             annotations:
               require-adobe-auth: true
               final: true
           generic:
             function: actions/generic/index.js
             web: 'yes'
-            runtime: nodejs:24
+            runtime: nodejs:22
             inputs:
               LOG_LEVEL: debug
             annotations:
@@ -28,7 +28,7 @@ application:
           validate-payment:
             function: actions/validate-payment/index.js
             web: 'yes'
-            runtime: nodejs:24
+            runtime: nodejs:22
             inputs:
               LOG_LEVEL: debug
               COMMERCE_PAYMENT_METHOD_CODES: $COMMERCE_PAYMENT_METHOD_CODES
@@ -40,7 +40,7 @@ application:
           filter-payment:
             function: actions/filter-payment/index.js
             web: 'yes'
-            runtime: nodejs:24
+            runtime: nodejs:22
             inputs:
               LOG_LEVEL: debug
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
@@ -52,7 +52,7 @@ application:
           shipping-methods:
             function: actions/shipping-methods/index.js
             web: 'yes'
-            runtime: nodejs:24
+            runtime: nodejs:22
             inputs:
               LOG_LEVEL: debug
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
@@ -64,7 +64,7 @@ application:
           collect-taxes:
             function: actions/collect-taxes/index.js
             web: 'yes'
-            runtime: nodejs:24
+            runtime: nodejs:22
             inputs:
               LOG_LEVEL: debug
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
@@ -76,7 +76,7 @@ application:
           consume:
             function: actions/commerce-events/consume.js
             web: 'no'
-            runtime: nodejs:24
+            runtime: nodejs:22
             inputs:
               LOG_LEVEL: debug
             annotations:
@@ -88,7 +88,7 @@ application:
           publish:
             function: actions/3rd-party-events/publish.js
             web: 'yes'
-            runtime: nodejs:24
+            runtime: nodejs:22
             inputs:
               LOG_LEVEL: debug
               # IMS credentials
@@ -111,7 +111,7 @@ application:
           consume:
             function: actions/3rd-party-events/consume.js
             web: 'no'
-            runtime: nodejs:24
+            runtime: nodejs:22
             inputs:
               LOG_LEVEL: debug
             annotations:
