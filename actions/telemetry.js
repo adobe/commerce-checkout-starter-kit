@@ -11,23 +11,45 @@ governing permissions and limitations under the License.
 */
 
 import { defineTelemetryConfig, getAioRuntimeResource, getPresetInstrumentations } from '@adobe/aio-lib-telemetry';
-import { commerceEvents } from '@adobe/aio-lib-telemetry/integrations';
 import { HTTP_OK } from '../lib/http.js';
+import {
+  OTLPTraceExporterProto,
+  OTLPLogExporterProto,
+  OTLPMetricExporterProto,
+  PeriodicExportingMetricReader,
+  SimpleLogRecordProcessor,
+} from '@adobe/aio-lib-telemetry/otel';
 
 /** The telemetry configuration to be used across all checkout actions */
 const telemetryConfig = defineTelemetryConfig((params, isDev) => {
   return {
-    integrations: [commerceEvents()],
     sdkConfig: {
       serviceName: 'commerce-checkout-starter-kit',
       instrumentations: getPresetInstrumentations('simple'),
       resource: getAioRuntimeResource(),
+      ...localCollectorConfig(),
     },
     diagnostics: {
       logLevel: isDev ? 'debug' : 'info',
     },
   };
 });
+
+/**
+ * returns the configuration to send telemetry data to a local Open Telemetry Collector
+ * @returns {object} the telemetry configuration object
+ */
+function localCollectorConfig() {
+  return {
+    // Not specifying any export URL will default to find an Open Telemetry Collector instance in localhost.
+    traceExporter: new OTLPTraceExporterProto(),
+    metricReader: new PeriodicExportingMetricReader({
+      exporter: new OTLPMetricExporterProto(),
+    }),
+
+    logRecordProcessors: [new SimpleLogRecordProcessor(new OTLPLogExporterProto())],
+  };
+}
 
 /**
  * Helper function to determine if a webhook response is successful.
