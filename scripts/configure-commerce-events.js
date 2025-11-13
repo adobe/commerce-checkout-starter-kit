@@ -46,7 +46,7 @@ async function main(workspaceFile) {
 
   const envSnapshot = { ...process.env };
   const { imsOrgId, apiKey, accessToken } = await resolveCredentials(envSnapshot);
-  
+
   const eventsApi = await Events.init(imsOrgId, apiKey, accessToken);
   const provider = await eventsApi.getProvider(providerId);
   if (provider.provider_metadata !== 'dx_commerce_events') {
