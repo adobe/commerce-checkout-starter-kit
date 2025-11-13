@@ -314,7 +314,6 @@ The current elemetry configuration is centralized in `actions/telemetry.js` and 
 - [OpenTelemetry Concepts](https://github.com/adobe/aio-lib-telemetry/blob/main/docs/concepts/open-telemetry.md)
 - [Export data](https://github.com/adobe/aio-lib-telemetry/tree/main/docs/use-cases)
 
-
 ## Deploy Your Application
 
 Once all configuration steps are complete, deploy the application:

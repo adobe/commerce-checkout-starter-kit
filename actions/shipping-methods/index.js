@@ -47,8 +47,6 @@ async function shippingMethods(params) {
     const { dest_country_id: destCountryId = 'US', dest_postcode: destPostcode = '12345' } = request;
 
     logger.info('Received request: ', request);
-    currentSpan.setAttribute('destination.country', destCountryId);
-    currentSpan.setAttribute('destination.postcode', destPostcode);
 
     const operations = [];
 
@@ -91,7 +89,6 @@ async function shippingMethods(params) {
           },
         })
       );
-      currentSpan.addEvent('shipping-methods.postcode-filter', { postcode: destPostcode });
     }
 
     // Based on the country we can add another shipping method
@@ -109,7 +106,6 @@ async function shippingMethods(params) {
           },
         })
       );
-      currentSpan.addEvent('shipping-methods.country-filter', { country: destCountryId });
     }
 
     // The shipping method can be added based on product custom attribute values.
@@ -117,8 +113,6 @@ async function shippingMethods(params) {
     // The additional data based on attributes or another logic can be added to the shipping method as
     // part of the additional_data key-value array
     const { all_items: cartItems = [] } = request;
-
-    currentSpan.setAttribute('cart.items.count', cartItems.length);
 
     cartItems.forEach((cartItem) => {
       const { country_origin: country = '' } = cartItem?.product?.attributes ?? {};
@@ -145,7 +139,6 @@ async function shippingMethods(params) {
             ],
           },
         });
-        currentSpan.addEvent('shipping-methods.origin-filter', { origin: country });
       }
     });
 
@@ -176,7 +169,6 @@ async function shippingMethods(params) {
           ],
         },
       });
-      currentSpan.addEvent('shipping-methods.customer-group-filter', { groupId: Customer.group_id });
     }
 
     // You can remove the shipping method based on some conditions.
