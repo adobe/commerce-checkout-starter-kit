@@ -30,11 +30,13 @@ export async function main(configFilePath) {
   for (const shippingCarrier of data.shipping_carriers) {
     const response = await client.createOopeShippingCarrier(shippingCarrier);
     const shippingCarrierCode = shippingCarrier.carrier.code;
-    if (response.success) {
+    if (response.ok) {
       console.info(`Shipping carrier ${shippingCarrierCode} created`);
       createShippingMethods.push(shippingCarrierCode);
     } else {
-      console.error(`Failed to create shipping carrier ${shippingCarrierCode}: ` + response.message);
+      console.error(
+        `Failed to create shipping carrier ${shippingCarrierCode}: ${JSON.stringify(await response.json())}`
+      );
     }
   }
   return createShippingMethods;

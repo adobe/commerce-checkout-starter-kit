@@ -22,17 +22,17 @@ describe('create-shipping-carriers', () => {
   });
 
   test('shipping carriers created', async () => {
-    mockAdobeCommerceClient({ success: true }, { success: true });
+    mockAdobeCommerceClient(ok({ success: true }), ok({ success: true }));
     const result = await main('test/scripts/shipping-carriers-test.yaml');
     expect(result).toEqual(['carrier-1', 'carrier-2']);
   });
   test('only one shipping carrier is created', async () => {
-    mockAdobeCommerceClient({ success: true }, { success: false });
+    mockAdobeCommerceClient(ok({ success: true }), error({ success: false }));
     const result = await main('test/scripts/shipping-carriers-test.yaml');
     expect(result).toEqual(['carrier-1']);
   });
   test('no shipping carrier is created', async () => {
-    mockAdobeCommerceClient({ success: false }, { success: false });
+    mockAdobeCommerceClient(error({ success: false }), error({ success: false }));
     const result = await main('test/scripts/shipping-carriers-test.yaml');
     expect(result).toEqual([]);
   });
@@ -49,4 +49,18 @@ function mockAdobeCommerceClient(response1, response2) {
   getAdobeCommerceClient.mockResolvedValue({
     createOopeShippingCarrier: vi.fn().mockResolvedValueOnce(response1).mockResolvedValueOnce(response2),
   });
+}
+
+function ok(json = {}) {
+  return {
+    ok: true,
+    json: () => json,
+  };
+}
+
+function error(json = {}) {
+  return {
+    ok: false,
+    json: () => json,
+  };
 }

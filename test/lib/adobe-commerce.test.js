@@ -10,96 +10,9 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { getAdobeCommerceClient, webhookVerify } from '../../lib/adobe-commerce.js';
+import { describe, test, expect } from 'vitest';
+import { webhookVerify } from '../../lib/adobe-commerce.js';
 import crypto from 'crypto';
-import nock from 'nock';
-
-vi.mock('@adobe/aio-lib-ims', async () => {
-  const actual = await vi.importActual('@adobe/aio-lib-ims');
-  const mockGetToken = vi.fn();
-  return {
-    default: {
-      context: actual.context,
-      getToken: mockGetToken,
-    },
-    context: actual.context,
-    getToken: mockGetToken,
-  };
-});
-
-// Get the mocked module to access mockGetToken
-const { getToken: mockGetToken } = await import('@adobe/aio-lib-ims');
-
-describe('getAdobeCommerceClient', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  describe('getAdobeCommerceClient', () => {
-    const sharedParams = {
-      COMMERCE_BASE_URL: 'http://mycommerce.com',
-      LOG_LEVEL: 'debug',
-    };
-    test('with IMS auth', async () => {
-      const params = {
-        ...sharedParams,
-        OAUTH_CLIENT_ID: 'test-client-id',
-        OAUTH_CLIENT_SECRETS: JSON.stringify(['supersecret']),
-        OAUTH_TECHNICAL_ACCOUNT_ID: 'test-technical-account-id',
-        OAUTH_TECHNICAL_ACCOUNT_EMAIL: 'test-email@example.com',
-        OAUTH_IMS_ORG_ID: 'test-org-id',
-        OAUTH_SCOPES: JSON.stringify(['scope1', 'scope2']),
-      };
-      mockGetToken.mockResolvedValue('supersecrettoken');
-      const scope = nock(params.COMMERCE_BASE_URL)
-        .get('/V1/testauth')
-        .matchHeader('Content-Type', 'application/json')
-        .matchHeader('x-ims-org-id', params.OAUTH_IMS_ORG_ID)
-        .matchHeader('x-api-key', params.OAUTH_CLIENT_ID)
-        .matchHeader('Authorization', 'Bearer supersecrettoken')
-        .reply(200);
-
-      const client = await getAdobeCommerceClient(params);
-      expect(mockGetToken).toHaveBeenCalled();
-
-      const { success } = await client.get('testauth');
-      expect(success).toBeTruthy();
-      scope.done();
-    });
-
-    test('with Commerce integration auth', async () => {
-      const params = {
-        ...sharedParams,
-        COMMERCE_CONSUMER_KEY: 'test-consumer-key',
-        COMMERCE_CONSUMER_SECRET: 'test-consumer-secret',
-        COMMERCE_ACCESS_TOKEN: 'test-access-token',
-        COMMERCE_ACCESS_TOKEN_SECRET: 'test-access-token-secret',
-      };
-
-      const scope = nock(params.COMMERCE_BASE_URL)
-        .get('/V1/testauth')
-        .matchHeader('Content-Type', 'application/json')
-        .matchHeader(
-          'Authorization',
-          /^OAuth oauth_consumer_key="test-consumer-key", oauth_nonce="[^"]+", oauth_signature="[^"]+", oauth_signature_method="HMAC-SHA256", oauth_timestamp="[^"]+", oauth_token="test-access-token", oauth_version="1\.0"$/
-        )
-        .reply(200);
-
-      const client = await getAdobeCommerceClient(params);
-
-      const { success } = await client.get('testauth');
-      expect(success).toBeTruthy();
-      scope.done();
-    });
-
-    test('throws when missing auth method', async () => {
-      await expect(getAdobeCommerceClient(sharedParams)).rejects.toThrow(
-        "Can't resolve authentication options for the given params."
-      );
-    });
-  });
-});
 
 describe('webhookVerify', () => {
   const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 512 });

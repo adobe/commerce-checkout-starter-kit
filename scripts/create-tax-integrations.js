@@ -33,7 +33,7 @@ export async function main(configFilePath) {
   for (const taxIntegration of data.tax_integrations) {
     const response = await client.createTaxIntegration(taxIntegration);
     const taxIntegrationCode = taxIntegration.tax_integration.code;
-    if (response.success) {
+    if (response.ok) {
       logger.info(`Tax integration ${taxIntegrationCode} created or updated`);
       createdTaxIntegrations.push(taxIntegrationCode);
     } else {
@@ -51,15 +51,15 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
 /**
  * Formats an error message by interpolating placeholder values from the response
- * @param {object} response - The response object returned from the API
+ * @param {Response} response - The response object returned from the API
  * @returns {string} A formatted error message string
  */
-function formatErrorMessage(response) {
-  let msg =
-    response.statusCode === 400 && response.body?.message ? response.body.message : response.message || 'Unknown error';
+async function formatErrorMessage(response) {
+  const body = await response.json();
+  let msg = response.statusCode === 400 && body?.message ? body.message : 'Unknown error';
 
-  if (response.body?.parameters) {
-    for (const [key, value] of Object.entries(response.body.parameters)) {
+  if (body?.parameters) {
+    for (const [key, value] of Object.entries(body.parameters)) {
       msg = msg.replaceAll(`%${key}%`, value);
     }
   }

@@ -28,6 +28,7 @@ beforeEach(() => {
   mockLoggerInstance.info.mockReset();
   mockLoggerInstance.debug.mockReset();
   mockLoggerInstance.error.mockReset();
+  fetch.mockReset();
 });
 
 const fakeParams = { __ow_headers: { authorization: 'Bearer fake' } };
