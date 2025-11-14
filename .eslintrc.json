@@ -20,7 +20,6 @@
   },
   "ignorePatterns": ["node_modules/", "dist/"],
   "rules": {
-    "jest/no-deprecated-functions": "off",
     "node/no-unpublished-require": [
       "error",
       {
