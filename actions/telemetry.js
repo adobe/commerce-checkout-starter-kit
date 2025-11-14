@@ -40,7 +40,7 @@ const telemetryConfig = defineTelemetryConfig((params, isDev) => {
       serviceName: 'commerce-checkout-starter-kit',
       instrumentations: getPresetInstrumentations('simple'),
       resource: getAioRuntimeResource(),
-      ...localCollectorConfig(), // replace by your preferred telemetry exporter configuration
+      //...localCollectorConfig(), // replace by your preferred telemetry exporter configuration
     },
     diagnostics: {
       logLevel: isDev ? 'debug' : 'info',
@@ -51,6 +51,7 @@ const telemetryConfig = defineTelemetryConfig((params, isDev) => {
 /**
  * returns the configuration to send telemetry data to a local Open Telemetry Collector
  * @returns {object} the telemetry configuration object
+ * Call in the sdkConfig as: ...localCollectorConfig() to export to local OTEL Collector
  */
 function localCollectorConfig() {
   return {
