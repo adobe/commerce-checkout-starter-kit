@@ -40,7 +40,7 @@ const telemetryConfig = defineTelemetryConfig((params, isDev) => {
       serviceName: 'commerce-checkout-starter-kit',
       instrumentations: getPresetInstrumentations('simple'),
       resource: getAioRuntimeResource(),
-      //...localCollectorConfig(), // replace by your preferred telemetry exporter configuration
+      // ...localCollectorConfig(), replace by your preferred telemetry exporter configuration
     },
     diagnostics: {
       logLevel: isDev ? 'debug' : 'info',
@@ -85,4 +85,4 @@ function isWebhookSuccessful(result) {
   return false;
 }
 
-export { telemetryConfig, isWebhookSuccessful };
+export { telemetryConfig, isWebhookSuccessful, localCollectorConfig };
