@@ -34,7 +34,8 @@
     "nock": "^14.0.5",
     "prettier": "^3.3.3",
     "vitest": "^4.0.7",
-    "wait-for-expect": "^3.0.2"
+    "wait-for-expect": "^3.0.2",
+    "tree-sitter": "0.22.4"
   },
   "scripts": {
     "test": "vitest run",
@@ -59,6 +60,7 @@
     "node": ">=22.0.0"
   },
   "overrides": {
-    "dockerode": "4.0.9"
+    "dockerode": "4.0.9",
+    "tree-sitter": "0.22.4"
   }
 }
