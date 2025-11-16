@@ -23,6 +23,10 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
+      - name: Upgrade npm
+        run: |
+          npm i -g npm@11.6.2
+          npm --version
       - run: npm ci
       - run: npm run code:check
       - run: npm test
