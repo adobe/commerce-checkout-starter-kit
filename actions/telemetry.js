@@ -35,7 +35,6 @@ import {
 
 /**
  * The telemetry configuration to be used across all checkout actions
- * To enable telemetry logs forwarding configure diagnostics accordingly
  */
 
 const telemetryConfig = defineTelemetryConfig((params, isDev) => {
