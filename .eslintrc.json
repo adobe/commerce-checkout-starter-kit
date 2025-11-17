@@ -16,9 +16,6 @@
   "settings": {
     "react": {
       "version": "detect"
-    },
-    "jest": {
-      "version": "29"
     }
   },
   "ignorePatterns": ["node_modules/", "dist/"],
