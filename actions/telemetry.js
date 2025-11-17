@@ -35,7 +35,7 @@ import {
 
 /**
  * The telemetry configuration to be used across all checkout actions
- * To disable telemetry logs forwarding and use App builder logs put -> diagnostics: false
+ * To enable telemetry logs forwarding configure diagnostics accordingly
  */
 
 const telemetryConfig = defineTelemetryConfig((params, isDev) => {
@@ -46,9 +46,7 @@ const telemetryConfig = defineTelemetryConfig((params, isDev) => {
       resource: getAioRuntimeResource(),
       // ...localCollectorConfig(), replace by your preferred telemetry exporter configuration
     },
-    diagnostics: {
-      logLevel: isDev ? 'debug' : 'info',
-    },
+    diagnostics: false // disable diagnostics by default
   };
 });
 
