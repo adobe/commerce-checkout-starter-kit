@@ -36,7 +36,7 @@ export async function main(params) {
   try {
     const { success, error } = webhookVerify(params);
     if (!success) {
-      return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
+      return webhookErrorResponse(`Failed to verify the  webhook signature: ${error}`);
     }
 
     // in the case when "raw-http: true" the body needs to be decoded and converted to JSON
