@@ -33,7 +33,11 @@ import {
   SimpleLogRecordProcessor,
 } from '@adobe/aio-lib-telemetry/otel';
 
-/** The telemetry configuration to be used across all checkout actions */
+/**
+ * The telemetry configuration to be used across all checkout actions
+ * To disable telemetry logs forwarding and use App builder logs put -> diagnostics: false
+ */
+
 const telemetryConfig = defineTelemetryConfig((params, isDev) => {
   return {
     sdkConfig: {
