@@ -14,7 +14,7 @@ governing permissions and limitations under the License.
 // Do not modify this file directly
 
 import { init } from '@adobe/aio-commerce-lib-config';
-import { internalServerError, ok } from '@adobe/aio-commerce-sdk/core/responses';
+import { internalServerError, ok } from '@adobe/aio-commerce-sdk/core/responses'
 
 /**
  * Get the configuration schema.
@@ -27,16 +27,16 @@ export async function main() {
 
     return ok({
       body: {
-        configSchema: configSchema,
-      },
+        configSchema: configSchema
+      }
     });
   } catch (error) {
     return internalServerError({
       body: {
-        code: 'INTERNAL_ERROR',
-        message: 'An internal server error occurred',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      },
+        code: "INTERNAL_ERROR",
+        message: "An internal server error occurred",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }
     });
   }
 }

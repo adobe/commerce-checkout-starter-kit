@@ -14,7 +14,10 @@ governing permissions and limitations under the License.
 // Do not modify this file directly
 
 import { init } from '@adobe/aio-commerce-lib-config';
-import { buildSuccessResponse, internalServerError } from '@adobe/aio-commerce-sdk/core/responses';
+import { 
+  buildSuccessResponse, 
+  internalServerError 
+} from '@adobe/aio-commerce-sdk/core/responses';
 
 /**
  * Get scope tree.
@@ -25,14 +28,17 @@ export async function main() {
     const config = init();
     const result = await config.getScopeTree();
 
-    return buildSuccessResponse(result.isCachedData ? 203 : 200, { body: { scopes: result.scopeTree } });
+    return buildSuccessResponse(
+      result.isCachedData ? 203 : 200,
+      { body: { scopes: result.scopeTree } }
+    );
   } catch (error) {
     return internalServerError({
       body: {
-        code: 'INTERNAL_ERROR',
-        message: 'An internal server error occurred',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      },
+        code: "INTERNAL_ERROR",
+        message: "An internal server error occurred",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }
     });
   }
 }

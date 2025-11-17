@@ -15,7 +15,9 @@ governing permissions and limitations under the License.
 
 import { init } from '@adobe/aio-commerce-lib-config';
 
-import { resolveCommerceHttpClientParams } from '@adobe/aio-commerce-sdk/api';
+import {
+  resolveCommerceHttpClientParams,
+} from '@adobe/aio-commerce-sdk/api';
 import { internalServerError, ok } from '@adobe/aio-commerce-sdk/core/responses';
 
 /**
@@ -27,7 +29,7 @@ export async function main(params) {
   try {
     const commerceConfig = resolveCommerceHttpClientParams(params);
     const config = init({
-      commerce: commerceConfig,
+      commerce: commerceConfig
     });
 
     const result = await config.syncCommerceScopes();
@@ -36,16 +38,16 @@ export async function main(params) {
       body: {
         scopes: result.scopeTree,
         synced: result.synced,
-        error: result.error,
-      },
+        error: result.error
+      }
     });
   } catch (error) {
     return internalServerError({
       body: {
-        code: 'INTERNAL_ERROR',
-        message: 'An internal server error occurred',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      },
+        code: "INTERNAL_ERROR",
+        message: "An internal server error occurred",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }
     });
   }
 }
