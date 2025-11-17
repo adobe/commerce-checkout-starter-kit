@@ -10,9 +10,11 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { Core } from '@adobe/aio-sdk';
 import { webhookErrorResponse, webhookVerify } from '../../lib/adobe-commerce.js';
 import { HTTP_OK } from '../../lib/http.js';
+import { telemetryConfig, isWebhookSuccessful } from '../telemetry.js';
+import { instrumentEntrypoint, getInstrumentationHelpers } from '@adobe/aio-lib-telemetry';
+import { checkoutMetrics } from '../checkout-metrics.js';
 
 /**
  * This action returns the list of out-of-process shipping methods for the given request.
@@ -22,11 +24,16 @@ import { HTTP_OK } from '../../lib/http.js';
  * @returns {Promise<{statusCode: number, body: {op: string}}>} the response object
  * @see https://developer.adobe.com/commerce/extensibility/webhooks
  */
-export async function main(params) {
-  const logger = Core.Logger('shipping-methods', { level: params.LOG_LEVEL || 'info' });
+async function shippingMethods(params) {
+  const { logger } = getInstrumentationHelpers();
+
   try {
+    logger.info('Starting shipping methods process');
+
     const { success, error } = webhookVerify(params);
     if (!success) {
+      logger.error(`Webhook verification failed: ${error}`);
+      checkoutMetrics.shippingMethodsCounter.add(1, { status: 'error', error_code: 'verification_failed' });
       return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
     }
 
@@ -176,12 +183,17 @@ export async function main(params) {
     //   },
     // });
 
+    logger.info(`Generated ${operations.length} shipping method operations`);
+
+    checkoutMetrics.shippingMethodsCounter.add(1, { status: 'success' });
+
     return {
       statusCode: HTTP_OK,
       body: JSON.stringify(operations),
     };
   } catch (error) {
-    logger.error(error);
+    logger.error('Error in shipping methods:', error);
+    checkoutMetrics.shippingMethodsCounter.add(1, { status: 'error', error_code: 'exception' });
     return webhookErrorResponse(`Server error: ${error.message}`);
   }
 }
@@ -199,3 +211,9 @@ function createShippingOperation(carrierData) {
     value: carrierData,
   };
 }
+
+// Export the instrumented function as main
+export const main = instrumentEntrypoint(shippingMethods, {
+  ...telemetryConfig,
+  isSuccessful: isWebhookSuccessful,
+});

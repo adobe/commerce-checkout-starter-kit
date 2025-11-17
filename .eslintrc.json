@@ -16,6 +16,9 @@
   "settings": {
     "react": {
       "version": "detect"
+    },
+    "jest": {
+      "version": "29"
     }
   },
   "ignorePatterns": ["node_modules/", "dist/"],
@@ -40,6 +43,12 @@
     ]
   },
   "overrides": [
+    {
+      "files": ["actions/telemetry.js", "actions/checkout-metrics.js"],
+      "rules": {
+        "node/no-missing-import": "off"
+      }
+    },
     {
       "files": ["commerce-backend-ui-1/web-src/**/*.js", "commerce-backend-ui-1/web-src/**/*.jsx"],
       "parser": "@babel/eslint-parser",

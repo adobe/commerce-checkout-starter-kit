@@ -10,9 +10,11 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { Core } from '@adobe/aio-sdk';
 import { webhookErrorResponse, webhookVerify } from '../../lib/adobe-commerce.js';
 import { HTTP_OK } from '../../lib/http.js';
+import { telemetryConfig, isWebhookSuccessful } from '../telemetry.js';
+import { instrumentEntrypoint, getInstrumentationHelpers } from '@adobe/aio-lib-telemetry';
+import { checkoutMetrics } from '../checkout-metrics.js';
 
 /**
  * This action returns the list of out-of-process payment method codes
@@ -23,11 +25,16 @@ import { HTTP_OK } from '../../lib/http.js';
  * @returns {Promise<{statusCode: number, body: {op: string}}>} the response object
  * @see https://developer.adobe.com/commerce/extensibility/webhooks
  */
-export async function main(params) {
-  const logger = Core.Logger('filter-payment', { level: params.LOG_LEVEL || 'info' });
+async function filterPayment(params) {
+  const { logger, currentSpan } = getInstrumentationHelpers();
+
   try {
+    logger.info('Starting payment filter process');
+
     const { success, error } = webhookVerify(params);
     if (!success) {
+      logger.error(`Webhook verification failed: ${error}`);
+      checkoutMetrics.filterPaymentCounter.add(1, { status: 'error', error_code: 'verification_failed' });
       return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
     }
 
@@ -62,6 +69,8 @@ export async function main(params) {
     // In the next example, payment method can is filtered out if any of `country_origin` attributes is equal to China
     const { items: cartItems = [] } = payload.cart;
 
+    currentSpan.setAttribute('cart.items.count', cartItems.length);
+
     cartItems.forEach((cartItem) => {
       const { country_origin: country = '' } = cartItem?.product?.attributes ?? {};
 
@@ -70,12 +79,17 @@ export async function main(params) {
       }
     });
 
+    logger.info(`Filtered ${operations.length} payment methods`);
+
+    checkoutMetrics.filterPaymentCounter.add(1, { status: 'success' });
+
     return {
       statusCode: HTTP_OK,
       body: JSON.stringify(operations),
     };
   } catch (error) {
-    logger.error(error);
+    logger.error('Error in payment filtering:', error);
+    checkoutMetrics.filterPaymentCounter.add(1, { status: 'error', error_code: 'exception' });
     return webhookErrorResponse(`Server error: ${error.message}`);
   }
 }
@@ -95,3 +109,9 @@ function createPaymentRemovalOperation(paymentCode) {
     },
   };
 }
+
+// Export the instrumented function as main
+export const main = instrumentEntrypoint(filterPayment, {
+  ...telemetryConfig,
+  isSuccessful: isWebhookSuccessful,
+});
