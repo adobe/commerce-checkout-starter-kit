@@ -14,11 +14,7 @@ governing permissions and limitations under the License.
 // Do not modify this file directly
 
 import { init } from '@adobe/aio-commerce-lib-config';
-import { 
-  badRequest, 
-  internalServerError, 
-  ok 
-} from '@adobe/aio-commerce-sdk/core/responses';
+import { badRequest, internalServerError, ok } from '@adobe/aio-commerce-sdk/core/responses';
 
 /**
  * Get the configuration.
@@ -34,25 +30,25 @@ export async function main(params) {
       body = {};
     }
 
-    const id = params.id
-    const code = params.code
+    const id = params.id;
+    const code = params.code;
     const level = params.level;
     if (!id && !(code && level)) {
-      return badRequest({ 
+      return badRequest({
         body: {
           code: 'INVALID_PARAMS',
-          message: 'Either id or both code and level query params are required'
-        } 
+          message: 'Either id or both code and level query params are required',
+        },
       });
     }
 
     const candidateConfig = params.config ?? body?.config;
     if (!candidateConfig || !Array.isArray(candidateConfig)) {
-      return badRequest({ 
+      return badRequest({
         body: {
           code: 'INVALID_BODY',
-          message: 'request must include a config array in params.config or body.config'
-        } 
+          message: 'request must include a config array in params.config or body.config',
+        },
       });
     }
 
@@ -60,22 +56,22 @@ export async function main(params) {
 
     const libAny = lib;
     const result = id
-        ? await libAny.setConfiguration(payload, id)
-        : await libAny.setConfiguration(payload, code, level);
+      ? await libAny.setConfiguration(payload, id)
+      : await libAny.setConfiguration(payload, code, level);
 
     return ok({
       body: { result },
       headers: {
-        'Cache-Control': 'no-store'
-      }
+        'Cache-Control': 'no-store',
+      },
     });
   } catch (error) {
     return internalServerError({
       body: {
-        code: "INTERNAL_ERROR",
-        message: "An internal server error occurred",
-        details: error instanceof Error ? error.message : 'Unknown error'
-      }
+        code: 'INTERNAL_ERROR',
+        message: 'An internal server error occurred',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
     });
   }
 }

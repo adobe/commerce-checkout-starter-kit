@@ -14,11 +14,7 @@ governing permissions and limitations under the License.
 // Do not modify this file directly
 
 import { init } from '@adobe/aio-commerce-lib-config';
-import { 
-  badRequest, 
-  internalServerError, 
-  ok 
-} from '@adobe/aio-commerce-sdk/core/responses';
+import { badRequest, internalServerError, ok } from '@adobe/aio-commerce-sdk/core/responses';
 
 /**
  * Get the configuration.
@@ -28,16 +24,16 @@ import {
 export async function main(params) {
   try {
     const config = init();
-    const id = params.id
-    const code = params.code
+    const id = params.id;
+    const code = params.code;
     const level = params.level;
 
     if (!id && !code) {
-      return badRequest({ 
-        body: { 
-          code: 'INVALID_PARAMS', 
-          message: 'Either id or code query param is required'
-        }
+      return badRequest({
+        body: {
+          code: 'INVALID_PARAMS',
+          message: 'Either id or code query param is required',
+        },
       });
     }
 
@@ -50,14 +46,14 @@ export async function main(params) {
       appConfiguration = await config.getConfiguration(code);
     }
 
-    return ok({ body: appConfiguration })
+    return ok({ body: appConfiguration });
   } catch (error) {
     return internalServerError({
       body: {
-        code: "INTERNAL_ERROR",
-        message: "An internal server error occurred",
-        details: error instanceof Error ? error.message : 'Unknown error'
-      }
+        code: 'INTERNAL_ERROR',
+        message: 'An internal server error occurred',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
     });
   }
 }

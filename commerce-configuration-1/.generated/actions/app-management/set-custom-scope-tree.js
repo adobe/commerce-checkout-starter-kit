@@ -14,11 +14,7 @@ governing permissions and limitations under the License.
 // Do not modify this file directly
 
 import { init } from '@adobe/aio-commerce-lib-config';
-import {
-  badRequest,
-  internalServerError,
-  ok
-} from '@adobe/aio-commerce-sdk/core/responses';
+import { badRequest, internalServerError, ok } from '@adobe/aio-commerce-sdk/core/responses';
 
 /**
  * Set custom scope tree - replace all custom scopes with provided ones
@@ -33,8 +29,8 @@ export async function main(params) {
         body: {
           code: 'INVALID_REQUEST',
           message: 'Request must include scopes parameter',
-          details: 'Expected: { scopes: [array of scope objects] }'
-        }
+          details: 'Expected: { scopes: [array of scope objects] }',
+        },
       });
     }
 
@@ -45,16 +41,16 @@ export async function main(params) {
     return ok({
       body: { result },
       headers: {
-        'Cache-Control': 'no-store'
-      }
+        'Cache-Control': 'no-store',
+      },
     });
   } catch (error) {
     return internalServerError({
       body: {
-        code: "INTERNAL_ERROR",
-        message: "An internal server error occurred while updating custom scope tree",
-        details: error instanceof Error ? error.message : 'Unknown error'
-      }
+        code: 'INTERNAL_ERROR',
+        message: 'An internal server error occurred while updating custom scope tree',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
     });
   }
 }
