@@ -32,7 +32,7 @@ async function validatePayment(params) {
     const { success, error } = webhookVerify(params);
     if (!success) {
       logger.error(`Webhook verification failed: ${error}`);
-      checkoutMetrics.validatePaymentCounter.add(1, { status: 'error', error_type: 'verification_failed' });
+      checkoutMetrics.validatePaymentCounter.add(1, { status: 'error', error_code: 'verification_failed' });
       return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
     }
 
@@ -57,7 +57,7 @@ async function validatePayment(params) {
       // payment_additional_information is set using the graphql mutation setPaymentMethodOnCart
       // see https://developer.adobe.com/commerce/webapi/graphql/schema/cart/mutations/set-payment-method/#paymentmethodinput-attributes
       logger.warn('payment_additional_information not found in the request', paymentMethod);
-      checkoutMetrics.validatePaymentCounter.add(1, { status: 'error', error_type: 'missing_info' });
+      checkoutMetrics.validatePaymentCounter.add(1, { status: 'error', error_code: 'missing_info' });
       return webhookErrorResponse('payment_additional_information not found in the request');
     }
 
@@ -69,7 +69,7 @@ async function validatePayment(params) {
     return webhookSuccessResponse();
   } catch (error) {
     logger.error('Error in payment validation:', error);
-    checkoutMetrics.validatePaymentCounter.add(1, { status: 'error', error_type: 'exception' });
+    checkoutMetrics.validatePaymentCounter.add(1, { status: 'error', error_code: 'exception' });
     return webhookErrorResponse(`Server error: ${error.message}`);
   }
 }

@@ -33,7 +33,7 @@ async function shippingMethods(params) {
     const { success, error } = webhookVerify(params);
     if (!success) {
       logger.error(`Webhook verification failed: ${error}`);
-      checkoutMetrics.shippingMethodsCounter.add(1, { status: 'error', error_type: 'verification_failed' });
+      checkoutMetrics.shippingMethodsCounter.add(1, { status: 'error', error_code: 'verification_failed' });
       return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
     }
 
@@ -193,7 +193,7 @@ async function shippingMethods(params) {
     };
   } catch (error) {
     logger.error('Error in shipping methods:', error);
-    checkoutMetrics.shippingMethodsCounter.add(1, { status: 'error', error_type: 'exception' });
+    checkoutMetrics.shippingMethodsCounter.add(1, { status: 'error', error_code: 'exception' });
     return webhookErrorResponse(`Server error: ${error.message}`);
   }
 }

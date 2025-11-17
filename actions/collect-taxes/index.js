@@ -41,7 +41,7 @@ async function collectTaxes(params) {
     const { success, error } = webhookVerify(params);
     if (!success) {
       logger.error(`Webhook verification failed: ${error}`);
-      checkoutMetrics.collectTaxesCounter.add(1, { status: 'error', error_type: 'verification_failed' });
+      checkoutMetrics.collectTaxesCounter.add(1, { status: 'error', error_code: 'verification_failed' });
       return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
     }
 
@@ -67,7 +67,7 @@ async function collectTaxes(params) {
     };
   } catch (error) {
     logger.error('Error in tax collection:', error);
-    checkoutMetrics.collectTaxesCounter.add(1, { status: 'error', error_type: 'exception' });
+    checkoutMetrics.collectTaxesCounter.add(1, { status: 'error', error_code: 'exception' });
     return webhookErrorResponse(`Server error: ${error.message}`);
   }
 }

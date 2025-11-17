@@ -34,7 +34,7 @@ async function filterPayment(params) {
     const { success, error } = webhookVerify(params);
     if (!success) {
       logger.error(`Webhook verification failed: ${error}`);
-      checkoutMetrics.filterPaymentCounter.add(1, { status: 'error', error_type: 'verification_failed' });
+      checkoutMetrics.filterPaymentCounter.add(1, { status: 'error', error_code: 'verification_failed' });
       return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
     }
 
@@ -88,8 +88,8 @@ async function filterPayment(params) {
       body: JSON.stringify(operations),
     };
   } catch (error) {
-    logger.error('Error in payment filter:', error);
-    checkoutMetrics.filterPaymentCounter.add(1, { status: 'error', error_type: 'exception' });
+    logger.error('Error in payment filtering:', error);
+    checkoutMetrics.filterPaymentCounter.add(1, { status: 'error', error_code: 'exception' });
     return webhookErrorResponse(`Server error: ${error.message}`);
   }
 }
