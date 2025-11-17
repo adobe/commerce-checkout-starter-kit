@@ -147,6 +147,8 @@ extensions:
 
   commerce/configuration/1:
     $include: commerce-configuration-1/ext.config.yaml
+    hooks: 
+      pre-app-build: npx @adobe/aio-commerce-lib-config generate schema
 
 productDependencies:
   - code: COMMC
