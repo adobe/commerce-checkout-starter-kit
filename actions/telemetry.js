@@ -23,27 +23,32 @@ governing permissions and limitations under the License.
  * @see https://github.com/adobe/aio-lib-telemetry
  */
 
-import { defineTelemetryConfig, getAioRuntimeResource, getPresetInstrumentations } from '@adobe/aio-lib-telemetry';
-import { HTTP_OK } from '../lib/http.js';
 import {
-  OTLPTraceExporterProto,
+  defineTelemetryConfig,
+  getAioRuntimeResource,
+  getPresetInstrumentations,
+} from "@adobe/aio-lib-telemetry";
+import {
   OTLPLogExporterProto,
   OTLPMetricExporterProto,
+  OTLPTraceExporterProto,
   PeriodicExportingMetricReader,
   SimpleLogRecordProcessor,
-} from '@adobe/aio-lib-telemetry/otel';
+} from "@adobe/aio-lib-telemetry/otel";
+
+import { HTTP_OK } from "../lib/http.js";
 
 /** The telemetry configuration to be used across all checkout actions */
-const telemetryConfig = defineTelemetryConfig((params, isDev) => {
+const telemetryConfig = defineTelemetryConfig((_params, isDev) => {
   return {
     sdkConfig: {
-      serviceName: 'commerce-checkout-starter-kit',
-      instrumentations: getPresetInstrumentations('simple'),
+      serviceName: "commerce-checkout-starter-kit",
+      instrumentations: getPresetInstrumentations("simple"),
       resource: getAioRuntimeResource(),
       // ...localCollectorConfig(), replace by your preferred telemetry exporter configuration
     },
     diagnostics: {
-      logLevel: isDev ? 'debug' : 'info',
+      logLevel: isDev ? "debug" : "info",
     },
   };
 });
@@ -61,7 +66,9 @@ function localCollectorConfig() {
       exporter: new OTLPMetricExporterProto(),
     }),
 
-    logRecordProcessors: [new SimpleLogRecordProcessor(new OTLPLogExporterProto())],
+    logRecordProcessors: [
+      new SimpleLogRecordProcessor(new OTLPLogExporterProto()),
+    ],
   };
 }
 
@@ -72,11 +79,11 @@ function localCollectorConfig() {
  * @returns {boolean} - True if the webhook response is successful, false otherwise.
  */
 function isWebhookSuccessful(result) {
-  if (result && typeof result === 'object') {
-    if ('statusCode' in result && result.statusCode === HTTP_OK) {
+  if (result && typeof result === "object") {
+    if ("statusCode" in result && result.statusCode === HTTP_OK) {
       // Check if body contains an error operation
-      if ('body' in result && typeof result.body === 'object') {
-        return result.body.op !== 'exception';
+      if ("body" in result && typeof result.body === "object") {
+        return result.body.op !== "exception";
       }
       return true;
     }

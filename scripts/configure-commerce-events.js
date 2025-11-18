@@ -10,18 +10,22 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import dotenv from 'dotenv';
-import { Core, Events } from '@adobe/aio-sdk';
-import yaml from 'js-yaml';
-import fs from 'fs';
-import * as keyValues from '../lib/key-values.js';
-import { getAdobeCommerceClient } from '../lib/adobe-commerce.js';
-import path from 'path';
-import { resolveCredentials } from '../lib/adobe-auth.js';
+import fs from "node:fs";
+import path from "node:path";
+
+import { Core, Events } from "@adobe/aio-sdk";
+import dotenv from "dotenv";
+import yaml from "js-yaml";
+
+import { resolveCredentials } from "../lib/adobe-auth.js";
+import { getAdobeCommerceClient } from "../lib/adobe-commerce.js";
+import * as keyValues from "../lib/key-values.js";
 
 dotenv.config();
 
-const logger = Core.Logger('configure-commerce-events', { level: process.env.LOG_LEVEL || 'info' });
+const logger = Core.Logger("configure-commerce-events", {
+  level: process.env.LOG_LEVEL || "info",
+});
 
 const eventProvidersPath = `${process.env.INIT_CWD}/events.config.yaml`;
 
@@ -32,40 +36,46 @@ const eventProvidersPath = `${process.env.INIT_CWD}/events.config.yaml`;
  */
 async function main(workspaceFile) {
   const { dx_commerce_events: providerId } = keyValues.decode(
-    process.env.AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING
+    process.env.AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING,
   );
   if (!providerId) {
     logger.warn(
-      'No commerce provider ID found in AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING.\n' +
-        'Please ensure the provider ID is correctly set by either:\n' +
+      "No commerce provider ID found in AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING.\n" +
+        "Please ensure the provider ID is correctly set by either:\n" +
         "- Running the 'configure-events' script, or\n" +
-        '- Updating the .env file with the existing provider ID.'
+        "- Updating the .env file with the existing provider ID.",
     );
     return;
   }
 
-  const { imsOrgId, apiKey, accessToken } = await resolveCredentials(process.env);
+  const { imsOrgId, apiKey, accessToken } = await resolveCredentials(
+    process.env,
+  );
   const eventsApi = await Events.init(imsOrgId, apiKey, accessToken);
   const provider = await eventsApi.getProvider(providerId);
-  if (provider.provider_metadata !== 'dx_commerce_events') {
-    throw new Error(`The provider ID ${providerId} is not a commerce event provider.`);
+  if (provider.provider_metadata !== "dx_commerce_events") {
+    throw new Error(
+      `The provider ID ${providerId} is not a commerce event provider.`,
+    );
   }
 
   if (!fs.existsSync(eventProvidersPath)) {
     logger.warn(
-      `Event providers spec file not found at ${eventProvidersPath}, commerce eventing reconciliation will be skipped`
+      `Event providers spec file not found at ${eventProvidersPath}, commerce eventing reconciliation will be skipped`,
     );
     return;
   }
 
-  const eventProvidersSpec = yaml.load(fs.readFileSync(eventProvidersPath, 'utf8'));
+  const eventProvidersSpec = yaml.load(
+    fs.readFileSync(eventProvidersPath, "utf8"),
+  );
   const commerceProviderSpec = eventProvidersSpec?.event_providers.find(
-    (providerSpec) => providerSpec.provider_metadata === 'dx_commerce_events'
+    (providerSpec) => providerSpec.provider_metadata === "dx_commerce_events",
   );
   if (!commerceProviderSpec) {
     logger.warn(
       `Cannot find the matched commerce provider spec for provider ID ${provider.id} at ${eventProvidersPath}. ` +
-        `Please update the event provider info as follows:\n`,
+        "Please update the event provider info as follows:\n",
       yaml.dump({
         event_providers: [
           {
@@ -75,7 +85,7 @@ async function main(workspaceFile) {
             docs_url: provider.docs_url,
           },
         ],
-      })
+      }),
     );
     return;
   }
@@ -83,13 +93,18 @@ async function main(workspaceFile) {
   commerceProviderSpec.id = provider.id;
   commerceProviderSpec.instance_id = provider.instance_id;
 
-  logger.info(`Configuring commerce events for the commerce instance: ${process.env.COMMERCE_BASE_URL}.`);
+  logger.info(
+    `Configuring commerce events for the commerce instance: ${process.env.COMMERCE_BASE_URL}.`,
+  );
 
-  const result = await configureCommerceEvents(commerceProviderSpec, workspaceFile);
+  const result = await configureCommerceEvents(
+    commerceProviderSpec,
+    workspaceFile,
+  );
   if (result.success) {
-    logger.info('Commerce event configuration and subscription successful.');
+    logger.info("Commerce event configuration and subscription successful.");
   } else {
-    logger.error('Failed to configure commerce events.', result.message);
+    logger.error("Failed to configure commerce events.", result.message);
   }
 }
 
@@ -107,7 +122,7 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
   if (!res.success) {
     return {
       success: false,
-      message: 'Failed to fetch event providers due to API error: ' + res.message,
+      message: `Failed to fetch event providers due to API error: ${res.message}`,
       details: { subscriptions: [] },
     };
   }
@@ -115,49 +130,66 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
   const existingProviders = res.message;
   const workspaceConfig = await readWorkspaceConfig(workspaceFile);
   // eslint-disable-next-line camelcase
-  const matchedProvider = existingProviders.find(({ provider_id }) => provider_id === eventProviderSpec.id);
+  const matchedProvider = existingProviders.find(
+    ({ provider_id }) => provider_id === eventProviderSpec.id,
+  );
 
   if (matchedProvider) {
     logger.info(
-      `Found existing event provider in the commerce instance with provider id: ${matchedProvider.provider_id}. Skipping configuration.`
+      `Found existing event provider in the commerce instance with provider id: ${matchedProvider.provider_id}. Skipping configuration.`,
     );
   } else if (existingProviders.length === 0) {
-    logger.info('No existing event providers found in the commerce instance. Adding the new event provider.');
-    await addCommerceEventProvider(eventProviderSpec.id, eventProviderSpec.instance_id, workspaceConfig);
+    logger.info(
+      "No existing event providers found in the commerce instance. Adding the new event provider.",
+    );
+    await addCommerceEventProvider(
+      eventProviderSpec.id,
+      eventProviderSpec.instance_id,
+      workspaceConfig,
+    );
   } else {
-    logger.info('Commerce already has a different event provider set, but adding an additional event provider.');
-    await addCommerceEventProvider(eventProviderSpec.id, eventProviderSpec.instance_id, workspaceConfig);
+    logger.info(
+      "Commerce already has a different event provider set, but adding an additional event provider.",
+    );
+    await addCommerceEventProvider(
+      eventProviderSpec.id,
+      eventProviderSpec.instance_id,
+      workspaceConfig,
+    );
   }
 
-  const result = await configureCommerceEventingConfig();
+  const commerceEventingResult = await configureCommerceEventingConfig();
 
-  if (!result.success) {
+  if (!commerceEventingResult.success) {
     return {
       success: false,
-      message: 'Failed to configure eventing in commerce: ' + result.body.message,
+      message: `Failed to configure eventing in commerce: ${commerceEventingResult.body.message}`,
       details: { subscriptions: [] },
     };
   }
 
   const subscriptionSpec = eventProviderSpec.subscription ?? [];
-  subscriptionSpec.forEach((subscription) => {
+  for (const subscription of subscriptionSpec) {
     subscription.event.provider_id = eventProviderSpec.id;
-  });
+  }
 
-  const results = await ensureCommerceEventSubscriptions(subscriptionSpec);
+  const commerceEventsSubscriptionsResults =
+    await ensureCommerceEventSubscriptions(subscriptionSpec);
 
-  if (results.some((result) => !result.result.success)) {
+  if (
+    commerceEventsSubscriptionsResults.some((result) => !result.result.success)
+  ) {
     return {
       success: false,
-      message: 'Event subscription was not successful.',
+      message: "Event subscription was not successful.",
     };
   }
 
   return {
     success: true,
-    message: 'Commerce event configuration and subscription successful.',
+    message: "Commerce event configuration and subscription successful.",
     details: {
-      subscriptions: results,
+      subscriptions: commerceEventsSubscriptionsResults,
     },
   };
 
@@ -168,14 +200,22 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
   async function configureCommerceEventingConfig() {
     const merchantId = process.env.COMMERCE_ADOBE_IO_EVENTS_MERCHANT_ID;
     if (!merchantId) {
-      logger.warn('Cannot find COMMERCE_ADOBE_IO_EVENTS_MERCHANT_ID environment variable, the value will be empty.');
+      logger.warn(
+        "Cannot find COMMERCE_ADOBE_IO_EVENTS_MERCHANT_ID environment variable, the value will be empty.",
+      );
     }
     const environmentId = process.env.COMMERCE_ADOBE_IO_EVENTS_ENVIRONMENT_ID;
     if (!environmentId) {
-      logger.warn('Cannot find COMMERCE_ADOBE_IO_EVENTS_ENVIRONMENT_ID environment variable, the value will be empty');
+      logger.warn(
+        "Cannot find COMMERCE_ADOBE_IO_EVENTS_ENVIRONMENT_ID environment variable, the value will be empty",
+      );
     }
 
-    return await commerceClient.configureEventing(merchantId, environmentId, workspaceConfig);
+    return await commerceClient.configureEventing(
+      merchantId,
+      environmentId,
+      workspaceConfig,
+    );
   }
 
   /**
@@ -185,24 +225,24 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
    * @param {Array<object>} eventsSpec The list of commerce event subscriptions details.
    * @returns {Promise<Array<object>>} A promise that resolves to an array of results for each subscription attempt.
    */
-  async function ensureCommerceEventSubscriptions(eventsSpec) {
+  function ensureCommerceEventSubscriptions(eventsSpec) {
     return Promise.all(
       eventsSpec.map(async (event) => {
         const result = await commerceClient.subscribeEvent(event);
-        if (!result.success) {
-          if (result.body.message.includes('already exists')) {
-            logger.warn(
-              'An event subscription with the same identifier already exists in the commerce system. ' +
-                'If you intend to update this subscription, please unsubscribe the existing one first. '
-            );
-          } else {
-            logger.error('Failed to subscribe event in Commerce: ' + result.body.message);
-          }
-        } else {
+        if (result.success) {
           logger.info(`Subscribed to event ${event.event.name} in Commerce.`);
+        } else if (result.body.message.includes("already exists")) {
+          logger.warn(
+            "An event subscription with the same identifier already exists in the commerce system. " +
+              "If you intend to update this subscription, please unsubscribe the existing one first. ",
+          );
+        } else {
+          logger.error(
+            `Failed to subscribe event in Commerce: ${result.body.message}`,
+          );
         }
         return { event, result };
-      })
+      }),
     );
   }
 
@@ -213,7 +253,11 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
    * @param {string} instanceId - instance id
    * @param {object} workspaceConfiguration - workspace configuration
    */
-  async function addCommerceEventProvider(providerId, instanceId, workspaceConfiguration) {
+  async function addCommerceEventProvider(
+    providerId,
+    instanceId,
+    workspaceConfiguration,
+  ) {
     await commerceClient.addEventProvider({
       eventProvider: {
         provider_id: providerId,
@@ -223,7 +267,9 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
         workspace_configuration: JSON.stringify(workspaceConfiguration),
       },
     });
-    logger.info(`Added non-default provider with id "${providerId}" and instance id "${instanceId}" to the Commerce.`);
+    logger.info(
+      `Added non-default provider with id "${providerId}" and instance id "${instanceId}" to the Commerce.`,
+    );
   }
 }
 
@@ -232,9 +278,11 @@ async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
  * @param {string} filePath the file path
  * @returns {Promise<object>} the workspace configuration
  */
-async function readWorkspaceConfig(filePath) {
-  const absolutePath = path.isAbsolute(filePath) ? filePath : `${process.env.INIT_CWD}/${filePath}`;
-  const fileContent = fs.readFileSync(absolutePath, 'utf8');
+function readWorkspaceConfig(filePath) {
+  const absolutePath = path.isAbsolute(filePath)
+    ? filePath
+    : `${process.env.INIT_CWD}/${filePath}`;
+  const fileContent = fs.readFileSync(absolutePath, "utf8");
   return JSON.parse(fileContent);
 }
 

@@ -9,11 +9,13 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-import { useEffect, useState, useCallback } from 'react';
-import { callAction } from '../utils';
+import { useCallback, useEffect, useState } from "react";
+
+import { callAction } from "../utils";
 
 export const useCommerceTaxClasses = (props) => {
-  const [isLoadingCommerceTaxClasses, setIsLoadingCommerceTaxClasses] = useState(true);
+  const [isLoadingCommerceTaxClasses, setIsLoadingCommerceTaxClasses] =
+    useState(true);
   const [commerceTaxClasses, setCommerceTaxClasses] = useState([]);
 
   const fetchCommerceTaxClasses = useCallback(async () => {
@@ -21,14 +23,21 @@ export const useCommerceTaxClasses = (props) => {
 
     try {
       const queryParams = new URLSearchParams({
-        'searchCriteria[currentPage]': 1,
-        'searchCriteria[pageSize]': 100,
+        "searchCriteria[currentPage]": 1,
+        "searchCriteria[pageSize]": 100,
       }).toString();
 
-      const response = await callAction(props, 'CustomMenu/commerce-rest-api', `taxClasses/search?${queryParams}`);
+      const response = await callAction(
+        props,
+        "CustomMenu/commerce-rest-api",
+        `taxClasses/search?${queryParams}`,
+      );
 
       if (!response.success) {
-        throw new Error('Error fetching commerce tax classes:', response.message);
+        throw new Error(
+          "Error fetching commerce tax classes:",
+          response.message,
+        );
       }
 
       const taxClasses = response.message?.items.map((item, index) => ({
@@ -36,13 +45,19 @@ export const useCommerceTaxClasses = (props) => {
         id: item.class_id,
         classType: item.class_type,
         className: item.class_name,
-        customTaxCode: item.custom_attributes?.find((attr) => attr.attribute_code === 'tax_code')?.value || '',
-        customTaxLabel: item.custom_attributes?.find((attr) => attr.attribute_code === 'tax_label')?.value || '',
+        customTaxCode:
+          item.custom_attributes?.find(
+            (attr) => attr.attribute_code === "tax_code",
+          )?.value || "",
+        customTaxLabel:
+          item.custom_attributes?.find(
+            (attr) => attr.attribute_code === "tax_label",
+          )?.value || "",
       }));
 
       setCommerceTaxClasses(taxClasses);
     } catch (error) {
-      console.error('Error fetching commerce tax classes:', error);
+      console.error("Error fetching commerce tax classes:", error);
       setCommerceTaxClasses([]);
     } finally {
       setIsLoadingCommerceTaxClasses(false);
@@ -53,7 +68,11 @@ export const useCommerceTaxClasses = (props) => {
     fetchCommerceTaxClasses();
   }, [fetchCommerceTaxClasses]);
 
-  return { isLoadingCommerceTaxClasses, commerceTaxClasses, refetchCommerceTaxClasses: fetchCommerceTaxClasses };
+  return {
+    isLoadingCommerceTaxClasses,
+    commerceTaxClasses,
+    refetchCommerceTaxClasses: fetchCommerceTaxClasses,
+  };
 };
 
 export const createOrUpdateCommerceTaxClass = async (props, newTaxClass) => {
@@ -64,16 +83,22 @@ export const createOrUpdateCommerceTaxClass = async (props, newTaxClass) => {
       class_type: newTaxClass.classType, // only create request uses class_type
       custom_attributes: [
         {
-          attribute_code: 'tax_code',
+          attribute_code: "tax_code",
           value: newTaxClass.customTaxCode,
         },
         {
-          attribute_code: 'tax_label',
+          attribute_code: "tax_label",
           value: newTaxClass.customTaxLabel,
         },
       ],
     },
   };
 
-  return await callAction(props, 'CustomMenu/commerce-rest-api', 'taxClasses', 'POST', payload);
+  return await callAction(
+    props,
+    "CustomMenu/commerce-rest-api",
+    "taxClasses",
+    "POST",
+    payload,
+  );
 };

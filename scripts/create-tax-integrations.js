@@ -10,11 +10,16 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { getAdobeCommerceClient } from '../lib/adobe-commerce.js';
-import fs from 'fs';
-import yaml from 'js-yaml';
-import { Core } from '@adobe/aio-sdk';
-const logger = Core.Logger('create-tax-integrations', { level: process.env.LOG_LEVEL || 'info' });
+import fs from "node:fs";
+
+import { Core } from "@adobe/aio-sdk";
+import yaml from "js-yaml";
+
+import { getAdobeCommerceClient } from "../lib/adobe-commerce.js";
+
+const logger = Core.Logger("create-tax-integrations", {
+  level: process.env.LOG_LEVEL || "info",
+});
 
 /**
  * Creates all the payment methods defined in the payment-methods.yaml file in the configured Adobe Commerce instance
@@ -22,10 +27,10 @@ const logger = Core.Logger('create-tax-integrations', { level: process.env.LOG_L
  * @returns {Promise<string[]>} An array of created tax integration codes
  */
 export async function main(configFilePath) {
-  logger.info('Reading tax configuration file...');
-  const fileContents = fs.readFileSync(configFilePath, 'utf8');
+  logger.info("Reading tax configuration file...");
+  const fileContents = fs.readFileSync(configFilePath, "utf8");
   const data = yaml.load(fileContents);
-  logger.info('Creating tax integrations...');
+  logger.info("Creating tax integrations...");
   const createdTaxIntegrations = [];
 
   const client = await getAdobeCommerceClient(process.env);
@@ -45,7 +50,7 @@ export async function main(configFilePath) {
 
 // Run if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const configFile = process.argv[2] || 'tax-integrations.yaml';
+  const configFile = process.argv[2] || "tax-integrations.yaml";
   main(configFile).catch(console.error);
 }
 
@@ -56,7 +61,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
  */
 function formatErrorMessage(response) {
   let msg =
-    response.statusCode === 400 && response.body?.message ? response.body.message : response.message || 'Unknown error';
+    response.statusCode === 400 && response.body?.message
+      ? response.body.message
+      : response.message || "Unknown error";
 
   if (response.body?.parameters) {
     for (const [key, value] of Object.entries(response.body.parameters)) {

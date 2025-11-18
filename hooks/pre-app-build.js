@@ -12,13 +12,17 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { Core } from '@adobe/aio-sdk';
-import { main as syncOAuthCredentials } from '../scripts/sync-oauth-credentials.js';
-const logger = Core.Logger('hooks/pre-app-build', { level: process.env.LOG_LEVEL || 'info' });
+import { Core } from "@adobe/aio-sdk";
+
+import { main as syncOAuthCredentials } from "../scripts/sync-oauth-credentials.js";
+
+const logger = Core.Logger("hooks/pre-app-build", {
+  level: process.env.LOG_LEVEL || "info",
+});
 
 const hook = async () => {
   await syncOAuthCredentials();
-  logger.info('Done');
+  logger.info("Done");
 };
 
 // Run if executed directly (as a script)

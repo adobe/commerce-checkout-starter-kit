@@ -9,14 +9,14 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-import { useState, useEffect, useCallback } from 'react';
-import { callAction } from '../utils';
+import { useCallback, useEffect, useState } from "react";
 
 export const useCustomTaxCodes = (props) => {
   const [customTaxCodes, setCustomTaxCodes] = useState([]);
   const [isLoadingCustomTaxCodes, setIsLoadingCustomTaxCodes] = useState(true);
 
-  const fetchCustomTaxCodes = useCallback(async () => {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: just for demo purpose
+  const fetchCustomTaxCodes = useCallback(() => {
     setIsLoadingCustomTaxCodes(true);
 
     try {
@@ -29,14 +29,14 @@ export const useCustomTaxCodes = (props) => {
 
       // Mock tax codes for example
       const codes = [
-        { taxCode: '001', name: 'Books' },
-        { taxCode: '002', name: 'Food' },
-        { taxCode: '003', name: 'Clothing' },
+        { taxCode: "001", name: "Books" },
+        { taxCode: "002", name: "Food" },
+        { taxCode: "003", name: "Clothing" },
       ];
 
       setCustomTaxCodes(codes);
     } catch (error) {
-      console.error('Error fetching custom tax codes:', error);
+      console.error("Error fetching custom tax codes:", error);
       setCustomTaxCodes([]);
     } finally {
       setIsLoadingCustomTaxCodes(false);

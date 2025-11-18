@@ -19,16 +19,23 @@ governing permissions and limitations under the License.
  * @param {object|null} payload The optional request payload
  * @returns {Promise<object>} The parsed JSON response from the backend
  */
-export async function callAction(props, action, operation, method = 'GET', payload = null) {
+// biome-ignore lint/nursery/useMaxParams: just for demo purposes
+export async function callAction(
+  props,
+  action,
+  operation,
+  method = "GET",
+  payload = null,
+) {
   // config.json is generated when running app builder cli
   // eslint-disable-next-line node/no-missing-require,node/no-unpublished-require
-  const actions = require('./config.json');
+  const actions = require("./config.json");
 
   const res = await fetch(actions[action], {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'x-gw-ims-org-id': props.imsOrgId,
+      "Content-Type": "application/json",
+      "x-gw-ims-org-id": props.imsOrgId,
       authorization: `Bearer ${props.imsToken}`,
     },
     body: JSON.stringify({

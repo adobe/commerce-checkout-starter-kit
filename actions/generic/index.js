@@ -21,8 +21,14 @@ governing permissions and limitations under the License.
  *   - Make sure to validate these changes against your security requirements before deploying the action
  */
 
-import { Core } from '@adobe/aio-sdk';
-import { errorResponse, getBearerToken, stringParameters, checkMissingRequestInputs } from '../utils.js';
+import { Core } from "@adobe/aio-sdk";
+
+import {
+  checkMissingRequestInputs,
+  errorResponse,
+  getBearerToken,
+  stringParameters,
+} from "../utils.js";
 
 /**
  * Main function that will be executed by Adobe I/O Runtime
@@ -31,11 +37,11 @@ import { errorResponse, getBearerToken, stringParameters, checkMissingRequestInp
  */
 export async function main(params) {
   // create a Logger
-  const logger = Core.Logger('main', { level: params.LOG_LEVEL || 'info' });
+  const logger = Core.Logger("main", { level: params.LOG_LEVEL || "info" });
 
   try {
     // 'info' is the default level if not set
-    logger.info('Calling the main action');
+    logger.info("Calling the main action");
 
     // log parameters, only if params.LOG_LEVEL === 'debug'
     logger.debug(stringParameters(params));
@@ -44,24 +50,29 @@ export async function main(params) {
     const requiredParams = [
       /* add required params */
     ];
-    const requiredHeaders = ['Authorization'];
-    const errorMessage = checkMissingRequestInputs(params, requiredParams, requiredHeaders);
+    const requiredHeaders = ["Authorization"];
+    const errorMessage = checkMissingRequestInputs(
+      params,
+      requiredParams,
+      requiredHeaders,
+    );
     if (errorMessage) {
       // return and log client errors
       return errorResponse(400, errorMessage, logger);
     }
 
     // extract the user Bearer token from the Authorization header
-    // eslint-disable-next-line no-unused-vars
-    const token = getBearerToken(params);
+    const _token = getBearerToken(params);
 
     // replace this with the api you want to access
-    const apiEndpoint = 'https://adobeioruntime.net/api/v1';
+    const apiEndpoint = "https://adobeioruntime.net/api/v1";
 
     // fetch content from external api endpoint
     const res = await fetch(apiEndpoint);
     if (!res.ok) {
-      throw new Error('request to ' + apiEndpoint + ' failed with status code ' + res.status);
+      throw new Error(
+        `request to ${apiEndpoint} failed with status code ${res.status}`,
+      );
     }
     const content = await res.json();
     const response = {
@@ -76,6 +87,6 @@ export async function main(params) {
     // log any server errors
     logger.error(error);
     // return with 500
-    return errorResponse(500, 'server error', logger);
+    return errorResponse(500, "server error", logger);
   }
 }

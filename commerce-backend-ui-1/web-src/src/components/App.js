@@ -9,11 +9,13 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-import React from 'react';
-import { Provider, lightTheme } from '@adobe/react-spectrum';
-import { ErrorBoundary } from 'react-error-boundary';
-import { Route, Routes, HashRouter } from 'react-router-dom';
-import ExtensionRegistration from './ExtensionRegistration';
+
+import { lightTheme, Provider } from "@adobe/react-spectrum";
+import React from "react";
+import { ErrorBoundary } from "react-error-boundary";
+import { HashRouter, Route, Routes } from "react-router-dom";
+
+import ExtensionRegistration from "./ExtensionRegistration";
 
 /**
  * Main application component
@@ -26,20 +28,28 @@ import ExtensionRegistration from './ExtensionRegistration';
 function App(props) {
   // use exc runtime event handlers
   // respond to configuration change events (e.g. user switches org)
-  props.runtime.on('configuration', ({ imsOrg, imsToken }) => {
-    console.log('configuration change', { imsOrg, imsToken });
+  props.runtime.on("configuration", ({ imsOrg, imsToken }) => {
+    console.log("configuration change", { imsOrg, imsToken });
   });
   // respond to history change events
-  props.runtime.on('history', ({ type, path }) => {
-    console.log('history change', { type, path });
+  props.runtime.on("history", ({ type, path }) => {
+    console.log("history change", { type, path });
   });
 
   return (
-    <ErrorBoundary onError={onError} FallbackComponent={fallbackComponent}>
+    <ErrorBoundary FallbackComponent={fallbackComponent} onError={onError}>
       <HashRouter>
-        <Provider theme={lightTheme} colorScheme={'light'}>
+        <Provider colorScheme={"light"} theme={lightTheme}>
           <Routes>
-            <Route index element={<ExtensionRegistration runtime={props.runtime} ims={props.ims} />} />
+            <Route
+              element={
+                <ExtensionRegistration
+                  ims={props.ims}
+                  runtime={props.runtime}
+                />
+              }
+              index
+            />
           </Routes>
         </Provider>
       </HashRouter>
@@ -55,7 +65,9 @@ function App(props) {
    * @param {string} componentStack Stack trace of where the error occurred
    * @returns {void}
    */
-  function onError(e, componentStack) {}
+  function onError(e, componentStack) {
+    console.error("Error rendering UI", e, componentStack);
+  }
 
   /**
    * Component to show if UI fails rendering
@@ -67,10 +79,12 @@ function App(props) {
    */
   function fallbackComponent({ componentStack, error }) {
     return (
-      <React.Fragment>
-        <h1 style={{ textAlign: 'center', marginTop: '20px' }}>Something went wrong :(</h1>
-        <pre>{componentStack + '\n' + error.message}</pre>
-      </React.Fragment>
+      <>
+        <h1 style={{ textAlign: "center", marginTop: "20px" }}>
+          Something went wrong :(
+        </h1>
+        <pre>{`${componentStack}\n${error.message}`}</pre>
+      </>
     );
   }
 }
