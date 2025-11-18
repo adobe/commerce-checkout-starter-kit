@@ -33,10 +33,7 @@ import {
   SimpleLogRecordProcessor,
 } from '@adobe/aio-lib-telemetry/otel';
 
-/**
- * The telemetry configuration to be used across all checkout actions
- */
-
+/** The telemetry configuration to be used across all checkout actions */
 const telemetryConfig = defineTelemetryConfig((params, isDev) => {
   return {
     sdkConfig: {
@@ -48,7 +45,7 @@ const telemetryConfig = defineTelemetryConfig((params, isDev) => {
     // disable diagnostics by default
     // diagnostics: {
     //   logLevel: isDev ? 'debug' : 'info',
-    // },    
+    // },
   };
 });
 
