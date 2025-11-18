@@ -45,7 +45,10 @@ const telemetryConfig = defineTelemetryConfig((params, isDev) => {
       resource: getAioRuntimeResource(),
       // ...localCollectorConfig(), replace by your preferred telemetry exporter configuration
     },
-    diagnostics: false, // disable diagnostics by default
+    // disable diagnostics by default
+    // diagnostics: {
+    //   logLevel: isDev ? 'debug' : 'info',
+    // },    
   };
 });
 
