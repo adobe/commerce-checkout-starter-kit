@@ -16,7 +16,7 @@ import { telemetryConfig, isWebhookSuccessful } from '../telemetry.js';
 import { instrumentEntrypoint, getInstrumentationHelpers } from '@adobe/aio-lib-telemetry';
 import { checkoutMetrics } from '../checkout-metrics.js';
 
-const TAX_RATE = 5.0; // 5 % tax rate as a sample
+const TAX_RATE = 5.0; // 5% tax rate as a sample
 
 /**
  * This action calculates the adjustment taxes for the given credit memo request.
@@ -27,7 +27,7 @@ const TAX_RATE = 5.0; // 5 % tax rate as a sample
  * @see https://developer.adobe.com/commerce/extensibility/webhooks
  */
 async function collectAdjustmentTaxes(params) {
-  const { logger, currentSpan } = getInstrumentationHelpers();
+  const { logger } = getInstrumentationHelpers();
 
   logger.debug('Starting adjustment tax collection process');
 
@@ -53,7 +53,7 @@ async function collectAdjustmentTaxes(params) {
     const adjustmentRefund = oopCreditmemo.adjustment?.refund;
     const adjustmentFee = oopCreditmemo.adjustment?.fee;
 
-    let operations = [];
+    const operations = [];
     if (adjustmentRefund) {
       const refundTax = calculateTaxAmount(adjustmentRefund, TAX_RATE, isTaxIncluded);
       operations.push(createAdjustmentRefundTax(refundTax));
