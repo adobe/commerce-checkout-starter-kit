@@ -19,16 +19,6 @@
       "!!**/commerce-backend-ui-1/web-src/src/exc-runtime.js"
     ]
   },
-  "linter": {
-    "rules": {
-      "style": {
-        "useReadonlyClassProperties": "off"
-      },
-      "performance": {
-        "noNamespaceImport": "off"
-      }
-    }
-  },
   "javascript": {
     "formatter": {
       "arrowParentheses": "always",

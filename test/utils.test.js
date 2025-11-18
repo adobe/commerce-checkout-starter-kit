@@ -12,18 +12,23 @@ governing permissions and limitations under the License.
 
 import { describe, expect, test, vi } from "vitest";
 
-import * as utils from "../actions/utils.js";
+import {
+  checkMissingRequestInputs,
+  errorResponse,
+  getBearerToken,
+  stringParameters,
+} from "../actions/utils.js";
 
 test("interface", () => {
-  expect(typeof utils.errorResponse).toBe("function");
-  expect(typeof utils.stringParameters).toBe("function");
-  expect(typeof utils.checkMissingRequestInputs).toBe("function");
-  expect(typeof utils.getBearerToken).toBe("function");
+  expect(typeof errorResponse).toBe("function");
+  expect(typeof stringParameters).toBe("function");
+  expect(typeof checkMissingRequestInputs).toBe("function");
+  expect(typeof getBearerToken).toBe("function");
 });
 
 describe("errorResponse", () => {
   test("(400, errorMessage)", () => {
-    const res = utils.errorResponse(400, "errorMessage");
+    const res = errorResponse(400, "errorMessage");
     expect(res).toEqual({
       error: {
         statusCode: 400,
@@ -36,7 +41,7 @@ describe("errorResponse", () => {
     const logger = {
       info: vi.fn(),
     };
-    const res = utils.errorResponse(400, "errorMessage", logger);
+    const res = errorResponse(400, "errorMessage", logger);
     expect(logger.info).toHaveBeenCalledWith("400: errorMessage");
     expect(res).toEqual({
       error: {
@@ -54,7 +59,7 @@ describe("stringParameters", () => {
       b: 2,
       __ow_headers: { "x-api-key": "fake-api-key" },
     };
-    expect(utils.stringParameters(params)).toEqual(JSON.stringify(params));
+    expect(stringParameters(params)).toEqual(JSON.stringify(params));
   });
   test("with auth header", () => {
     const params = {
@@ -62,10 +67,10 @@ describe("stringParameters", () => {
       b: 2,
       __ow_headers: { "x-api-key": "fake-api-key", authorization: "secret" },
     };
-    expect(utils.stringParameters(params)).toEqual(
+    expect(stringParameters(params)).toEqual(
       expect.stringContaining('"authorization":"<hidden>"'),
     );
-    expect(utils.stringParameters(params)).not.toEqual(
+    expect(stringParameters(params)).not.toEqual(
       expect.stringContaining("secret"),
     );
   });
@@ -73,18 +78,16 @@ describe("stringParameters", () => {
 
 describe("checkMissingRequestInputs", () => {
   test("({ a: 1, b: 2 }, [a])", () => {
-    expect(utils.checkMissingRequestInputs({ a: 1, b: 2 }, ["a"])).toEqual(
-      null,
-    );
+    expect(checkMissingRequestInputs({ a: 1, b: 2 }, ["a"])).toEqual(null);
   });
   test("({ a: 1 }, [a, b])", () => {
-    expect(utils.checkMissingRequestInputs({ a: 1 }, ["a", "b"])).toEqual(
+    expect(checkMissingRequestInputs({ a: 1 }, ["a", "b"])).toEqual(
       "missing parameter(s) 'b'",
     );
   });
   test("({ a: { b: { c: 1 } }, f: { g: 2 } }, [a.b.c, f.g.h.i])", () => {
     expect(
-      utils.checkMissingRequestInputs({ a: { b: { c: 1 } }, f: { g: 2 } }, [
+      checkMissingRequestInputs({ a: { b: { c: 1 } }, f: { g: 2 } }, [
         "a.b.c",
         "f.g.h.i",
       ]),
@@ -92,7 +95,7 @@ describe("checkMissingRequestInputs", () => {
   });
   test("({ a: { b: { c: 1 } }, f: { g: 2 } }, [a.b.c, f.g.h])", () => {
     expect(
-      utils.checkMissingRequestInputs({ a: { b: { c: 1 } }, f: { g: 2 } }, [
+      checkMissingRequestInputs({ a: { b: { c: 1 } }, f: { g: 2 } }, [
         "a.b.c",
         "f",
       ]),
@@ -100,7 +103,7 @@ describe("checkMissingRequestInputs", () => {
   });
   test("({ a: 1, __ow_headers: { h: 1, i: 2 } }, undefined, [h])", () => {
     expect(
-      utils.checkMissingRequestInputs(
+      checkMissingRequestInputs(
         { a: 1, __ow_headers: { h: 1, i: 2 } },
         undefined,
         ["h"],
@@ -109,7 +112,7 @@ describe("checkMissingRequestInputs", () => {
   });
   test("({ a: 1, __ow_headers: { f: 2 } }, [a], [h, i])", () => {
     expect(
-      utils.checkMissingRequestInputs(
+      checkMissingRequestInputs(
         { a: 1, __ow_headers: { f: 2 } },
         ["a"],
         ["h", "i"],
@@ -117,23 +120,23 @@ describe("checkMissingRequestInputs", () => {
     ).toEqual("missing header(s) 'h,i'");
   });
   test("({ c: 1, __ow_headers: { f: 2 } }, [a, b], [h, i])", () => {
-    expect(
-      utils.checkMissingRequestInputs({ c: 1 }, ["a", "b"], ["h", "i"]),
-    ).toEqual("missing header(s) 'h,i' and missing parameter(s) 'a,b'");
+    expect(checkMissingRequestInputs({ c: 1 }, ["a", "b"], ["h", "i"])).toEqual(
+      "missing header(s) 'h,i' and missing parameter(s) 'a,b'",
+    );
   });
   test("({ a: 0 }, [a])", () => {
-    expect(utils.checkMissingRequestInputs({ a: 0 }, ["a"])).toEqual(null);
+    expect(checkMissingRequestInputs({ a: 0 }, ["a"])).toEqual(null);
   });
   test("({ a: null }, [a])", () => {
-    expect(utils.checkMissingRequestInputs({ a: null }, ["a"])).toEqual(null);
+    expect(checkMissingRequestInputs({ a: null }, ["a"])).toEqual(null);
   });
   test("({ a: '' }, [a])", () => {
-    expect(utils.checkMissingRequestInputs({ a: "" }, ["a"])).toEqual(
+    expect(checkMissingRequestInputs({ a: "" }, ["a"])).toEqual(
       "missing parameter(s) 'a'",
     );
   });
   test("({ a: undefined }, [a])", () => {
-    expect(utils.checkMissingRequestInputs({ a: undefined }, ["a"])).toEqual(
+    expect(checkMissingRequestInputs({ a: undefined }, ["a"])).toEqual(
       "missing parameter(s) 'a'",
     );
   });
@@ -141,16 +144,16 @@ describe("checkMissingRequestInputs", () => {
 
 describe("getBearerToken", () => {
   test("({})", () => {
-    expect(utils.getBearerToken({})).toEqual(undefined);
+    expect(getBearerToken({})).toEqual(undefined);
   });
   test("({ authorization: Bearer fake, __ow_headers: {} })", () => {
     expect(
-      utils.getBearerToken({ authorization: "Bearer fake", __ow_headers: {} }),
+      getBearerToken({ authorization: "Bearer fake", __ow_headers: {} }),
     ).toEqual(undefined);
   });
   test("({ authorization: Bearer fake, __ow_headers: { authorization: fake } })", () => {
     expect(
-      utils.getBearerToken({
+      getBearerToken({
         authorization: "Bearer fake",
         __ow_headers: { authorization: "fake" },
       }),
@@ -158,17 +161,17 @@ describe("getBearerToken", () => {
   });
   test("({ __ow_headers: { authorization: Bearerfake} })", () => {
     expect(
-      utils.getBearerToken({ __ow_headers: { authorization: "Bearerfake" } }),
+      getBearerToken({ __ow_headers: { authorization: "Bearerfake" } }),
     ).toEqual(undefined);
   });
   test("({ __ow_headers: { authorization: Bearer fake} })", () => {
     expect(
-      utils.getBearerToken({ __ow_headers: { authorization: "Bearer fake" } }),
+      getBearerToken({ __ow_headers: { authorization: "Bearer fake" } }),
     ).toEqual("fake");
   });
   test("({ __ow_headers: { authorization: Bearer fake Bearer fake} })", () => {
     expect(
-      utils.getBearerToken({
+      getBearerToken({
         __ow_headers: { authorization: "Bearer fake Bearer fake" },
       }),
     ).toEqual("fake Bearer fake");

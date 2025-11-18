@@ -16,7 +16,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import { resolveCredentials } from "../../lib/adobe-auth.js";
 import { HTTP_INTERNAL_ERROR, HTTP_OK } from "../../lib/http.js";
-import * as keyValues from "../../lib/key-values.js";
+import { decode as keyValueDecode } from "../../lib/key-values.js";
 import { errorResponse } from "../utils.js";
 
 /**
@@ -53,7 +53,7 @@ export async function main(params) {
       return errorResponse(400, "Missing event.data property", logger);
     }
 
-    const { "3rd_party_custom_events": providerId } = keyValues.decode(
+    const { "3rd_party_custom_events": providerId } = keyValueDecode(
       params.AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING,
     );
     if (!providerId) {

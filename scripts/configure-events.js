@@ -19,7 +19,10 @@ import { v4 as uuidv4 } from "uuid";
 
 import { resolveCredentials } from "../lib/adobe-auth.js";
 import { replaceEnvVar } from "../lib/env.js";
-import * as keyValues from "../lib/key-values.js";
+import {
+  decode as keyValueDecode,
+  encode as keyValueEncode,
+} from "../lib/key-values.js";
 
 dotenv.config();
 
@@ -111,8 +114,8 @@ async function main() {
 
   const envProviderMapping =
     process.env.AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING;
-  const updatedProviderMapping = keyValues.encode({
-    ...keyValues.decode(envProviderMapping),
+  const updatedProviderMapping = keyValueEncode({
+    ...keyValueDecode(envProviderMapping),
     // eslint-disable-next-line camelcase
     ...eventsConfig.reduce((acc, { provider: { provider_metadata, id } }) => {
       // eslint-disable-next-line camelcase

@@ -19,7 +19,7 @@ import yaml from "js-yaml";
 
 import { resolveCredentials } from "../lib/adobe-auth.js";
 import { getAdobeCommerceClient } from "../lib/adobe-commerce.js";
-import * as keyValues from "../lib/key-values.js";
+import { decode as keyValueDecode } from "../lib/key-values.js";
 
 dotenv.config();
 
@@ -35,7 +35,7 @@ const eventProvidersPath = `${process.env.INIT_CWD}/events.config.yaml`;
  * @returns {Promise<void>}
  */
 async function main(workspaceFile) {
-  const { dx_commerce_events: providerId } = keyValues.decode(
+  const { dx_commerce_events: providerId } = keyValueDecode(
     process.env.AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING,
   );
   if (!providerId) {
