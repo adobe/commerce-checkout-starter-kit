@@ -19,7 +19,7 @@ import { checkoutMetrics } from '../checkout-metrics.js';
 const TAX_RATE = 5.0; // 5 % tax rate as a sample
 
 /**
- * This action calculates the adjustment tax for the given credit memo request.
+ * This action calculates the adjustment taxes for the given credit memo request.
  * It has to be configured as Commerce Webhook in the Adobe Commerce Admin.
  *
  * @param {object} params - method params includes environment and request data
@@ -80,11 +80,12 @@ async function collectAdjustmentTaxes(params) {
 }
 
 /**
+ * Calculates the tax amount based on the taxable amount, tax rate, and whether tax is included.
  *
  * @param taxableAmount
  * @param taxRate
  * @param isTaxIncluded
- * @returns {number}
+ * @returns {number} The calculated tax amount, rounded to two decimal places.
  */
 function calculateTaxAmount(taxableAmount, taxRate, isTaxIncluded = false) {
   const taxAmount = isTaxIncluded
@@ -95,6 +96,7 @@ function calculateTaxAmount(taxableAmount, taxRate, isTaxIncluded = false) {
 }
 
 /**
+ * Creates webhook operation to update the adjustment refund tax value.
  *
  * @param value
  * @returns {{op: string, path: string, value}}
@@ -108,6 +110,7 @@ function createAdjustmentRefundTax(value) {
 }
 
 /**
+ * Creates webhook operation to update the adjustment fee tax value.
  *
  * @param value
  * @returns {{op: string, path: string, value}}
