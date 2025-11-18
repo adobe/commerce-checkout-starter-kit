@@ -27,9 +27,9 @@ import { checkoutMetrics } from '../checkout-metrics.js';
 async function shippingMethods(params) {
   const { logger } = getInstrumentationHelpers();
 
-  try {
-    logger.info('Starting shipping methods process');
+  logger.debug('Starting shipping methods process');
 
+  try {
     const { success, error } = webhookVerify(params);
     if (!success) {
       logger.error(`Webhook verification failed: ${error}`);

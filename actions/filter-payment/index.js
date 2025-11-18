@@ -28,9 +28,9 @@ import { checkoutMetrics } from '../checkout-metrics.js';
 async function filterPayment(params) {
   const { logger, currentSpan } = getInstrumentationHelpers();
 
-  try {
-    logger.info('Starting payment filter process');
+  logger.debug('Starting payment filter process');
 
+  try {
     const { success, error } = webhookVerify(params);
     if (!success) {
       logger.error(`Webhook verification failed: ${error}`);

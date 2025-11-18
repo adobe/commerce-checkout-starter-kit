@@ -35,9 +35,9 @@ const TAX_RATES = Object.freeze({
 async function collectTaxes(params) {
   const { logger, currentSpan } = getInstrumentationHelpers();
 
-  try {
-    logger.info('Starting tax collection process');
+  logger.debug('Starting tax collection process');
 
+  try {
     const { success, error } = webhookVerify(params);
     if (!success) {
       logger.error(`Webhook verification failed: ${error}`);
@@ -57,7 +57,7 @@ async function collectTaxes(params) {
       operations.push(...calculateTaxOperations(item, index));
     });
 
-    logger.info('Tax calculation response : ', JSON.stringify(operations, null, 2));
+    logger.debug('Tax calculation response : ', JSON.stringify(operations, null, 2));
 
     checkoutMetrics.collectTaxesCounter.add(1, { status: 'success' });
 
