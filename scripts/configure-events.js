@@ -70,7 +70,8 @@ async function main() {
     return;
   }
 
-  const { imsOrgId, apiKey, accessToken } = await resolveCredentials(process.env);
+  const envSnapshot = { ...process.env };
+  const { imsOrgId, apiKey, accessToken } = await resolveCredentials(envSnapshot);
 
   logger.info(`Event providers label will be suffixed with "<label> - ${process.env.AIO_runtime_namespace}"`);
   const modifiedEventProvidersSpec = {

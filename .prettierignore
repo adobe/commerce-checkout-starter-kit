@@ -5,3 +5,5 @@
 COPYRIGHT
 CODE_OF_CONDUCT.md
 exc-runtime.js
+
+.generated/

@@ -44,7 +44,9 @@ async function main(workspaceFile) {
     return;
   }
 
-  const { imsOrgId, apiKey, accessToken } = await resolveCredentials(process.env);
+  const envSnapshot = { ...process.env };
+  const { imsOrgId, apiKey, accessToken } = await resolveCredentials(envSnapshot);
+
   const eventsApi = await Events.init(imsOrgId, apiKey, accessToken);
   const provider = await eventsApi.getProvider(providerId);
   if (provider.provider_metadata !== 'dx_commerce_events') {
@@ -83,7 +85,7 @@ async function main(workspaceFile) {
   commerceProviderSpec.id = provider.id;
   commerceProviderSpec.instance_id = provider.instance_id;
 
-  logger.info(`Configuring commerce events for the commerce instance: ${process.env.COMMERCE_BASE_URL}.`);
+  logger.info(`Configuring commerce events for the commerce instance: ${process.env.AIO_COMMERCE_API_BASE_URL}.`);
 
   const result = await configureCommerceEvents(commerceProviderSpec, workspaceFile);
   if (result.success) {
@@ -102,7 +104,8 @@ async function main(workspaceFile) {
  * @returns {Promise<{success: boolean, message: string, details: {subscriptions: Array<object>}}>} The result of the configuration.
  */
 async function configureCommerceEvents(eventProviderSpec, workspaceFile) {
-  const commerceClient = await getAdobeCommerceClient(process.env);
+  const envSnapshot = { ...process.env };
+  const commerceClient = await getAdobeCommerceClient(envSnapshot);
   const res = await commerceClient.getEventProviders();
   if (!res.success) {
     return {

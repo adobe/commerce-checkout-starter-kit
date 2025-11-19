@@ -28,7 +28,8 @@ export async function main(configFilePath) {
   logger.info('Creating tax integrations...');
   const createdTaxIntegrations = [];
 
-  const client = await getAdobeCommerceClient(process.env);
+  const envSnapshot = { ...process.env };
+  const client = await getAdobeCommerceClient(envSnapshot);
 
   for (const taxIntegration of data.tax_integrations) {
     const response = await client.createTaxIntegration(taxIntegration);

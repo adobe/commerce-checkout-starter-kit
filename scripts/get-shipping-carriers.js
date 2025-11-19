@@ -16,9 +16,12 @@ import { getAdobeCommerceClient } from '../lib/adobe-commerce.js';
  * Retrieves all shipping carrier from the configured Adobe Commerce instance
  */
 export async function main() {
-  const client = await getAdobeCommerceClient(process.env);
+  const envSnapshot = { ...process.env };
+  const client = await getAdobeCommerceClient(envSnapshot);
+
   const response = await client.getOopeShippingCarriers();
   console.info('Fetching shipping carriers...');
+
   if (response.success) {
     console.info(
       `Total ${response.message.length} shipping carriers fetched: ${response.message

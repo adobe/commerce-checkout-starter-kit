@@ -26,7 +26,8 @@ export async function main(configFilePath) {
   console.info('Creating payment methods...');
   const createdPaymentMethods = [];
 
-  const client = await getAdobeCommerceClient(process.env);
+  const envSnapshot = { ...process.env };
+  const client = await getAdobeCommerceClient(envSnapshot);
 
   for (const paymentMethod of data.methods) {
     const response = await client.createOopePaymentMethod(paymentMethod);

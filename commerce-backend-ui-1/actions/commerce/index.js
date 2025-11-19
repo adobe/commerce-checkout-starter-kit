@@ -29,7 +29,7 @@ export async function main(params) {
   const logger = Core.Logger('main', { level: params.LOG_LEVEL || 'debug' });
 
   try {
-    const requiredParams = ['operation', 'COMMERCE_BASE_URL'];
+    const requiredParams = ['operation', 'AIO_COMMERCE_API_BASE_URL'];
     const requiredHeaders = ['Authorization'];
     const errorMessage = checkMissingRequestInputs(params, requiredParams, requiredHeaders);
     if (errorMessage) {
