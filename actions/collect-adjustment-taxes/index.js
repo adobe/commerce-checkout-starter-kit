@@ -10,11 +10,18 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { HTTP_OK } from '../../lib/http.js';
-import { webhookErrorResponse, webhookVerify } from '../../lib/adobe-commerce.js';
-import { telemetryConfig, isWebhookSuccessful } from '../telemetry.js';
-import { instrumentEntrypoint, getInstrumentationHelpers } from '@adobe/aio-lib-telemetry';
-import { checkoutMetrics } from '../checkout-metrics.js';
+import {
+  getInstrumentationHelpers,
+  instrumentEntrypoint,
+} from "@adobe/aio-lib-telemetry";
+
+import {
+  webhookErrorResponse,
+  webhookVerify,
+} from "../../lib/adobe-commerce.js";
+import { HTTP_OK } from "../../lib/http.js";
+import { checkoutMetrics } from "../checkout-metrics.js";
+import { isWebhookSuccessful, telemetryConfig } from "../telemetry.js";
 
 const TAX_RATE = 5.0; // 5% tax rate as a sample
 
@@ -26,36 +33,47 @@ const TAX_RATE = 5.0; // 5% tax rate as a sample
  * @returns {Promise<{statusCode: number, body: {op: string}}>} the response object
  * @see https://developer.adobe.com/commerce/extensibility/webhooks
  */
-async function collectAdjustmentTaxes(params) {
+function collectAdjustmentTaxes(params) {
   const { logger } = getInstrumentationHelpers();
 
-  logger.debug('Starting adjustment tax collection process');
+  logger.debug("Starting adjustment tax collection process");
 
   try {
     const { success, error } = webhookVerify(params);
     if (!success) {
       logger.error(`Webhook verification failed: ${error}`);
-      checkoutMetrics.collectAdjustmentTaxesCounter.add(1, { status: 'error', error_code: 'verification_failed' });
-      return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
+      checkoutMetrics.collectAdjustmentTaxesCounter.add(1, {
+        status: "error",
+        error_code: "verification_failed",
+      });
+      return webhookErrorResponse(
+        `Failed to verify the webhook signature: ${error}`,
+      );
     }
 
     // in the case when "raw-http: true" the body needs to be decoded and converted to JSON
     const body = JSON.parse(atob(params.__ow_body));
-    logger.debug('Received request: ', body);
+    logger.debug("Received request: ", body);
 
     const { oopCreditmemo } = body;
-    if (!oopCreditmemo || !oopCreditmemo.items) {
-      logger.error('Invalid or missing oopCreditmemo data');
-      return webhookErrorResponse('Invalid or missing oopCreditmemo data');
+    if (!oopCreditmemo?.items) {
+      logger.error("Invalid or missing oopCreditmemo data");
+      return webhookErrorResponse("Invalid or missing oopCreditmemo data");
     }
 
-    const isTaxIncluded = oopCreditmemo.items.some((item) => item.is_tax_included === true);
+    const isTaxIncluded = oopCreditmemo.items.some(
+      (item) => item.is_tax_included === true,
+    );
     const adjustmentRefund = oopCreditmemo.adjustment?.refund;
     const adjustmentFee = oopCreditmemo.adjustment?.fee;
 
     const operations = [];
     if (adjustmentRefund) {
-      const refundTax = calculateTaxAmount(adjustmentRefund, TAX_RATE, isTaxIncluded);
+      const refundTax = calculateTaxAmount(
+        adjustmentRefund,
+        TAX_RATE,
+        isTaxIncluded,
+      );
       operations.push(createAdjustmentRefundTax(refundTax));
     }
 
@@ -64,17 +82,23 @@ async function collectAdjustmentTaxes(params) {
       operations.push(createAdjustmentFeeTax(feeTax));
     }
 
-    logger.debug('Adjustment Tax calculation response: ', JSON.stringify(operations, null, 2));
+    logger.debug(
+      "Adjustment Tax calculation response: ",
+      JSON.stringify(operations, null, 2),
+    );
 
-    checkoutMetrics.collectAdjustmentTaxesCounter.add(1, { status: 'success' });
+    checkoutMetrics.collectAdjustmentTaxesCounter.add(1, { status: "success" });
 
     return {
       statusCode: HTTP_OK,
       body: JSON.stringify(operations),
     };
   } catch (error) {
-    logger.error('Error in adjustment tax collection:', error);
-    checkoutMetrics.collectAdjustmentTaxesCounter.add(1, { status: 'error', error_code: 'exception' });
+    logger.error("Error in adjustment tax collection:", error);
+    checkoutMetrics.collectAdjustmentTaxesCounter.add(1, {
+      status: "error",
+      error_code: "exception",
+    });
     return webhookErrorResponse(`Server error: ${error.message}`);
   }
 }
@@ -103,9 +127,9 @@ function calculateTaxAmount(taxableAmount, taxRate, isTaxIncluded = false) {
  */
 function createAdjustmentRefundTax(value) {
   return {
-    op: 'replace',
-    path: 'oopCreditmemo/adjustment/refund_tax',
-    value: value,
+    op: "replace",
+    path: "oopCreditmemo/adjustment/refund_tax",
+    value,
   };
 }
 
@@ -117,9 +141,9 @@ function createAdjustmentRefundTax(value) {
  */
 function createAdjustmentFeeTax(value) {
   return {
-    op: 'replace',
-    path: 'oopCreditmemo/adjustment/fee_tax',
-    value: value,
+    op: "replace",
+    path: "oopCreditmemo/adjustment/fee_tax",
+    value,
   };
 }
 
