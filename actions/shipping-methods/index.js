@@ -10,11 +10,18 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { webhookErrorResponse, webhookVerify } from '../../lib/adobe-commerce.js';
-import { HTTP_OK } from '../../lib/http.js';
-import { telemetryConfig, isWebhookSuccessful } from '../telemetry.js';
-import { instrumentEntrypoint, getInstrumentationHelpers } from '@adobe/aio-lib-telemetry';
-import { checkoutMetrics } from '../checkout-metrics.js';
+import {
+  getInstrumentationHelpers,
+  instrumentEntrypoint,
+} from "@adobe/aio-lib-telemetry";
+
+import {
+  webhookErrorResponse,
+  webhookVerify,
+} from "../../lib/adobe-commerce.js";
+import { HTTP_OK } from "../../lib/http.js";
+import { checkoutMetrics } from "../checkout-metrics.js";
+import { isWebhookSuccessful, telemetryConfig } from "../telemetry.js";
 
 /**
  * This action returns the list of out-of-process shipping methods for the given request.
@@ -24,17 +31,22 @@ import { checkoutMetrics } from '../checkout-metrics.js';
  * @returns {Promise<{statusCode: number, body: {op: string}}>} the response object
  * @see https://developer.adobe.com/commerce/extensibility/webhooks
  */
-async function shippingMethods(params) {
+function shippingMethods(params) {
   const { logger } = getInstrumentationHelpers();
 
-  logger.debug('Starting shipping methods process');
-
   try {
+    logger.info("Starting shipping methods process");
+
     const { success, error } = webhookVerify(params);
     if (!success) {
       logger.error(`Webhook verification failed: ${error}`);
-      checkoutMetrics.shippingMethodsCounter.add(1, { status: 'error', error_code: 'verification_failed' });
-      return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
+      checkoutMetrics.shippingMethodsCounter.add(1, {
+        status: "error",
+        error_code: "verification_failed",
+      });
+      return webhookErrorResponse(
+        `Failed to verify the webhook signature: ${error}`,
+      );
     }
 
     // in the case when "raw-http: true" the body needs to be decoded and converted to JSON
@@ -44,67 +56,70 @@ async function shippingMethods(params) {
     // if the "raw-http: false" then the rateRequest can be used directly from params
     // const request = params.rateRequest;
 
-    const { dest_country_id: destCountryId = 'US', dest_postcode: destPostcode = '12345' } = request;
+    const {
+      dest_country_id: destCountryId = "US",
+      dest_postcode: destPostcode = "12345",
+    } = request;
 
-    logger.info('Received request: ', request);
+    logger.info("Received request: ", request);
 
     const operations = [];
 
     operations.push(
       createShippingOperation({
-        carrier_code: 'DPS',
-        method: 'dps_shipping_one',
-        method_title: 'Demo Custom Shipping One',
+        carrier_code: "DPS",
+        method: "dps_shipping_one",
+        method_title: "Demo Custom Shipping One",
         price: 17,
         cost: 17,
         additional_data: [
           {
-            key: 'additional_data_key',
-            value: 'additional_data_value',
+            key: "additional_data_key",
+            value: "additional_data_value",
           },
           {
-            key: 'additional_data_key2',
-            value: 'additional_data_value2',
+            key: "additional_data_key2",
+            value: "additional_data_value2",
           },
           {
-            key: 'additional_data_key3',
-            value: 'additional_data_value3',
+            key: "additional_data_key3",
+            value: "additional_data_value3",
           },
         ],
-      })
+      }),
     );
 
     // Based on the postal code, we can add another shipping method
-    if (destPostcode > 30000) {
+    if (destPostcode > 30_000) {
       operations.push(
         createShippingOperation({
-          carrier_code: 'DPS',
-          method: 'dps_shipping_two',
-          method_title: 'Demo Custom Shipping Two',
+          carrier_code: "DPS",
+          method: "dps_shipping_two",
+          method_title: "Demo Custom Shipping Two",
           price: 18,
           cost: 18,
           additional_data: {
-            key: 'additional_data_key',
-            value: 'additional_data_value',
+            key: "additional_data_key",
+            value: "additional_data_value",
           },
-        })
+        }),
       );
     }
 
     // Based on the country we can add another shipping method
-    if (destCountryId === 'CA') {
+    if (destCountryId === "CA") {
       operations.push(
         createShippingOperation({
-          carrier_code: 'DPS',
-          method: 'dps_shipping_ca_one',
-          method_title: 'Demo Custom Shipping for Canada only',
+          carrier_code: "DPS",
+          method: "dps_shipping_ca_one",
+          method_title: "Demo Custom Shipping for Canada only",
           price: 18,
           cost: 18,
           additional_data: {
-            key: 'additional_data_key',
-            value: 'additional_data_value',
+            key: "additional_data_key",
+            value: "additional_data_value",
           },
-        })
+        }),
       );
     }
 
@@ -114,33 +129,34 @@ async function shippingMethods(params) {
     // part of the additional_data key-value array
     const { all_items: cartItems = [] } = request;
 
-    cartItems.forEach((cartItem) => {
-      const { country_origin: country = '' } = cartItem?.product?.attributes ?? {};
+    for (const cartItem of cartItems) {
+      const { country_origin: country = "" } =
+        cartItem?.product?.attributes ?? {};
 
-      if (country.toLowerCase() === 'china') {
+      if (country.toLowerCase() === "china") {
         operations.push({
-          op: 'add',
-          path: 'result',
+          op: "add",
+          path: "result",
           value: {
-            carrier_code: 'DPS',
-            method: 'dps_shipping_from_china',
-            method_title: 'Demo Custom Shipping country origin China',
+            carrier_code: "DPS",
+            method: "dps_shipping_from_china",
+            method_title: "Demo Custom Shipping country origin China",
             price: 230,
             cost: 230,
             additional_data: [
               {
-                key: 'shipped_from',
-                value: 'China',
+                key: "shipped_from",
+                value: "China",
               },
               {
-                key: 'delivery_time',
-                value: '15 days',
+                key: "delivery_time",
+                value: "15 days",
               },
             ],
           },
         });
       }
-    });
+    }
 
     // If the Commerce customer is logged in, the request contains customer data otherwise the customer is set to null
     // In the next example, the shipping method is added based on the Customer group id
@@ -148,23 +164,23 @@ async function shippingMethods(params) {
 
     if (
       Customer !== null &&
-      typeof Customer === 'object' &&
-      Object.prototype.hasOwnProperty.call(Customer, 'group_id') &&
-      Customer.group_id === '1'
+      typeof Customer === "object" &&
+      Object.hasOwn(Customer, "group_id") &&
+      Customer.group_id === "1"
     ) {
       operations.push({
-        op: 'add',
-        path: 'result',
+        op: "add",
+        path: "result",
         value: {
-          carrier_code: 'DPS',
-          method: 'dps_shipping_customer_group_one',
-          method_title: 'Demo Custom Shipping based on customer group',
+          carrier_code: "DPS",
+          method: "dps_shipping_customer_group_one",
+          method_title: "Demo Custom Shipping based on customer group",
           price: 7,
           cost: 7,
           additional_data: [
             {
-              key: 'group_special',
-              value: '-20%',
+              key: "group_special",
+              value: "-20%",
             },
           ],
         },
@@ -185,15 +201,18 @@ async function shippingMethods(params) {
 
     logger.info(`Generated ${operations.length} shipping method operations`);
 
-    checkoutMetrics.shippingMethodsCounter.add(1, { status: 'success' });
+    checkoutMetrics.shippingMethodsCounter.add(1, { status: "success" });
 
     return {
       statusCode: HTTP_OK,
       body: JSON.stringify(operations),
     };
   } catch (error) {
-    logger.error('Error in shipping methods:', error);
-    checkoutMetrics.shippingMethodsCounter.add(1, { status: 'error', error_code: 'exception' });
+    logger.error("Error in shipping methods:", error);
+    checkoutMetrics.shippingMethodsCounter.add(1, {
+      status: "error",
+      error_code: "exception",
+    });
     return webhookErrorResponse(`Server error: ${error.message}`);
   }
 }
@@ -206,8 +225,8 @@ async function shippingMethods(params) {
  */
 function createShippingOperation(carrierData) {
   return {
-    op: 'add',
-    path: 'result',
+    op: "add",
+    path: "result",
     value: carrierData,
   };
 }

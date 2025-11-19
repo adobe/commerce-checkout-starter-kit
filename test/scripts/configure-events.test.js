@@ -10,12 +10,13 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { Events } from '@adobe/aio-sdk';
-import { configureEvents } from '../../scripts/configure-events.js';
+import { Events } from "@adobe/aio-sdk";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 
-vi.mock('@adobe/aio-sdk', async () => ({
-  ...(await vi.importActual('@adobe/aio-sdk')),
+import { configureEvents } from "../../scripts/configure-events.js";
+
+vi.mock("@adobe/aio-sdk", async () => ({
+  ...(await vi.importActual("@adobe/aio-sdk")),
   Events: {
     init: vi.fn(),
   },
@@ -37,25 +38,35 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-const project = { organizationId: 'orgId', projectId: 'projectId', workspaceId: 'workspaceId' };
-const credentials = { imsOrgId: 'imsOrgId', clientId: 'clientId', accessToken: 'accessToken' };
+const project = {
+  organizationId: "orgId",
+  projectId: "projectId",
+  workspaceId: "workspaceId",
+};
+const credentials = {
+  imsOrgId: "imsOrgId",
+  clientId: "clientId",
+  accessToken: "accessToken",
+};
 
-describe('configure-events', () => {
-  describe('configureEvents', () => {
-    test('does nothing when event config is empty', async () => {
+describe("configure-events", () => {
+  describe("configureEvents", () => {
+    test("does nothing when event config is empty", async () => {
       const eventsConfig = await configureEvents(project, credentials, {});
       expect(eventsConfig).toEqual([]);
     });
-    describe('providers', () => {
-      test('is created when missing', async () => {
+    describe("providers", () => {
+      test("is created when missing", async () => {
         const eventProvider = {
-          label: 'label',
-          description: 'description',
-          docs_url: 'docs_url',
+          label: "label",
+          description: "description",
+          docs_url: "docs_url",
         };
-        const createdEventProvider = { id: '1', ...eventProvider };
+        const createdEventProvider = { id: "1", ...eventProvider };
 
-        mockEvents.getAllProviders.mockResolvedValue({ _embedded: { providers: [] } });
+        mockEvents.getAllProviders.mockResolvedValue({
+          _embedded: { providers: [] },
+        });
         mockEvents.createProvider.mockResolvedValue(createdEventProvider);
 
         const eventsConfig = await configureEvents(project, credentials, {
@@ -64,16 +75,21 @@ describe('configure-events', () => {
 
         expect(eventsConfig[0]?.provider).toEqual(createdEventProvider);
       });
-      test('is updated when present', async () => {
+      test("is updated when present", async () => {
         const originalEventProvider = {
-          id: '1',
-          label: 'label',
-          description: 'description',
-          docs_url: 'docs_url',
+          id: "1",
+          label: "label",
+          description: "description",
+          docs_url: "docs_url",
         };
-        const updatedEventProvider = { ...originalEventProvider, description: 'updated' };
+        const updatedEventProvider = {
+          ...originalEventProvider,
+          description: "updated",
+        };
 
-        mockEvents.getAllProviders.mockResolvedValue({ _embedded: { providers: [originalEventProvider] } });
+        mockEvents.getAllProviders.mockResolvedValue({
+          _embedded: { providers: [originalEventProvider] },
+        });
         mockEvents.updateProvider.mockResolvedValue(updatedEventProvider);
 
         const eventsConfig = await configureEvents(project, credentials, {
@@ -82,15 +98,17 @@ describe('configure-events', () => {
 
         expect(eventsConfig[0]?.provider).toEqual(updatedEventProvider);
       });
-      test('unchanged when present and in sync', async () => {
+      test("unchanged when present and in sync", async () => {
         const eventProvider = {
-          id: '1',
-          label: 'label',
-          description: 'description',
-          docs_url: 'docs_url',
+          id: "1",
+          label: "label",
+          description: "description",
+          docs_url: "docs_url",
         };
 
-        mockEvents.getAllProviders.mockResolvedValue({ _embedded: { providers: [eventProvider] } });
+        mockEvents.getAllProviders.mockResolvedValue({
+          _embedded: { providers: [eventProvider] },
+        });
 
         const eventsConfig = await configureEvents(project, credentials, {
           event_providers: [eventProvider],
@@ -98,25 +116,31 @@ describe('configure-events', () => {
 
         expect(eventsConfig[0]?.provider).toEqual(eventProvider);
       });
-      describe('events metadata', () => {
+      describe("events metadata", () => {
         const eventProvider = {
-          id: '1',
-          label: 'label',
-          description: 'description',
-          docs_url: 'docs_url',
+          id: "1",
+          label: "label",
+          description: "description",
+          docs_url: "docs_url",
         };
-        mockEvents.getAllProviders.mockResolvedValue({ _embedded: { providers: [eventProvider] } });
+        mockEvents.getAllProviders.mockResolvedValue({
+          _embedded: { providers: [eventProvider] },
+        });
 
-        test('is created when missing', async () => {
+        test("is created when missing", async () => {
           const eventMetadata = {
-            event_code: 'event_code',
-            label: 'label',
-            description: 'description',
+            event_code: "event_code",
+            label: "label",
+            description: "description",
           };
-          const createdEventMetadata = { id: '1', ...eventMetadata };
+          const createdEventMetadata = { id: "1", ...eventMetadata };
 
-          mockEvents.getAllEventMetadataForProvider.mockResolvedValue({ _embedded: { eventmetadata: [] } });
-          mockEvents.createEventMetadataForProvider.mockResolvedValue(createdEventMetadata);
+          mockEvents.getAllEventMetadataForProvider.mockResolvedValue({
+            _embedded: { eventmetadata: [] },
+          });
+          mockEvents.createEventMetadataForProvider.mockResolvedValue(
+            createdEventMetadata,
+          );
 
           const eventsConfig = await configureEvents(project, credentials, {
             event_providers: [
@@ -127,21 +151,28 @@ describe('configure-events', () => {
             ],
           });
 
-          expect(eventsConfig[0]?.eventsMetadata[0]).toEqual(createdEventMetadata);
+          expect(eventsConfig[0]?.eventsMetadata[0]).toEqual(
+            createdEventMetadata,
+          );
         });
-        test('is updated when present', async () => {
+        test("is updated when present", async () => {
           const originalEventMetadata = {
-            id: '1',
-            event_code: 'event_code',
-            label: 'label',
-            description: 'description',
+            id: "1",
+            event_code: "event_code",
+            label: "label",
+            description: "description",
           };
-          const updatedEventMetadata = { description: 'updated', ...originalEventMetadata };
+          const updatedEventMetadata = {
+            description: "updated",
+            ...originalEventMetadata,
+          };
 
           mockEvents.getAllEventMetadataForProvider.mockResolvedValue({
             _embedded: { eventmetadata: [originalEventMetadata] },
           });
-          mockEvents.updateEventMetadataForProvider.mockResolvedValue(updatedEventMetadata);
+          mockEvents.updateEventMetadataForProvider.mockResolvedValue(
+            updatedEventMetadata,
+          );
 
           const eventsConfig = await configureEvents(project, credentials, {
             event_providers: [
@@ -152,14 +183,16 @@ describe('configure-events', () => {
             ],
           });
 
-          expect(eventsConfig[0]?.eventsMetadata[0]).toEqual(updatedEventMetadata);
+          expect(eventsConfig[0]?.eventsMetadata[0]).toEqual(
+            updatedEventMetadata,
+          );
         });
-        test('unchanged when present and in sync', async () => {
+        test("unchanged when present and in sync", async () => {
           const eventMetadata = {
-            id: '1',
-            event_code: 'event_code',
-            label: 'label',
-            description: 'description',
+            id: "1",
+            event_code: "event_code",
+            label: "label",
+            description: "description",
           };
 
           mockEvents.getAllEventMetadataForProvider.mockResolvedValue({

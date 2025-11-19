@@ -10,24 +10,24 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { test, expect } from 'vitest';
-import { Core } from '@adobe/aio-sdk';
+import { Core } from "@adobe/aio-sdk";
+import { expect, test } from "vitest";
 
 const { Config } = Core;
 
 // get action url
-const namespace = Config.get('runtime.namespace');
-const hostname = Config.get('cna.hostname') || 'adobeioruntime.net';
-const runtimePackage = 'commerce-checkout-starter-kit';
+const namespace = Config.get("runtime.namespace");
+const hostname = Config.get("cna.hostname") || "adobeioruntime.net";
+const runtimePackage = "commerce-checkout-starter-kit";
 const actionUrl = `https://${namespace}.${hostname}/api/v1/web/${runtimePackage}/generic`;
 
 // The deployed actions are secured with the `require-adobe-auth` annotation.
 // If the authorization header is missing, Adobe I/O Runtime returns with a 401 before the action is executed.
-test('returns a 401 when missing Authorization header', async () => {
+test("returns a 401 when missing Authorization header", async () => {
   const res = await fetch(actionUrl);
   expect(res).toEqual(
     expect.objectContaining({
       status: 401,
-    })
+    }),
   );
 });

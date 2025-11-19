@@ -10,105 +10,116 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { getAdobeCommerceClient, webhookVerify } from '../../lib/adobe-commerce.js';
-import crypto from 'crypto';
-import nock from 'nock';
+import crypto from "node:crypto";
 
-vi.mock('@adobe/aio-lib-ims', async () => {
-  const actual = await vi.importActual('@adobe/aio-lib-ims');
-  const mockGetToken = vi.fn();
+import nock from "nock";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+
+import {
+  getAdobeCommerceClient,
+  webhookVerify,
+} from "../../lib/adobe-commerce.js";
+
+vi.mock("@adobe/aio-lib-ims", async () => {
+  const actual = await vi.importActual("@adobe/aio-lib-ims");
+  const getToken = vi.fn();
   return {
     default: {
       context: actual.context,
-      getToken: mockGetToken,
+      getToken,
     },
     context: actual.context,
-    getToken: mockGetToken,
+    getToken,
   };
 });
 
 // Get the mocked module to access mockGetToken
-const { getToken: mockGetToken } = await import('@adobe/aio-lib-ims');
+const { getToken: mockGetToken } = await import("@adobe/aio-lib-ims");
 
-describe('getAdobeCommerceClient', () => {
+describe("getAdobeCommerceClient", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('getAdobeCommerceClient', () => {
+  describe("getAdobeCommerceClient", () => {
     const sharedParams = {
-      COMMERCE_BASE_URL: 'http://mycommerce.com',
-      LOG_LEVEL: 'debug',
+      COMMERCE_BASE_URL: "http://mycommerce.com",
+      LOG_LEVEL: "debug",
     };
-    test('with IMS auth', async () => {
+    test("with IMS auth", async () => {
       const params = {
         ...sharedParams,
-        OAUTH_CLIENT_ID: 'test-client-id',
-        OAUTH_CLIENT_SECRETS: JSON.stringify(['supersecret']),
-        OAUTH_TECHNICAL_ACCOUNT_ID: 'test-technical-account-id',
-        OAUTH_TECHNICAL_ACCOUNT_EMAIL: 'test-email@example.com',
-        OAUTH_IMS_ORG_ID: 'test-org-id',
-        OAUTH_SCOPES: JSON.stringify(['scope1', 'scope2']),
+        OAUTH_CLIENT_ID: "test-client-id",
+        OAUTH_CLIENT_SECRETS: JSON.stringify(["supersecret"]),
+        OAUTH_TECHNICAL_ACCOUNT_ID: "test-technical-account-id",
+        OAUTH_TECHNICAL_ACCOUNT_EMAIL: "test-email@example.com",
+        OAUTH_IMS_ORG_ID: "test-org-id",
+        OAUTH_SCOPES: JSON.stringify(["scope1", "scope2"]),
       };
-      mockGetToken.mockResolvedValue('supersecrettoken');
+      mockGetToken.mockResolvedValue("supersecrettoken");
       const scope = nock(params.COMMERCE_BASE_URL)
-        .get('/V1/testauth')
-        .matchHeader('Content-Type', 'application/json')
-        .matchHeader('x-ims-org-id', params.OAUTH_IMS_ORG_ID)
-        .matchHeader('x-api-key', params.OAUTH_CLIENT_ID)
-        .matchHeader('Authorization', 'Bearer supersecrettoken')
+        .get("/V1/testauth")
+        .matchHeader("Content-Type", "application/json")
+        .matchHeader("x-ims-org-id", params.OAUTH_IMS_ORG_ID)
+        .matchHeader("x-api-key", params.OAUTH_CLIENT_ID)
+        .matchHeader("Authorization", "Bearer supersecrettoken")
         .reply(200);
 
       const client = await getAdobeCommerceClient(params);
       expect(mockGetToken).toHaveBeenCalled();
 
-      const { success } = await client.get('testauth');
+      const { success } = await client.get("testauth");
       expect(success).toBeTruthy();
       scope.done();
     });
 
-    test('with Commerce integration auth', async () => {
+    test("with Commerce integration auth", async () => {
       const params = {
         ...sharedParams,
-        COMMERCE_CONSUMER_KEY: 'test-consumer-key',
-        COMMERCE_CONSUMER_SECRET: 'test-consumer-secret',
-        COMMERCE_ACCESS_TOKEN: 'test-access-token',
-        COMMERCE_ACCESS_TOKEN_SECRET: 'test-access-token-secret',
+        COMMERCE_CONSUMER_KEY: "test-consumer-key",
+        COMMERCE_CONSUMER_SECRET: "test-consumer-secret",
+        COMMERCE_ACCESS_TOKEN: "test-access-token",
+        COMMERCE_ACCESS_TOKEN_SECRET: "test-access-token-secret",
       };
 
       const scope = nock(params.COMMERCE_BASE_URL)
-        .get('/V1/testauth')
-        .matchHeader('Content-Type', 'application/json')
+        .get("/V1/testauth")
+        .matchHeader("Content-Type", "application/json")
         .matchHeader(
-          'Authorization',
-          /^OAuth oauth_consumer_key="test-consumer-key", oauth_nonce="[^"]+", oauth_signature="[^"]+", oauth_signature_method="HMAC-SHA256", oauth_timestamp="[^"]+", oauth_token="test-access-token", oauth_version="1\.0"$/
+          "Authorization",
+          // biome-ignore lint/performance/useTopLevelRegex: not relevant in tests
+          /^OAuth oauth_consumer_key="test-consumer-key", oauth_nonce="[^"]+", oauth_signature="[^"]+", oauth_signature_method="HMAC-SHA256", oauth_timestamp="[^"]+", oauth_token="test-access-token", oauth_version="1\.0"$/,
         )
         .reply(200);
 
       const client = await getAdobeCommerceClient(params);
 
-      const { success } = await client.get('testauth');
+      const { success } = await client.get("testauth");
       expect(success).toBeTruthy();
       scope.done();
     });
 
-    test('throws when missing auth method', async () => {
+    test("throws when missing auth method", async () => {
       await expect(getAdobeCommerceClient(sharedParams)).rejects.toThrow(
-        "Can't resolve authentication options for the given params."
+        "Can't resolve authentication options for the given params.",
       );
     });
   });
 });
 
-describe('webhookVerify', () => {
-  const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 512 });
-  const body = JSON.stringify({ test: 'data' });
-  const signature = crypto.createSign('SHA256').update(body).sign(privateKey, 'base64');
+describe("webhookVerify", () => {
+  const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {
+    modulusLength: 512,
+  });
+  const body = JSON.stringify({ test: "data" });
+  const signature = crypto
+    .createSign("SHA256")
+    .update(body)
+    .sign(privateKey, "base64");
 
-  test('should return success true for valid signature', () => {
+  test("should return success true for valid signature", () => {
     const params = {
-      __ow_headers: { 'x-adobe-commerce-webhook-signature': signature },
+      __ow_headers: { "x-adobe-commerce-webhook-signature": signature },
       __ow_body: body,
       COMMERCE_WEBHOOKS_PUBLIC_KEY: publicKey,
     };
@@ -117,7 +128,7 @@ describe('webhookVerify', () => {
     expect(result).toEqual({ success: true });
   });
 
-  test('should return success false for missing signature header', () => {
+  test("should return success false for missing signature header", () => {
     const params = {
       __ow_headers: {},
       __ow_body: body,
@@ -129,9 +140,9 @@ describe('webhookVerify', () => {
     expect(result).toEqual({ success: false, error: expect.any(String) });
   });
 
-  test('should return success false for missing body', () => {
+  test("should return success false for missing body", () => {
     const params = {
-      __ow_headers: { 'x-adobe-commerce-webhook-signature': signature },
+      __ow_headers: { "x-adobe-commerce-webhook-signature": signature },
       COMMERCE_WEBHOOKS_PUBLIC_KEY: publicKey,
     };
 
@@ -140,9 +151,9 @@ describe('webhookVerify', () => {
     expect(result).toEqual({ success: false, error: expect.any(String) });
   });
 
-  test('should return success false for missing public key', () => {
+  test("should return success false for missing public key", () => {
     const params = {
-      __ow_headers: { 'x-adobe-commerce-webhook-signature': signature },
+      __ow_headers: { "x-adobe-commerce-webhook-signature": signature },
       __ow_body: body,
     };
 
@@ -151,10 +162,10 @@ describe('webhookVerify', () => {
     expect(result).toEqual({ success: false, error: expect.any(String) });
   });
 
-  test('should return success false for invalid signature', () => {
-    const invalidSignature = 'invalid-signature';
+  test("should return success false for invalid signature", () => {
+    const invalidSignature = "invalid-signature";
     const params = {
-      __ow_headers: { 'x-adobe-commerce-webhook-signature': invalidSignature },
+      __ow_headers: { "x-adobe-commerce-webhook-signature": invalidSignature },
       __ow_body: body,
       COMMERCE_WEBHOOKS_PUBLIC_KEY: publicKey,
     };

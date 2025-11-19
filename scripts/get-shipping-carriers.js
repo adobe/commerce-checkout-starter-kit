@@ -10,7 +10,7 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { getAdobeCommerceClient } from '../lib/adobe-commerce.js';
+import { getAdobeCommerceClient } from "../lib/adobe-commerce.js";
 
 /**
  * Retrieves all shipping carrier from the configured Adobe Commerce instance
@@ -18,15 +18,15 @@ import { getAdobeCommerceClient } from '../lib/adobe-commerce.js';
 export async function main() {
   const client = await getAdobeCommerceClient(process.env);
   const response = await client.getOopeShippingCarriers();
-  console.info('Fetching shipping carriers...');
+  console.info("Fetching shipping carriers...");
   if (response.success) {
     console.info(
       `Total ${response.message.length} shipping carriers fetched: ${response.message
-        .map((carrier) => '\n' + JSON.stringify(carrier, null, 2))
-        .join('')}`
+        .map((carrier) => `\n${JSON.stringify(carrier, null, 2)}`)
+        .join("")}`,
     );
   } else {
-    console.error(`Failed to retrieve shipping carriers` + response.message);
+    console.error(`Failed to retrieve shipping carriers${response.message}`);
   }
 }
 

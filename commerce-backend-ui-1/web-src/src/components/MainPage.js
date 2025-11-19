@@ -9,14 +9,23 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-import { Flex, Item, ProgressCircle, TabList, TabPanels, Tabs, View } from '@adobe/react-spectrum';
-import { attach } from '@adobe/uix-guest';
-import { useEffect, useState } from 'react';
-import { TaxClassesPage } from './TaxClassesPage';
-import { TAX_EXTENSION_ID } from '../constants/extension';
+import {
+  Flex,
+  Item,
+  ProgressCircle,
+  TabList,
+  TabPanels,
+  Tabs,
+  View,
+} from "@adobe/react-spectrum";
+import { attach } from "@adobe/uix-guest";
+import { useEffect, useState } from "react";
+
+import { TAX_EXTENSION_ID } from "../constants/extension";
+import { TaxClassesPage } from "./TaxClassesPage";
 
 export const MainPage = (props) => {
-  const [selectedTab, setSelectedTab] = useState('1');
+  const [selectedTab, setSelectedTab] = useState("1");
   const [imsToken, setImsToken] = useState(null);
   const [imsOrgId, setImsOrgId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -25,6 +34,7 @@ export const MainPage = (props) => {
     setSelectedTab(selectedTabKey);
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only run on mount
   useEffect(() => {
     // Load IMS token for calling require-adobe-auth: true actions
     const loadImsInfo = async () => {
@@ -38,11 +48,11 @@ export const MainPage = (props) => {
           // See https://developer.adobe.com/commerce/extensibility/admin-ui-sdk/extension-points/#shared-contexts
           const guestConnection = await attach({ id: TAX_EXTENSION_ID });
           const context = guestConnection?.sharedContext;
-          setImsToken(context?.get('imsToken'));
-          setImsOrgId(context?.get('imsOrgId'));
+          setImsToken(context?.get("imsToken"));
+          setImsOrgId(context?.get("imsOrgId"));
         }
       } catch (error) {
-        console.error('Error loading IMS info:', error);
+        console.error("Error loading IMS info:", error);
       } finally {
         setIsLoading(false);
       }
@@ -53,29 +63,38 @@ export const MainPage = (props) => {
 
   const tabs = [
     {
-      id: '1',
-      name: 'Tax Class',
-      children: <TaxClassesPage runtime={props.runtime} imsToken={imsToken} imsOrgId={imsOrgId} />,
+      id: "1",
+      name: "Tax Class",
+      children: (
+        <TaxClassesPage
+          imsOrgId={imsOrgId}
+          imsToken={imsToken}
+          runtime={props.runtime}
+        />
+      ),
     },
   ];
 
   return (
     <View>
       {isLoading ? (
-        <Flex alignItems="center" justifyContent="center" height="100vh">
-          <ProgressCircle size="L" aria-label="Loading…" isIndeterminate />
+        <Flex alignItems="center" height="100vh" justifyContent="center">
+          <ProgressCircle aria-label="Loading…" isIndeterminate size="L" />
         </Flex>
       ) : (
         <Tabs
           aria-label="Commerce data"
-          items={tabs}
-          orientation="horizontal"
           isEmphasized={true}
-          selectedKey={selectedTab}
+          items={tabs}
           onSelectionChange={onSelectionTabChange}
-        >
-          <TabList marginX={20}>{(item) => <Item key={item.id}>{item.name}</Item>}</TabList>
-          <TabPanels>{(item) => <Item key={item.id}>{item.children}</Item>}</TabPanels>
+          orientation="horizontal"
+          selectedKey={selectedTab}>
+          <TabList marginX={20}>
+            {(item) => <Item key={item.id}>{item.name}</Item>}
+          </TabList>
+          <TabPanels>
+            {(item) => <Item key={item.id}>{item.children}</Item>}
+          </TabPanels>
         </Tabs>
       )}
     </View>

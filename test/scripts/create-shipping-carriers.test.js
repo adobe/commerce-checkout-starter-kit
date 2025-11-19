@@ -10,30 +10,31 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { main } from '../../scripts/create-shipping-carriers.js';
-import { getAdobeCommerceClient } from '../../lib/adobe-commerce.js';
+import { beforeEach, describe, expect, test, vi } from "vitest";
 
-vi.mock('../../lib/adobe-commerce.js');
+import { getAdobeCommerceClient } from "../../lib/adobe-commerce.js";
+import { main } from "../../scripts/create-shipping-carriers.js";
 
-describe('create-shipping-carriers', () => {
+vi.mock("../../lib/adobe-commerce.js");
+
+describe("create-shipping-carriers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  test('shipping carriers created', async () => {
+  test("shipping carriers created", async () => {
     mockAdobeCommerceClient({ success: true }, { success: true });
-    const result = await main('test/scripts/shipping-carriers-test.yaml');
-    expect(result).toEqual(['carrier-1', 'carrier-2']);
+    const result = await main("test/scripts/shipping-carriers-test.yaml");
+    expect(result).toEqual(["carrier-1", "carrier-2"]);
   });
-  test('only one shipping carrier is created', async () => {
+  test("only one shipping carrier is created", async () => {
     mockAdobeCommerceClient({ success: true }, { success: false });
-    const result = await main('test/scripts/shipping-carriers-test.yaml');
-    expect(result).toEqual(['carrier-1']);
+    const result = await main("test/scripts/shipping-carriers-test.yaml");
+    expect(result).toEqual(["carrier-1"]);
   });
-  test('no shipping carrier is created', async () => {
+  test("no shipping carrier is created", async () => {
     mockAdobeCommerceClient({ success: false }, { success: false });
-    const result = await main('test/scripts/shipping-carriers-test.yaml');
+    const result = await main("test/scripts/shipping-carriers-test.yaml");
     expect(result).toEqual([]);
   });
 });
@@ -47,6 +48,9 @@ describe('create-shipping-carriers', () => {
  */
 function mockAdobeCommerceClient(response1, response2) {
   getAdobeCommerceClient.mockResolvedValue({
-    createOopeShippingCarrier: vi.fn().mockResolvedValueOnce(response1).mockResolvedValueOnce(response2),
+    createOopeShippingCarrier: vi
+      .fn()
+      .mockResolvedValueOnce(response1)
+      .mockResolvedValueOnce(response2),
   });
 }

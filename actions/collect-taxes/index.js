@@ -10,18 +10,25 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { HTTP_OK } from '../../lib/http.js';
-import { webhookErrorResponse, webhookVerify } from '../../lib/adobe-commerce.js';
-import { telemetryConfig, isWebhookSuccessful } from '../telemetry.js';
-import { instrumentEntrypoint, getInstrumentationHelpers } from '@adobe/aio-lib-telemetry';
-import { checkoutMetrics } from '../checkout-metrics.js';
+import {
+  getInstrumentationHelpers,
+  instrumentEntrypoint,
+} from "@adobe/aio-lib-telemetry";
+
+import {
+  webhookErrorResponse,
+  webhookVerify,
+} from "../../lib/adobe-commerce.js";
+import { HTTP_OK } from "../../lib/http.js";
+import { checkoutMetrics } from "../checkout-metrics.js";
+import { isWebhookSuccessful, telemetryConfig } from "../telemetry.js";
 
 const TAX_RATES = Object.freeze({
   EXCLUDING_TAX: [
-    { code: 'state_tax', rate: 4.5, title: 'State Tax' },
-    { code: 'county_tax', rate: 3.6, title: 'County Tax' },
+    { code: "state_tax", rate: 4.5, title: "State Tax" },
+    { code: "county_tax", rate: 3.6, title: "County Tax" },
   ],
-  INCLUDING_TAX: [{ code: 'vat', rate: 8.4, title: 'VAT' }],
+  INCLUDING_TAX: [{ code: "vat", rate: 8.4, title: "VAT" }],
 });
 
 /**
@@ -32,24 +39,32 @@ const TAX_RATES = Object.freeze({
  * @returns {Promise<{statusCode: number, body: {op: string}}>} the response object
  * @see https://developer.adobe.com/commerce/extensibility/webhooks
  */
-async function collectTaxes(params) {
+function collectTaxes(params) {
   const { logger, currentSpan } = getInstrumentationHelpers();
 
-  logger.debug('Starting tax collection process');
-
   try {
+    logger.info("Starting tax collection process");
+
     const { success, error } = webhookVerify(params);
     if (!success) {
       logger.error(`Webhook verification failed: ${error}`);
-      checkoutMetrics.collectTaxesCounter.add(1, { status: 'error', error_code: 'verification_failed' });
-      return webhookErrorResponse(`Failed to verify the webhook signature: ${error}`);
+      checkoutMetrics.collectTaxesCounter.add(1, {
+        status: "error",
+        error_code: "verification_failed",
+      });
+      return webhookErrorResponse(
+        `Failed to verify the webhook signature: ${error}`,
+      );
     }
 
     // in the case when "raw-http: true" the body needs to be decoded and converted to JSON
     const body = JSON.parse(atob(params.__ow_body));
-    logger.debug('Received request: ', body);
+    logger.debug("Received request: ", body);
 
-    currentSpan.setAttribute('quote.items.count', body.oopQuote?.items?.length || 0);
+    currentSpan.setAttribute(
+      "quote.items.count",
+      body.oopQuote?.items?.length || 0,
+    );
 
     const operations = [];
 
@@ -57,17 +72,23 @@ async function collectTaxes(params) {
       operations.push(...calculateTaxOperations(item, index));
     });
 
-    logger.debug('Tax calculation response : ', JSON.stringify(operations, null, 2));
+    logger.info(
+      "Tax calculation response : ",
+      JSON.stringify(operations, null, 2),
+    );
 
-    checkoutMetrics.collectTaxesCounter.add(1, { status: 'success' });
+    checkoutMetrics.collectTaxesCounter.add(1, { status: "success" });
 
     return {
       statusCode: HTTP_OK,
       body: JSON.stringify(operations),
     };
   } catch (error) {
-    logger.error('Error in tax collection:', error);
-    checkoutMetrics.collectTaxesCounter.add(1, { status: 'error', error_code: 'exception' });
+    logger.error("Error in tax collection:", error);
+    checkoutMetrics.collectTaxesCounter.add(1, {
+      status: "error",
+      error_code: "exception",
+    });
     return webhookErrorResponse(`Server error: ${error.message}`);
   }
 }
@@ -83,12 +104,15 @@ function calculateTaxOperations(item, index) {
   const operations = [];
 
   // This sample assumes that discount is applied before tax (Apply Tax After Discount = NO)
-  const discountAmount = Math.min(item.unit_price * item.quantity, item.discount_amount);
+  const discountAmount = Math.min(
+    item.unit_price * item.quantity,
+    item.discount_amount,
+  );
   const taxableAmount = item.unit_price * item.quantity - discountAmount;
   let itemTaxAmount = 0.0;
   let discountCompensationTaxAmount = 0.0;
 
-  taxesToApply.forEach((tax) => {
+  for (const tax of taxesToApply) {
     let taxAmount = 0;
 
     if (item.is_tax_included) {
@@ -105,15 +129,26 @@ function calculateTaxOperations(item, index) {
     itemTaxAmount += taxAmount;
 
     operations.push(createTaxBreakdownOperation(index, tax, taxAmount));
-  });
+  }
 
   itemTaxAmount = Math.round(itemTaxAmount * 100) / 100;
-  discountCompensationTaxAmount = Math.round(discountCompensationTaxAmount * 100) / 100;
+  discountCompensationTaxAmount =
+    Math.round(discountCompensationTaxAmount * 100) / 100;
 
-  const netPrice = item.is_tax_included ? taxableAmount - itemTaxAmount : taxableAmount;
-  const itemTaxRate = netPrice > 0 ? Math.round((itemTaxAmount / netPrice) * 10000) / 100 : 0;
+  const netPrice = item.is_tax_included
+    ? taxableAmount - itemTaxAmount
+    : taxableAmount;
+  const itemTaxRate =
+    netPrice > 0 ? Math.round((itemTaxAmount / netPrice) * 10_000) / 100 : 0;
 
-  operations.push(createTaxSummaryOperation(index, itemTaxRate, itemTaxAmount, discountCompensationTaxAmount));
+  operations.push(
+    createTaxSummaryOperation(
+      index,
+      itemTaxRate,
+      itemTaxAmount,
+      discountCompensationTaxAmount,
+    ),
+  );
 
   return operations;
 }
@@ -126,7 +161,9 @@ function calculateTaxOperations(item, index) {
  */
 function obtainTaxRates(item) {
   // Replace this example with external tax service containing the tax rates
-  return item.is_tax_included ? TAX_RATES.INCLUDING_TAX : TAX_RATES.EXCLUDING_TAX;
+  return item.is_tax_included
+    ? TAX_RATES.INCLUDING_TAX
+    : TAX_RATES.EXCLUDING_TAX;
 }
 
 /**
@@ -139,7 +176,7 @@ function obtainTaxRates(item) {
  */
 function createTaxBreakdownOperation(index, tax, taxAmount) {
   return {
-    op: 'add',
+    op: "add",
     path: `oopQuote/items/${index}/tax_breakdown`,
     value: {
       data: {
@@ -150,7 +187,8 @@ function createTaxBreakdownOperation(index, tax, taxAmount) {
         tax_rate_key: `${tax.code}-${tax.rate}`,
       },
     },
-    instance: 'Magento\\OutOfProcessTaxManagement\\Api\\Data\\OopQuoteItemTaxBreakdownInterface',
+    instance:
+      "Magento\\OutOfProcessTaxManagement\\Api\\Data\\OopQuoteItemTaxBreakdownInterface",
   };
 }
 
@@ -163,9 +201,14 @@ function createTaxBreakdownOperation(index, tax, taxAmount) {
  * @returns {{op: string, path: string, value: object, instance: string}} the response operation
  * @see https://developer.adobe.com/commerce/extensibility/webhooks/responses/#replace-operation
  */
-function createTaxSummaryOperation(index, itemTaxRate, itemTaxAmount, discountCompensationTaxAmount) {
+function createTaxSummaryOperation(
+  index,
+  itemTaxRate,
+  itemTaxAmount,
+  discountCompensationTaxAmount,
+) {
   return {
-    op: 'replace',
+    op: "replace",
     path: `oopQuote/items/${index}/tax`,
     value: {
       data: {
@@ -174,7 +217,8 @@ function createTaxSummaryOperation(index, itemTaxRate, itemTaxAmount, discountCo
         discount_compensation_amount: discountCompensationTaxAmount,
       },
     },
-    instance: 'Magento\\OutOfProcessTaxManagement\\Api\\Data\\OopQuoteItemTaxInterface',
+    instance:
+      "Magento\\OutOfProcessTaxManagement\\Api\\Data\\OopQuoteItemTaxInterface",
   };
 }
 

@@ -10,9 +10,10 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { Core, State } from '@adobe/aio-sdk';
-import { errorResponse } from '../utils.js';
-import { HTTP_OK, HTTP_INTERNAL_ERROR } from '../../lib/http.js';
+import { Core, State } from "@adobe/aio-sdk";
+
+import { HTTP_INTERNAL_ERROR, HTTP_OK } from "../../lib/http.js";
+import { errorResponse } from "../utils.js";
 
 /**
  * Simple action to consume 3rd party events produced by the publisher.
@@ -22,7 +23,9 @@ import { HTTP_OK, HTTP_INTERNAL_ERROR } from '../../lib/http.js';
  * @see https://developer.adobe.com/events/docs/support/faq/#what-happens-if-my-webhook-is-down-why-is-my-event-registration-marked-as-unstable
  */
 export async function main(params) {
-  const logger = Core.Logger('3rd-party-events/consume', { level: params.LOG_LEVEL || 'info' });
+  const logger = Core.Logger("3rd-party-events/consume", {
+    level: params.LOG_LEVEL || "info",
+  });
 
   // eslint-disable-next-line no-unused-vars
   const { id, type, data } = params;
@@ -38,6 +41,6 @@ export async function main(params) {
     };
   } catch (error) {
     logger.error(error);
-    return errorResponse(HTTP_INTERNAL_ERROR, 'server error', logger);
+    return errorResponse(HTTP_INTERNAL_ERROR, "server error", logger);
   }
 }
