@@ -10,18 +10,25 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import dotenv from 'dotenv';
-import { Core, Events } from '@adobe/aio-sdk';
-import yaml from 'js-yaml';
-import fs from 'fs';
-import * as keyValues from '../lib/key-values.js';
-import { replaceEnvVar } from '../lib/env.js';
-import { resolveCredentials } from '../lib/adobe-auth.js';
-import { v4 as uuidv4 } from 'uuid';
+import fs from "node:fs";
+
+import { Core, Events } from "@adobe/aio-sdk";
+import dotenv from "dotenv";
+import yaml from "js-yaml";
+import { v4 as uuidv4 } from "uuid";
+
+import { resolveCredentials } from "../lib/adobe-auth.js";
+import { replaceEnvVar } from "../lib/env.js";
+import {
+  decode as keyValueDecode,
+  encode as keyValueEncode,
+} from "../lib/key-values.js";
 
 dotenv.config();
 
-const logger = Core.Logger('events-config', { level: process.env.LOG_LEVEL || 'info' });
+const logger = Core.Logger("events-config", {
+  level: process.env.LOG_LEVEL || "info",
+});
 
 const eventProvidersPath = `${process.env.INIT_CWD}/events.config.yaml`;
 
@@ -37,42 +44,54 @@ const envPath = `${process.env.INIT_CWD}/.env`;
 async function main() {
   if (!fs.existsSync(eventProvidersPath)) {
     logger.warn(
-      `Event providers spec file not found at ${eventProvidersPath}, event providers reconciliation will be skipped`
+      `Event providers spec file not found at ${eventProvidersPath}, event providers reconciliation will be skipped`,
     );
     return;
   }
-  const eventProvidersSpec = yaml.load(fs.readFileSync(eventProvidersPath, 'utf8'));
+  const eventProvidersSpec = yaml.load(
+    fs.readFileSync(eventProvidersPath, "utf8"),
+  );
 
   const {
     org: { id: organizationId },
     id: projectId,
     workspace: { id: workspaceId },
-  } = Core.Config.get('project');
+  } = Core.Config.get("project");
   if (!organizationId) {
-    logger.warn(`Cannot find project.org.id in the config, event providers reconciliation will be skipped`);
+    logger.warn(
+      "Cannot find project.org.id in the config, event providers reconciliation will be skipped",
+    );
     return;
   }
   if (!projectId) {
-    logger.warn(`Cannot find project.id in the config, event providers reconciliation will be skipped`);
+    logger.warn(
+      "Cannot find project.id in the config, event providers reconciliation will be skipped",
+    );
     return;
   }
   if (!workspaceId) {
-    logger.warn(`Cannot find project.workspace.id in the config, event providers reconciliation will be skipped`);
+    logger.warn(
+      "Cannot find project.workspace.id in the config, event providers reconciliation will be skipped",
+    );
     return;
   }
 
   const clientId = process.env.SERVICE_API_KEY;
   if (!clientId) {
     logger.warn(
-      'SERVICE_API_KEY environment variable not found. Event provider reconciliation will be skipped. ' +
-        'Please run "aio app use" to configure the project.'
+      "SERVICE_API_KEY environment variable not found. Event provider reconciliation will be skipped. " +
+        'Please run "aio app use" to configure the project.',
     );
     return;
   }
 
-  const { imsOrgId, apiKey, accessToken } = await resolveCredentials(process.env);
+  const { imsOrgId, apiKey, accessToken } = await resolveCredentials(
+    process.env,
+  );
 
-  logger.info(`Event providers label will be suffixed with "<label> - ${process.env.AIO_runtime_namespace}"`);
+  logger.info(
+    `Event providers label will be suffixed with "<label> - ${process.env.AIO_runtime_namespace}"`,
+  );
   const modifiedEventProvidersSpec = {
     event_providers: eventProvidersSpec?.event_providers.map((provider) => ({
       ...provider,
@@ -83,17 +102,20 @@ async function main() {
   const eventsConfig = await configureEvents(
     { organizationId, projectId, workspaceId },
     { imsOrgId, apiKey, accessToken },
-    modifiedEventProvidersSpec
+    modifiedEventProvidersSpec,
   );
 
-  logger.info(`Event providers and metadata from ${eventProvidersPath} are in sync with the given spec.`);
+  logger.info(
+    `Event providers and metadata from ${eventProvidersPath} are in sync with the given spec.`,
+  );
   if (eventsConfig.length === 0) {
     return;
   }
 
-  const envProviderMapping = process.env.AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING;
-  const updatedProviderMapping = keyValues.encode({
-    ...keyValues.decode(envProviderMapping),
+  const envProviderMapping =
+    process.env.AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING;
+  const updatedProviderMapping = keyValueEncode({
+    ...keyValueDecode(envProviderMapping),
     // eslint-disable-next-line camelcase
     ...eventsConfig.reduce((acc, { provider: { provider_metadata, id } }) => {
       // eslint-disable-next-line camelcase
@@ -103,11 +125,17 @@ async function main() {
   });
   if (envProviderMapping === updatedProviderMapping) {
     logger.info(
-      `Event provider mapping AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING in file ${envPath} is already up to date.`
+      `Event provider mapping AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING in file ${envPath} is already up to date.`,
     );
   } else {
-    replaceEnvVar(envPath, 'AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING', updatedProviderMapping);
-    logger.info(`Updated event provider mapping AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING in file ${envPath}`);
+    replaceEnvVar(
+      envPath,
+      "AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING",
+      updatedProviderMapping,
+    );
+    logger.info(
+      `Updated event provider mapping AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING in file ${envPath}`,
+    );
   }
 }
 
@@ -127,11 +155,11 @@ async function main() {
 async function configureEvents(
   { organizationId, projectId, workspaceId },
   { apiKey, imsOrgId, accessToken },
-  eventsSpec
+  eventsSpec,
 ) {
   const eventProvidersSpec = eventsSpec?.event_providers ?? [];
   if (eventProvidersSpec.length === 0) {
-    logger.warn(`Event providers spec is empty.`);
+    logger.warn("Event providers spec is empty.");
     return [];
   }
 
@@ -144,7 +172,9 @@ async function configureEvents(
   return await Promise.all(
     eventProvidersSpec.map(async (providerSpec) => {
       const provider = await ensureEventProvider(providerSpec);
-      logger.info(`Configured event provider '${provider.label}' (${provider.id}).`);
+      logger.info(
+        `Configured event provider '${provider.label}' (${provider.id}).`,
+      );
 
       const eventsMetadataSpec = providerSpec.events_metadata ?? [];
       if (eventsMetadataSpec.length === 0) {
@@ -156,15 +186,19 @@ async function configureEvents(
       } = await eventsApi.getAllEventMetadataForProvider(provider.id);
       const eventsMetadata = await Promise.all(
         eventsMetadataSpec.map(async (eventMetadataSpec) => {
-          const eventMetadata = await ensureEventMetadata(provider, eventmetadata, eventMetadataSpec);
+          const eventMetadata = await ensureEventMetadata(
+            provider,
+            eventmetadata,
+            eventMetadataSpec,
+          );
           logger.info(
-            `Configured event metadata '${eventMetadata.label}' (${eventMetadata.event_code}) in provider '${provider.label}' (${provider.id}).`
+            `Configured event metadata '${eventMetadata.label}' (${eventMetadata.event_code}) in provider '${provider.label}' (${provider.id}).`,
           );
           return eventMetadata;
-        })
+        }),
       );
       return { provider, eventsMetadata };
-    })
+    }),
   );
 
   /**
@@ -176,22 +210,36 @@ async function configureEvents(
   async function ensureEventProvider(spec) {
     const existing = providers.find(({ label }) => label === spec.label);
     if (existing) {
-      if (existing.description === spec.description && existing.docs_url === spec.docs_url) {
-        logger.debug('Found event provider', existing);
+      if (
+        existing.description === spec.description &&
+        existing.docs_url === spec.docs_url
+      ) {
+        logger.debug("Found event provider", existing);
         return existing;
       }
 
-      const updated = await eventsApi.updateProvider(organizationId, projectId, workspaceId, existing.id, spec);
-      logger.debug('Updated event provider', updated);
+      const updated = await eventsApi.updateProvider(
+        organizationId,
+        projectId,
+        workspaceId,
+        existing.id,
+        spec,
+      );
+      logger.debug("Updated event provider", updated);
       return updated;
     }
 
-    if (spec.provider_metadata === 'dx_commerce_events') {
+    if (spec.provider_metadata === "dx_commerce_events") {
       spec.instance_id = uuidv4();
     }
 
-    const created = await eventsApi.createProvider(organizationId, projectId, workspaceId, spec);
-    logger.debug('Created event provider', created);
+    const created = await eventsApi.createProvider(
+      organizationId,
+      projectId,
+      workspaceId,
+      spec,
+    );
+    logger.debug("Created event provider", created);
     return created;
   }
 
@@ -205,10 +253,18 @@ async function configureEvents(
    */
   async function ensureEventMetadata(provider, eventmetadata, spec) {
     // eslint-disable-next-line camelcase
-    const existing = eventmetadata.find(({ event_code }) => event_code === spec.event_code);
+    const existing = eventmetadata.find(
+      ({ event_code }) => event_code === spec.event_code,
+    );
     if (existing) {
-      if (existing.label === spec.label && existing.description === spec.description) {
-        logger.debug(`Found event metadata in provider ${provider.label} (${provider.id})`, existing);
+      if (
+        existing.label === spec.label &&
+        existing.description === spec.description
+      ) {
+        logger.debug(
+          `Found event metadata in provider ${provider.label} (${provider.id})`,
+          existing,
+        );
         return existing;
       }
 
@@ -217,9 +273,12 @@ async function configureEvents(
         projectId,
         workspaceId,
         provider.id,
-        spec
+        spec,
       );
-      logger.debug(`Updated event metadata in provider ${provider.label} (${provider.id})`, updated);
+      logger.debug(
+        `Updated event metadata in provider ${provider.label} (${provider.id})`,
+        updated,
+      );
       return updated;
     }
 
@@ -228,9 +287,12 @@ async function configureEvents(
       projectId,
       workspaceId,
       provider.id,
-      spec
+      spec,
     );
-    logger.debug(`Created event metadata in provider ${provider.label} (${provider.id})`, created);
+    logger.debug(
+      `Created event metadata in provider ${provider.label} (${provider.id})`,
+      created,
+    );
     return created;
   }
 }

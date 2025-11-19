@@ -9,44 +9,58 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-import React, { useCallback } from 'react';
+
 import {
-  TableView,
-  TableHeader,
-  TableBody,
-  Column,
-  Row,
-  Cell,
   Button,
+  Cell,
+  Column,
+  Content,
   DialogTrigger,
-  Text,
   Flex,
   Heading,
-  ProgressCircle,
   IllustratedMessage,
-  Content,
-} from '@adobe/react-spectrum';
-import { TaxClassDialog } from './TaxClassDialog';
-import { useCommerceTaxClasses, createOrUpdateCommerceTaxClass } from '../hooks/useCommerceTaxClasses';
-import { useCustomTaxCodes } from '../hooks/useCustomTaxCodes';
+  ProgressCircle,
+  Row,
+  TableBody,
+  TableHeader,
+  TableView,
+  Text,
+} from "@adobe/react-spectrum";
+import React, { useCallback } from "react";
+
+import {
+  createOrUpdateCommerceTaxClass,
+  useCommerceTaxClasses,
+} from "../hooks/useCommerceTaxClasses";
+import { useCustomTaxCodes } from "../hooks/useCustomTaxCodes";
+import { TaxClassDialog } from "./TaxClassDialog";
 
 export const TaxClassesPage = (props) => {
-  const { isLoadingCommerceTaxClasses, commerceTaxClasses, refetchCommerceTaxClasses } = useCommerceTaxClasses(props);
+  const {
+    isLoadingCommerceTaxClasses,
+    commerceTaxClasses,
+    refetchCommerceTaxClasses,
+  } = useCommerceTaxClasses(props);
   const { isLoadingCustomTaxCodes, customTaxCodes } = useCustomTaxCodes(props);
 
   const handleSave = useCallback(
     async (newTaxClass) => {
       try {
-        const response = await createOrUpdateCommerceTaxClass(props, newTaxClass);
-        if (!response || !response.success) {
-          throw new Error(`Failed to save tax class: ${response?.message || 'Unknown error'}`);
+        const response = await createOrUpdateCommerceTaxClass(
+          props,
+          newTaxClass,
+        );
+        if (!response?.success) {
+          throw new Error(
+            `Failed to save tax class: ${response?.message || "Unknown error"}`,
+          );
         }
         await refetchCommerceTaxClasses();
       } catch (error) {
-        console.error('Something went wrong while saving tax class:', error);
+        console.error("Something went wrong while saving tax class:", error);
       }
     },
-    [props, refetchCommerceTaxClasses]
+    [props, refetchCommerceTaxClasses],
   );
 
   /**
@@ -63,33 +77,42 @@ export const TaxClassesPage = (props) => {
 
   return (
     <Flex direction="column" marginX={20}>
-      <Flex direction="row" justifyContent="space-between" alignItems="center" gap="size-200" marginX={5}>
+      <Flex
+        alignItems="center"
+        direction="row"
+        gap="size-200"
+        justifyContent="space-between"
+        marginX={5}>
         <Heading level={1}>Manage Tax Classes</Heading>
 
         <DialogTrigger type="modal">
-          <Button variant="accent" isDisabled={isLoadingCustomTaxCodes}>
+          <Button isDisabled={isLoadingCustomTaxCodes} variant="accent">
             Add New Tax Class
           </Button>
           {(close) => (
-            <TaxClassDialog taxClass={null} customTaxCodes={customTaxCodes} onSave={handleSave} close={close} />
+            <TaxClassDialog
+              close={close}
+              customTaxCodes={customTaxCodes}
+              onSave={handleSave}
+              taxClass={null}
+            />
           )}
         </DialogTrigger>
       </Flex>
 
       {isLoadingCustomTaxCodes || isLoadingCommerceTaxClasses ? (
-        <Flex alignItems="center" justifyContent="center" height="100vh">
-          <ProgressCircle size="L" aria-label="Loading…" isIndeterminate />
+        <Flex alignItems="center" height="100vh" justifyContent="center">
+          <ProgressCircle aria-label="Loading…" isIndeterminate size="L" />
         </Flex>
       ) : (
         <Flex>
           <TableView
             aria-label="tax class table"
-            width="100%"
-            overflowMode="wrap"
             flex
-            renderEmptyState={renderEmptyState}
             minHeight="static-size-1000"
-          >
+            overflowMode="wrap"
+            renderEmptyState={renderEmptyState}
+            width="100%">
             <TableHeader>
               <Column align="start" width={10}>
                 #
@@ -105,23 +128,31 @@ export const TaxClassesPage = (props) => {
               {(item) => (
                 <Row key={item.id}>
                   <Cell>
-                    <Text UNSAFE_style={{ color: 'grey' }}>{item.rowNumber}</Text>
+                    <Text UNSAFE_style={{ color: "grey" }}>
+                      {item.rowNumber}
+                    </Text>
                   </Cell>
                   <Cell>{item.id}</Cell>
                   <Cell>{item.classType}</Cell>
                   <Cell>{item.className}</Cell>
-                  <Cell>{item.customTaxCode ? `${item.customTaxCode} (${item.customTaxLabel})` : ''}</Cell>
                   <Cell>
-                    <DialogTrigger type="modal" key={`${item.id}-${customTaxCodes.length}`}>
-                      <Button variant="secondary" style="outline">
+                    {item.customTaxCode
+                      ? `${item.customTaxCode} (${item.customTaxLabel})`
+                      : ""}
+                  </Cell>
+                  <Cell>
+                    <DialogTrigger
+                      key={`${item.id}-${customTaxCodes.length}`}
+                      type="modal">
+                      <Button style="outline" variant="secondary">
                         Edit
                       </Button>
                       {(close) => (
                         <TaxClassDialog
-                          taxClass={item}
+                          close={close}
                           customTaxCodes={customTaxCodes}
                           onSave={handleSave}
-                          close={close}
+                          taxClass={item}
                         />
                       )}
                     </DialogTrigger>

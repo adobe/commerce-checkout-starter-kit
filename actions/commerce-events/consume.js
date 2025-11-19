@@ -10,9 +10,10 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { Core } from '@adobe/aio-sdk';
-import { HTTP_OK } from '../../lib/http.js';
-import { getHandler } from './events-handler.js';
+import { Core } from "@adobe/aio-sdk";
+
+import { HTTP_OK } from "../../lib/http.js";
+import { getHandler } from "./events-handler.js";
 
 /**
  * Events consumer for Adobe Commerce Event provider. Routes the events through the appropriate handler according to
@@ -21,9 +22,11 @@ import { getHandler } from './events-handler.js';
  * @returns {object} The response object
  */
 export async function main(params) {
-  const logger = Core.Logger('commerce-events/consume', { level: params.LOG_LEVEL || 'info' });
+  const logger = Core.Logger("commerce-events/consume", {
+    level: params.LOG_LEVEL || "info",
+  });
 
-  // eslint-disable-next-line no-unused-vars
+  // biome-ignore lint/correctness/noUnusedVariables: destructuring assignment for clarity
   const { id, type, data } = params;
   logger.debug(`Received Commerce event ${type}`);
 
@@ -37,7 +40,7 @@ export async function main(params) {
 
   const response = await handler(params);
 
-  logger.debug('Consumed Commerce event.', { response, type });
+  logger.debug("Consumed Commerce event.", { response, type });
 
   return response;
 }

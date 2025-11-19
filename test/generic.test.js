@@ -10,11 +10,12 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { Core } from '@adobe/aio-sdk';
-import { main } from '../actions/generic/index.js';
+import { Core } from "@adobe/aio-sdk";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 
-vi.mock('@adobe/aio-sdk', () => ({
+import { main } from "../actions/generic/index.js";
+
+vi.mock("@adobe/aio-sdk", () => ({
   Core: {
     Logger: vi.fn(),
   },
@@ -30,40 +31,42 @@ beforeEach(() => {
   mockLoggerInstance.error.mockReset();
 });
 
-const fakeParams = { __ow_headers: { authorization: 'Bearer fake' } };
-describe('generic', () => {
-  test('main should be defined', () => {
+const fakeParams = { __ow_headers: { authorization: "Bearer fake" } };
+describe("generic", () => {
+  test("main should be defined", () => {
     expect(main).toBeInstanceOf(Function);
   });
-  test('should set logger to use LOG_LEVEL param', async () => {
-    await main({ ...fakeParams, LOG_LEVEL: 'fakeLevel' });
-    expect(Core.Logger).toHaveBeenCalledWith(expect.any(String), { level: 'fakeLevel' });
+  test("should set logger to use LOG_LEVEL param", async () => {
+    await main({ ...fakeParams, LOG_LEVEL: "fakeLevel" });
+    expect(Core.Logger).toHaveBeenCalledWith(expect.any(String), {
+      level: "fakeLevel",
+    });
   });
-  test('should return an http reponse with the fetched content', async () => {
+  test("should return an http reponse with the fetched content", async () => {
     const mockFetchResponse = {
       ok: true,
-      json: () => Promise.resolve({ content: 'fake' }),
+      json: () => Promise.resolve({ content: "fake" }),
     };
     fetch.mockResolvedValue(mockFetchResponse);
     const response = await main(fakeParams);
     expect(response).toEqual({
       statusCode: 200,
-      body: { content: 'fake' },
+      body: { content: "fake" },
     });
   });
-  test('should return a 500 error when fetch throws an error', async () => {
-    const error = new Error('error');
+  test("should return a 500 error when fetch throws an error", async () => {
+    const error = new Error("error");
     fetch.mockRejectedValue(error);
     const response = await main(fakeParams);
     expect(response).toEqual({
       error: {
         statusCode: 500,
-        body: { error: 'server error' },
+        body: { error: "server error" },
       },
     });
     expect(mockLoggerInstance.error).toHaveBeenCalledWith(error);
   });
-  test('if returned service status code is not ok should return a 500 and log the status', async () => {
+  test("if returned service status code is not ok should return a 500 and log the status", async () => {
     const mockFetchResponse = {
       ok: false,
       status: 404,
@@ -73,15 +76,15 @@ describe('generic', () => {
     expect(response).toEqual({
       error: {
         statusCode: 500,
-        body: { error: 'server error' },
+        body: { error: "server error" },
       },
     });
     // error message should contain 404
     expect(mockLoggerInstance.error).toHaveBeenCalledWith(
-      expect.objectContaining({ message: expect.stringContaining('404') })
+      expect.objectContaining({ message: expect.stringContaining("404") }),
     );
   });
-  test('missing input request parameters, should return 400', async () => {
+  test("missing input request parameters, should return 400", async () => {
     const response = await main({});
     expect(response).toEqual({
       error: {

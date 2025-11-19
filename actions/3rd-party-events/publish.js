@@ -10,13 +10,14 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { Core, Events } from '@adobe/aio-sdk';
-import { v4 as uuidv4 } from 'uuid';
-import { CloudEvent } from 'cloudevents';
-import { errorResponse } from '../utils.js';
-import { resolveCredentials } from '../../lib/adobe-auth.js';
-import { HTTP_OK, HTTP_INTERNAL_ERROR } from '../../lib/http.js';
-import * as keyValues from '../../lib/key-values.js';
+import { Core, Events } from "@adobe/aio-sdk";
+import { CloudEvent } from "cloudevents";
+import { v4 as uuidv4 } from "uuid";
+
+import { resolveCredentials } from "../../lib/adobe-auth.js";
+import { HTTP_INTERNAL_ERROR, HTTP_OK } from "../../lib/http.js";
+import { decode as keyValueDecode } from "../../lib/key-values.js";
+import { errorResponse } from "../utils.js";
 
 /**
  * This is a web action to publish 3rd party events to an already created event provider in Adobe Events.
@@ -27,7 +28,9 @@ import * as keyValues from '../../lib/key-values.js';
  * @returns {Promise<object>} the response object
  */
 export async function main(params) {
-  const logger = Core.Logger('3rd-party-events/publish', { level: params.LOG_LEVEL || 'info' });
+  const logger = Core.Logger("3rd-party-events/publish", {
+    level: params.LOG_LEVEL || "info",
+  });
 
   try {
     const authError = validateCustomAuthRequest(params);
@@ -39,25 +42,25 @@ export async function main(params) {
     // Event validation
     const { event } = params;
     if (!event) {
-      return errorResponse(400, 'Missing event property', logger);
+      return errorResponse(400, "Missing event property", logger);
     }
 
     const { type, data } = event;
     if (!type) {
-      return errorResponse(400, 'Missing event.type property', logger);
+      return errorResponse(400, "Missing event.type property", logger);
     }
     if (!data) {
-      return errorResponse(400, 'Missing event.data property', logger);
+      return errorResponse(400, "Missing event.data property", logger);
     }
 
-    const { '3rd_party_custom_events': providerId } = keyValues.decode(
-      params.AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING
+    const { "3rd_party_custom_events": providerId } = keyValueDecode(
+      params.AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING,
     );
     if (!providerId) {
       return errorResponse(
         HTTP_INTERNAL_ERROR,
-        'Can not find provider id in AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING',
-        logger
+        "Can not find provider id in AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING",
+        logger,
       );
     }
 
@@ -66,8 +69,8 @@ export async function main(params) {
     // Publish event
     const cloudEvent = new CloudEvent({
       id: uuidv4(),
-      source: 'urn:uuid:' + providerId,
-      datacontenttype: 'application/json',
+      source: `urn:uuid:${providerId}`,
+      datacontenttype: "application/json",
       type,
       data,
     });
@@ -76,7 +79,9 @@ export async function main(params) {
     const eventsClient = await Events.init(imsOrgId, apiKey, accessToken);
     await eventsClient.publishEvent(cloudEvent);
 
-    logger.info(`Ingested 3rd party event with id '${cloudEvent.id}' of type '${cloudEvent.type}'`);
+    logger.info(
+      `Ingested 3rd party event with id '${cloudEvent.id}' of type '${cloudEvent.type}'`,
+    );
     return {
       statusCode: HTTP_OK,
       body: {
@@ -85,7 +90,7 @@ export async function main(params) {
     };
   } catch (error) {
     logger.error(error);
-    return errorResponse(HTTP_INTERNAL_ERROR, 'server error', logger);
+    return errorResponse(HTTP_INTERNAL_ERROR, "server error", logger);
   }
 }
 
@@ -104,8 +109,8 @@ function validateCustomAuthRequest(params) {
   // The implementation of this function will be vendor specific, could involve checking a custom header, a custom
   // token, etc. As an example, we just check that the Authorization header is present
   if (!authorization) {
-    return 'Missing Authorization header';
+    return "Missing Authorization header";
   }
 
-  return undefined;
+  return;
 }

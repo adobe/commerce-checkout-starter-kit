@@ -10,13 +10,13 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    environment: 'node',
-    include: ['e2e/**/*.e2e.test.js'],
-    testTimeout: 30000,
-    hookTimeout: 30000,
+    environment: "node",
+    include: ["e2e/**/*.e2e.test.js"],
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
   },
 });

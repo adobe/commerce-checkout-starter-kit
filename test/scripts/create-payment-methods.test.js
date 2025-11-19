@@ -10,36 +10,40 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { main } from '../../scripts/create-payment-methods.js';
-import { getAdobeCommerceClient } from '../../lib/adobe-commerce.js';
+import { beforeEach, describe, expect, test, vi } from "vitest";
 
-vi.mock('../../lib/adobe-commerce.js');
+import { getAdobeCommerceClient } from "../../lib/adobe-commerce.js";
+import { main } from "../../scripts/create-payment-methods.js";
 
-describe('create-payment-methods', () => {
+vi.mock("../../lib/adobe-commerce.js");
+
+describe("create-payment-methods", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  test('payment methods created', async () => {
+  test("payment methods created", async () => {
     mockAdobeCommerceClient({ success: true }, { success: true });
-    const result = await main('test/scripts/payment-methods-test.yaml');
-    expect(result).toEqual(['method-1', 'method-2']);
+    const result = await main("test/scripts/payment-methods-test.yaml");
+    expect(result).toEqual(["method-1", "method-2"]);
   });
-  test('only one payment methods is created', async () => {
+  test("only one payment methods is created", async () => {
     mockAdobeCommerceClient({ success: true }, { success: false });
-    const result = await main('test/scripts/payment-methods-test.yaml');
-    expect(result).toEqual(['method-1']);
+    const result = await main("test/scripts/payment-methods-test.yaml");
+    expect(result).toEqual(["method-1"]);
   });
-  test('no one payment methods is created', async () => {
+  test("no one payment methods is created", async () => {
     mockAdobeCommerceClient({ success: false }, { success: false });
-    const result = await main('test/scripts/payment-methods-test.yaml');
+    const result = await main("test/scripts/payment-methods-test.yaml");
     expect(result).toEqual([]);
   });
 });
 
 function mockAdobeCommerceClient(response1, response2) {
   getAdobeCommerceClient.mockResolvedValue({
-    createOopePaymentMethod: vi.fn().mockResolvedValueOnce(response1).mockResolvedValueOnce(response2),
+    createOopePaymentMethod: vi
+      .fn()
+      .mockResolvedValueOnce(response1)
+      .mockResolvedValueOnce(response2),
   });
 }

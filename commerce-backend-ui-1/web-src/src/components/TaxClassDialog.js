@@ -9,37 +9,47 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-import React, { useState } from 'react';
+
 import {
-  Dialog,
-  Heading,
-  Divider,
-  Content,
-  Form,
-  TextField,
-  Picker,
-  Item,
   Button,
   ButtonGroup,
+  Content,
+  Dialog,
+  Divider,
+  Form,
+  Heading,
   InlineAlert,
-} from '@adobe/react-spectrum';
+  Item,
+  Picker,
+  TextField,
+} from "@adobe/react-spectrum";
+import { useState } from "react";
 
-export const TaxClassDialog = ({ taxClass, customTaxCodes = [], onSave, close }) => {
+export const TaxClassDialog = ({
+  taxClass,
+  customTaxCodes = [],
+  onSave,
+  close,
+}) => {
   const isEdit = Boolean(taxClass);
-  const [className, setClassName] = useState(taxClass?.className || '');
-  const [classType, setClassType] = useState(taxClass?.classType || 'PRODUCT');
-  const [selectedTaxCode, setSelectedTaxCode] = useState(taxClass?.customTaxCode || '');
+  const [className, setClassName] = useState(taxClass?.className || "");
+  const [classType, setClassType] = useState(taxClass?.classType || "PRODUCT");
+  const [selectedTaxCode, setSelectedTaxCode] = useState(
+    taxClass?.customTaxCode || "",
+  );
   const [formError, setFormError] = useState(null);
 
   const handleSubmit = () => {
     if (!className.trim()) {
-      setFormError('Class Name is required.');
+      setFormError("Class Name is required.");
       return;
     }
 
-    const selectedCode = customTaxCodes.find((code) => code.taxCode === selectedTaxCode);
+    const selectedCode = customTaxCodes.find(
+      (code) => code.taxCode === selectedTaxCode,
+    );
     if (!selectedCode) {
-      setFormError('Please select a valid Custom Tax Code.');
+      setFormError("Please select a valid Custom Tax Code.");
       return;
     }
 
@@ -58,7 +68,7 @@ export const TaxClassDialog = ({ taxClass, customTaxCodes = [], onSave, close })
 
   return (
     <Dialog>
-      <Heading>{isEdit ? 'Edit Tax Class' : 'Add New Tax Class'}</Heading>
+      <Heading>{isEdit ? "Edit Tax Class" : "Add New Tax Class"}</Heading>
       <Divider />
       <Content>
         {formError && (
@@ -67,33 +77,42 @@ export const TaxClassDialog = ({ taxClass, customTaxCodes = [], onSave, close })
           </InlineAlert>
         )}
         <Form>
-          <TextField label="Class Name" value={className} onChange={setClassName} isRequired />
+          <TextField
+            isRequired
+            label="Class Name"
+            onChange={setClassName}
+            value={className}
+          />
           <Picker
-            label="Class Type"
-            selectedKey={classType}
-            onSelectionChange={setClassType}
             isDisabled={isEdit}
             isRequired
-          >
+            label="Class Type"
+            onSelectionChange={setClassType}
+            selectedKey={classType}>
             <Item key="PRODUCT">PRODUCT</Item>
             <Item key="SHIPPING">SHIPPING</Item>
             <Item key="CUSTOMER">CUSTOMER</Item>
           </Picker>
           <Picker
-            label="Custom Tax Code"
-            selectedKey={selectedTaxCode}
-            onSelectionChange={setSelectedTaxCode}
             isRequired
-          >
+            label="Custom Tax Code"
+            onSelectionChange={setSelectedTaxCode}
+            selectedKey={selectedTaxCode}>
             {customTaxCodes.map((code) => (
               <Item key={code.taxCode}>{`${code.taxCode} (${code.name})`}</Item>
             ))}
           </Picker>
           <ButtonGroup align="end">
-            <Button variant="secondary" onPress={close} data-testid="tax-class-cancel-button">
+            <Button
+              data-testid="tax-class-cancel-button"
+              onPress={close}
+              variant="secondary">
               Cancel
             </Button>
-            <Button variant="cta" onPress={handleSubmit} data-testid="tax-class-save-button">
+            <Button
+              data-testid="tax-class-save-button"
+              onPress={handleSubmit}
+              variant="cta">
               Save
             </Button>
           </ButtonGroup>

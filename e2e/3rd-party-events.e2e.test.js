@@ -10,57 +10,57 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { describe, test, expect } from 'vitest';
-import waitForExpect from 'wait-for-expect';
-import { Core, State } from '@adobe/aio-sdk';
+import { Core, State } from "@adobe/aio-sdk";
+import { describe, expect, test } from "vitest";
+import waitForExpect from "wait-for-expect";
 
 const { Config } = Core;
 
 // get action url
-const namespace = Config.get('runtime.namespace');
-const hostname = Config.get('cna.hostname') || 'adobeioruntime.net';
+const namespace = Config.get("runtime.namespace");
+const hostname = Config.get("cna.hostname") || "adobeioruntime.net";
 const actionUrl = `https://${namespace}.${hostname}/api/v1/web/3rd-party-events/publish`;
 
 // state config
 const owOptions = {
-  namespace: Config.get('runtime.namespace'),
-  auth: Config.get('runtime.auth'),
+  namespace: Config.get("runtime.namespace"),
+  auth: Config.get("runtime.auth"),
 };
 
-describe('3rd-party-events actions', () => {
-  test('publish returns a 401 when missing Authorization header', async () => {
+describe("3rd-party-events actions", () => {
+  test("publish returns a 401 when missing Authorization header", async () => {
     const res = await fetch(actionUrl);
     expect(res?.status).toEqual(401);
     expect(await res.json()).toEqual(
       expect.objectContaining({
-        error: 'Missing Authorization header',
-      })
+        error: "Missing Authorization header",
+      }),
     );
   });
-  test('publish returns a 400 when missing event property in the body', async () => {
+  test("publish returns a 400 when missing event property in the body", async () => {
     const res = await fetch(actionUrl, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        Authorization: 'supersecret',
-        'Content-Type': 'application/json',
+        Authorization: "supersecret",
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({}),
     });
     expect(res?.status).toEqual(400);
     expect(await res.json()).toEqual(
       expect.objectContaining({
-        error: 'Missing event property',
-      })
+        error: "Missing event property",
+      }),
     );
   });
-  test('publish returns a 200 when event has been ingested and it is consumed by the webhook', async () => {
-    const type = 'com.3rdparty.events.test.Event1';
-    const data = { foo: 'bar' };
+  test("publish returns a 200 when event has been ingested and it is consumed by the webhook", async () => {
+    const type = "com.3rdparty.events.test.Event1";
+    const data = { foo: "bar" };
     const res = await fetch(actionUrl, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        Authorization: 'supersecret',
-        'Content-Type': 'application/json',
+        Authorization: "supersecret",
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         event: { type, data },
@@ -73,7 +73,7 @@ describe('3rd-party-events actions', () => {
         id: expect.any(String),
         type,
         data,
-      })
+      }),
     );
 
     const state = await State.init({ ow: owOptions });

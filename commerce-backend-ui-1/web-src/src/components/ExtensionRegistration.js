@@ -9,10 +9,12 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-import React, { useEffect } from 'react';
-import { register } from '@adobe/uix-guest';
-import { MainPage } from './MainPage';
-import { TAX_EXTENSION_ID } from '../constants/extension';
+
+import { register } from "@adobe/uix-guest";
+import React, { useEffect } from "react";
+
+import { TAX_EXTENSION_ID } from "../constants/extension";
+import { MainPage } from "./MainPage";
 
 /**
  * Extension Registration Component
@@ -29,9 +31,10 @@ export default function ExtensionRegistration(props) {
     });
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: only run on mount
   useEffect(() => {
     registerExtension().catch(console.error);
   }, []);
 
-  return <MainPage runtime={props.runtime} ims={props.ims} />;
+  return <MainPage ims={props.ims} runtime={props.runtime} />;
 }

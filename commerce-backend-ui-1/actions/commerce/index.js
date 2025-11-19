@@ -9,9 +9,10 @@ the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTA
 OF ANY KIND, either express or implied. See the License for the specific language
 governing permissions and limitations under the License.
 */
-import { Core } from '@adobe/aio-sdk';
-import { errorResponse, checkMissingRequestInputs } from '../utils.js';
-import { getAdobeCommerceClient } from '../../../lib/adobe-commerce.js';
+import { Core } from "@adobe/aio-sdk";
+
+import { getAdobeCommerceClient } from "../../../lib/adobe-commerce.js";
+import { checkMissingRequestInputs, errorResponse } from "../utils.js";
 
 const actionMap = {
   POST: (adobeCommerce, operation, payload) => {
@@ -26,34 +27,48 @@ const actionMap = {
  * @returns {Promise<{statusCode: number, body: object}>} The HTTP response with status code and body.
  */
 export async function main(params) {
-  const logger = Core.Logger('main', { level: params.LOG_LEVEL || 'debug' });
+  const logger = Core.Logger("main", { level: params.LOG_LEVEL || "debug" });
 
   try {
-    const requiredParams = ['operation', 'COMMERCE_BASE_URL'];
-    const requiredHeaders = ['Authorization'];
-    const errorMessage = checkMissingRequestInputs(params, requiredParams, requiredHeaders);
+    const requiredParams = ["operation", "COMMERCE_BASE_URL"];
+    const requiredHeaders = ["Authorization"];
+    const errorMessage = checkMissingRequestInputs(
+      params,
+      requiredParams,
+      requiredHeaders,
+    );
     if (errorMessage) {
       // return and log client errors
       return errorResponse(400, errorMessage, logger);
     }
 
-    const { operation, method = 'GET', payload = {} } = params;
-    logger.debug(`operation: ${operation}, method: ${method}, payload: ${JSON.stringify(payload)}`);
+    const { operation, method = "GET", payload = {} } = params;
+    logger.debug(
+      `operation: ${operation}, method: ${method}, payload: ${JSON.stringify(payload)}`,
+    );
 
     if (!actionMap[method.toUpperCase()]) {
-      return errorResponse(405, `Method ${method.toUpperCase()} not allowed`, logger);
+      return errorResponse(
+        405,
+        `Method ${method.toUpperCase()} not allowed`,
+        logger,
+      );
     }
 
     const adobeCommerce = await getAdobeCommerceClient(params);
 
-    const content = await actionMap[method.toUpperCase()](adobeCommerce, operation, payload);
+    const content = await actionMap[method.toUpperCase()](
+      adobeCommerce,
+      operation,
+      payload,
+    );
     return {
       statusCode: 200,
       body: content || { success: true },
     };
   } catch (error) {
     // log any server errors
-    logger.error('Commerce action error:', error);
+    logger.error("Commerce action error:", error);
     // return with 500
     return errorResponse(500, error, logger);
   }
