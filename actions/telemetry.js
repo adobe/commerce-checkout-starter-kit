@@ -39,7 +39,7 @@ import {
 import { HTTP_OK } from "../lib/http.js";
 
 /** The telemetry configuration to be used across all checkout actions */
-const telemetryConfig = defineTelemetryConfig((_params, isDev) => {
+const telemetryConfig = defineTelemetryConfig((_params, _isDev) => {
   return {
     sdkConfig: {
       serviceName: "commerce-checkout-starter-kit",
@@ -47,9 +47,10 @@ const telemetryConfig = defineTelemetryConfig((_params, isDev) => {
       resource: getAioRuntimeResource(),
       // ...localCollectorConfig(), replace by your preferred telemetry exporter configuration
     },
-    diagnostics: {
-      logLevel: isDev ? "debug" : "info",
-    },
+    // disable diagnostics by default
+    // diagnostics: {
+    //   logLevel: _isDev ? "debug" : "info",
+    // },
   };
 });
 
