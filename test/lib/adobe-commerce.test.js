@@ -73,8 +73,8 @@ describe('getAdobeCommerceClient', () => {
         ...sharedParams,
         AIO_COMMERCE_AUTH_INTEGRATION_CONSUMER_KEY: 'test-consumer-key',
         AIO_COMMERCE_AUTH_INTEGRATION_CONSUMER_SECRET: 'test-consumer-secret',
-        COMMERCE_ACCESS_TOKEN: 'test-access-token',
-        COMMERCE_ACCESS_TOKEN_SECRET: 'test-access-token-secret',
+        AIO_COMMERCE_AUTH_INTEGRATION_ACCESS_TOKEN: 'test-access-token',
+        AIO_COMMERCE_AUTH_INTEGRATION_ACCESS_TOKEN_SECRET: 'test-access-token-secret',
       };
 
       const scope = nock(params.AIO_COMMERCE_API_BASE_URL)
