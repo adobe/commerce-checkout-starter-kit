@@ -23,7 +23,10 @@ import { HTTP_OK } from "../../lib/http.js";
 import { checkoutMetrics } from "../checkout-metrics.js";
 import { isWebhookSuccessful, telemetryConfig } from "../telemetry.js";
 
-const TAX_RATE = 5.0; // 5% tax rate as a sample
+const TAX_RATES = Object.freeze({
+  EXCLUDING_TAX: 8.1,
+  INCLUDING_TAX: 8.4,
+});
 
 /**
  * This action calculates the adjustment taxes for the given credit memo request.
@@ -61,24 +64,30 @@ function collectAdjustmentTaxes(params) {
       return webhookErrorResponse("Invalid or missing oopCreditMemo data");
     }
 
+    // Check if store has tax included setup
     const isTaxIncluded = oopCreditMemo.items.some(
       (item) => item.is_tax_included === true,
     );
+    // Sample tax rates matched with collect-taxes action depending on tax-inclusive
+    const taxRate = isTaxIncluded
+      ? TAX_RATES.INCLUDING_TAX
+      : TAX_RATES.EXCLUDING_TAX;
+
+    // Adjustment Refund and Fee Amounts, remaining without tax
+    // The calculated returned taxes will be summed up to the grand total in Commerce
     const adjustmentRefund = oopCreditMemo.adjustment?.refund;
     const adjustmentFee = oopCreditMemo.adjustment?.fee;
-
     const operations = [];
+
+    // Calculate and add refund tax if applicable
     if (adjustmentRefund) {
-      const refundTax = calculateTaxAmount(
-        adjustmentRefund,
-        TAX_RATE,
-        isTaxIncluded,
-      );
+      const refundTax = calculateTaxAmount(adjustmentRefund, taxRate);
       operations.push(createAdjustmentRefundTax(refundTax));
     }
 
+    // Calculate and add fee tax if applicable
     if (adjustmentFee) {
-      const feeTax = calculateTaxAmount(adjustmentFee, TAX_RATE, isTaxIncluded);
+      const feeTax = calculateTaxAmount(adjustmentFee, taxRate);
       operations.push(createAdjustmentFeeTax(feeTax));
     }
 
@@ -104,18 +113,14 @@ function collectAdjustmentTaxes(params) {
 }
 
 /**
- * Calculates the tax amount based on the taxable amount, tax rate, and whether tax is included.
+ * Calculates the tax amount based on the taxable amount and tax rate.
  *
  * @param taxableAmount
  * @param taxRate
- * @param isTaxIncluded
  * @returns {number} The calculated tax amount, rounded to two decimal places.
  */
-function calculateTaxAmount(taxableAmount, taxRate, isTaxIncluded = false) {
-  const taxAmount = isTaxIncluded
-    ? taxableAmount - taxableAmount / (1 + taxRate / 100) // Reverse tax calculation
-    : taxableAmount * (taxRate / 100);
-
+function calculateTaxAmount(taxableAmount, taxRate) {
+  const taxAmount = taxableAmount * (taxRate / 100);
   return Math.round(taxAmount * 100) / 100;
 }
 
