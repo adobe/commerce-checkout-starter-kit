@@ -34,9 +34,9 @@ import { isWebhookSuccessful, telemetryConfig } from "../telemetry.js";
 function validatePayment(params) {
   const { logger, currentSpan } = getInstrumentationHelpers();
 
-  try {
-    logger.info("Starting payment validation process");
+  logger.debug("Starting payment validation process");
 
+  try {
     const { success, error } = webhookVerify(params);
     if (!success) {
       logger.error(`Webhook verification failed: ${error}`);

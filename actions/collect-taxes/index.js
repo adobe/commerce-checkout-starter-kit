@@ -42,9 +42,9 @@ const TAX_RATES = Object.freeze({
 function collectTaxes(params) {
   const { logger, currentSpan } = getInstrumentationHelpers();
 
-  try {
-    logger.info("Starting tax collection process");
+  logger.debug("Starting tax collection process");
 
+  try {
     const { success, error } = webhookVerify(params);
     if (!success) {
       logger.error(`Webhook verification failed: ${error}`);

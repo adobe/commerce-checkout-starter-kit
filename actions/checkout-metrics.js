@@ -24,16 +24,14 @@ import { ValueType } from "@adobe/aio-lib-telemetry/otel";
 /** Metrics for checkout-related actions. */
 export const checkoutMetrics = defineMetrics((meter) => {
   return {
-    // Collect Taxes Metrics
-    collectTaxesCounter: meter.createCounter(
-      "checkout.collect_taxes.requests_total",
+    // Payment Metrics
+    validatePaymentCounter: meter.createCounter(
+      "checkout.validate_payment.requests_total",
       {
-        description: "Total number of collect taxes requests.",
+        description: "Total number of validate payment requests.",
         valueType: ValueType.INT,
       },
     ),
-
-    // Filter Payment Metrics
     filterPaymentCounter: meter.createCounter(
       "checkout.filter_payment.requests_total",
       {
@@ -51,11 +49,18 @@ export const checkoutMetrics = defineMetrics((meter) => {
       },
     ),
 
-    // Validate Payment Metrics
-    validatePaymentCounter: meter.createCounter(
-      "checkout.validate_payment.requests_total",
+    // Tax Metrics
+    collectTaxesCounter: meter.createCounter(
+      "checkout.collect_taxes.requests_total",
       {
-        description: "Total number of validate payment requests.",
+        description: "Total number of collect taxes requests.",
+        valueType: ValueType.INT,
+      },
+    ),
+    collectAdjustmentTaxesCounter: meter.createCounter(
+      "checkout.collect_adjustment_taxes.requests_total",
+      {
+        description: "Total number of collect adjustment taxes requests.",
         valueType: ValueType.INT,
       },
     ),
