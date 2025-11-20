@@ -55,17 +55,17 @@ function collectAdjustmentTaxes(params) {
     const body = JSON.parse(atob(params.__ow_body));
     logger.debug("Received request: ", body);
 
-    const { oopCreditmemo } = body;
-    if (!oopCreditmemo?.items) {
-      logger.error("Invalid or missing oopCreditmemo data");
-      return webhookErrorResponse("Invalid or missing oopCreditmemo data");
+    const { oopCreditMemo } = body;
+    if (!oopCreditMemo?.items) {
+      logger.error("Invalid or missing oopCreditMemo data");
+      return webhookErrorResponse("Invalid or missing oopCreditMemo data");
     }
 
-    const isTaxIncluded = oopCreditmemo.items.some(
+    const isTaxIncluded = oopCreditMemo.items.some(
       (item) => item.is_tax_included === true,
     );
-    const adjustmentRefund = oopCreditmemo.adjustment?.refund;
-    const adjustmentFee = oopCreditmemo.adjustment?.fee;
+    const adjustmentRefund = oopCreditMemo.adjustment?.refund;
+    const adjustmentFee = oopCreditMemo.adjustment?.fee;
 
     const operations = [];
     if (adjustmentRefund) {
@@ -128,7 +128,7 @@ function calculateTaxAmount(taxableAmount, taxRate, isTaxIncluded = false) {
 function createAdjustmentRefundTax(value) {
   return {
     op: "replace",
-    path: "oopCreditmemo/adjustment/refund_tax",
+    path: "oopCreditMemo/adjustment/refund_tax",
     value,
   };
 }
@@ -142,7 +142,7 @@ function createAdjustmentRefundTax(value) {
 function createAdjustmentFeeTax(value) {
   return {
     op: "replace",
-    path: "oopCreditmemo/adjustment/fee_tax",
+    path: "oopCreditMemo/adjustment/fee_tax",
     value,
   };
 }
