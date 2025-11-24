@@ -97,17 +97,17 @@ application:
             inputs:
               LOG_LEVEL: debug
               # IMS credentials
-              AIO_COMMERCE_AUTH_IMS_CLIENT_ID: $AIO_COMMERCE_AUTH_IMS_CLIENT_ID
-              AIO_COMMERCE_AUTH_IMS_CLIENT_SECRETS: $AIO_COMMERCE_AUTH_IMS_CLIENT_SECRETS
-              AIO_COMMERCE_AUTH_IMS_TECHNICAL_ACCOUNT_ID: $AIO_COMMERCE_AUTH_IMS_TECHNICAL_ACCOUNT_ID
-              AIO_COMMERCE_AUTH_IMS_TECHNICAL_ACCOUNT_EMAIL: $AIO_COMMERCE_AUTH_IMS_TECHNICAL_ACCOUNT_EMAIL
-              AIO_COMMERCE_AUTH_IMS_ORG_ID: $AIO_COMMERCE_AUTH_IMS_ORG_ID
-              AIO_COMMERCE_AUTH_IMS_SCOPES: $AIO_COMMERCE_AUTH_IMS_SCOPES
+              OAUTH_CLIENT_ID: $OAUTH_CLIENT_ID
+              OAUTH_CLIENT_SECRETS: $OAUTH_CLIENT_SECRETS
+              OAUTH_TECHNICAL_ACCOUNT_ID: $OAUTH_TECHNICAL_ACCOUNT_ID
+              OAUTH_TECHNICAL_ACCOUNT_EMAIL: $OAUTH_TECHNICAL_ACCOUNT_EMAIL
+              OAUTH_IMS_ORG_ID: $OAUTH_IMS_ORG_ID
+              OAUTH_SCOPES: $OAUTH_SCOPES
               # Commerce integration credentials
-              AIO_COMMERCE_AUTH_INTEGRATION_CONSUMER_KEY: $AIO_COMMERCE_AUTH_INTEGRATION_CONSUMER_KEY
-              AIO_COMMERCE_AUTH_INTEGRATION_CONSUMER_SECRET: $AIO_COMMERCE_AUTH_INTEGRATION_CONSUMER_SECRET
-              AIO_COMMERCE_AUTH_INTEGRATION_ACCESS_TOKEN: $AIO_COMMERCE_AUTH_INTEGRATION_ACCESS_TOKEN
-              AIO_COMMERCE_AUTH_INTEGRATION_ACCESS_TOKEN_SECRET: $AIO_COMMERCE_AUTH_INTEGRATION_ACCESS_TOKEN_SECRET
+              COMMERCE_CONSUMER_KEY: $COMMERCE_CONSUMER_KEY
+              COMMERCE_CONSUMER_SECRET: $COMMERCE_CONSUMER_SECRET
+              COMMERCE_ACCESS_TOKEN: $COMMERCE_ACCESS_TOKEN
+              COMMERCE_ACCESS_TOKEN_SECRET: $COMMERCE_ACCESS_TOKEN_SECRET
               AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING: $AIO_EVENTS_PROVIDERMETADATA_TO_PROVIDER_MAPPING
               AIO_CLI_ENV: $AIO_CLI_ENV
             annotations:
@@ -122,6 +122,24 @@ application:
             annotations:
               require-adobe-auth: true
               final: true
+  # https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/configure/#configure-eventing
+  events:
+    registrations:
+      Event registration for 3rd party system:
+        description: Event registration for 3rd party system
+        events_of_interest:
+          - provider_metadata: 3rd_party_custom_events
+            event_codes:
+              - com.3rdparty.events.test.Event1
+        runtime_action: 3rd-party-events/consume
+      Commerce events consumer:
+        description: Consumes events from Adobe Commerce
+        events_of_interest:
+          - provider_metadata: dx_commerce_events
+            event_codes:
+              # com.adobe.commerce.<your-application-name>.<commerce-event-code> eg: your-application-name = checkout_starter_kit
+              - com.adobe.commerce.checkout_starter_kit.observer.sales_order_creditmemo_save_after
+        runtime_action: commerce-checkout-starter-kit/consume
 
 extensions:
   commerce/backend-ui/1:
