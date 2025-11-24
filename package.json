@@ -4,6 +4,8 @@
   "type": "module",
   "private": true,
   "dependencies": {
+    "@adobe/aio-commerce-lib-config": "^0.7.2",
+    "@adobe/aio-commerce-sdk": "^0.6.2",
     "@adobe/aio-lib-ims": "^7.0.2",
     "@adobe/aio-lib-telemetry": "^1.1.0",
     "@adobe/aio-sdk": "^6",
@@ -38,6 +40,7 @@
     "wait-for-expect": "^3.0.2"
   },
   "scripts": {
+    "postinstall": "npx @adobe/aio-commerce-lib-config generate all",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
