@@ -38,25 +38,25 @@ describe('getAdobeCommerceClient', () => {
 
   describe('getAdobeCommerceClient', () => {
     const sharedParams = {
-      COMMERCE_BASE_URL: 'http://mycommerce.com',
+      AIO_COMMERCE_API_BASE_URL: 'http://mycommerce.com',
       LOG_LEVEL: 'debug',
     };
     test('with IMS auth', async () => {
       const params = {
         ...sharedParams,
-        OAUTH_CLIENT_ID: 'test-client-id',
-        OAUTH_CLIENT_SECRETS: JSON.stringify(['supersecret']),
-        OAUTH_TECHNICAL_ACCOUNT_ID: 'test-technical-account-id',
-        OAUTH_TECHNICAL_ACCOUNT_EMAIL: 'test-email@example.com',
-        OAUTH_IMS_ORG_ID: 'test-org-id',
-        OAUTH_SCOPES: JSON.stringify(['scope1', 'scope2']),
+        AIO_COMMERCE_AUTH_IMS_CLIENT_ID: 'test-client-id',
+        AIO_COMMERCE_AUTH_IMS_CLIENT_SECRETS: JSON.stringify(['supersecret']),
+        AIO_COMMERCE_AUTH_IMS_TECHNICAL_ACCOUNT_ID: 'test-technical-account-id',
+        AIO_COMMERCE_AUTH_IMS_TECHNICAL_ACCOUNT_EMAIL: 'test-email@example.com',
+        AIO_COMMERCE_AUTH_IMS_ORG_ID: 'test-org-id',
+        AIO_COMMERCE_AUTH_IMS_SCOPES: JSON.stringify(['scope1', 'scope2']),
       };
       mockGetToken.mockResolvedValue('supersecrettoken');
-      const scope = nock(params.COMMERCE_BASE_URL)
+      const scope = nock(params.AIO_COMMERCE_API_BASE_URL)
         .get('/V1/testauth')
         .matchHeader('Content-Type', 'application/json')
-        .matchHeader('x-ims-org-id', params.OAUTH_IMS_ORG_ID)
-        .matchHeader('x-api-key', params.OAUTH_CLIENT_ID)
+        .matchHeader('x-ims-org-id', params.AIO_COMMERCE_AUTH_IMS_ORG_ID)
+        .matchHeader('x-api-key', params.AIO_COMMERCE_AUTH_IMS_CLIENT_ID)
         .matchHeader('Authorization', 'Bearer supersecrettoken')
         .reply(200);
 
@@ -71,13 +71,13 @@ describe('getAdobeCommerceClient', () => {
     test('with Commerce integration auth', async () => {
       const params = {
         ...sharedParams,
-        COMMERCE_CONSUMER_KEY: 'test-consumer-key',
-        COMMERCE_CONSUMER_SECRET: 'test-consumer-secret',
-        COMMERCE_ACCESS_TOKEN: 'test-access-token',
-        COMMERCE_ACCESS_TOKEN_SECRET: 'test-access-token-secret',
+        AIO_COMMERCE_AUTH_INTEGRATION_CONSUMER_KEY: 'test-consumer-key',
+        AIO_COMMERCE_AUTH_INTEGRATION_CONSUMER_SECRET: 'test-consumer-secret',
+        AIO_COMMERCE_AUTH_INTEGRATION_ACCESS_TOKEN: 'test-access-token',
+        AIO_COMMERCE_AUTH_INTEGRATION_ACCESS_TOKEN_SECRET: 'test-access-token-secret',
       };
 
-      const scope = nock(params.COMMERCE_BASE_URL)
+      const scope = nock(params.AIO_COMMERCE_API_BASE_URL)
         .get('/V1/testauth')
         .matchHeader('Content-Type', 'application/json')
         .matchHeader(
