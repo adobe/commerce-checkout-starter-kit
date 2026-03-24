@@ -22,7 +22,7 @@ const logger = Core.Logger("create-tax-integrations", {
 });
 
 /**
- * Creates all the payment methods defined in the payment-methods.yaml file in the configured Adobe Commerce instance
+ * Creates all the tax integrations defined in the tax-integrations.yaml file in the configured Adobe Commerce instance
  * @param {string} configFilePath - The file path to the YAML configuration file
  * @returns {Promise<string[]>} An array of created tax integration codes
  */
