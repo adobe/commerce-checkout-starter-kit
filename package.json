@@ -10,7 +10,7 @@
     "@adobe/exc-app": "^1.4.11",
     "@adobe/react-spectrum": "^3.40.1",
     "@adobe/uix-guest": "^0.10.5",
-    "cloudevents": "^4.0.2",
+    "cloudevents": "^10.0.0",
     "core-js": "^3.41.0",
     "dotenv": "^16.4.5",
     "got": "^11.8.6",
