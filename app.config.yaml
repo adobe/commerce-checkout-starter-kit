@@ -89,6 +89,114 @@ application:
               require-adobe-auth: false
               raw-http: true
               final: true
+          tiered-quantity-discount:
+            function: actions/tiered-quantity-discount/index.js
+            web: 'yes'
+            runtime: nodejs:22
+            inputs:
+              LOG_LEVEL: debug
+              COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
+              ENABLE_TELEMETRY: true
+            annotations:
+              require-adobe-auth: false
+              raw-http: true
+              final: true
+          tiered-category-discount:
+            function: actions/tiered-category-discount/index.js
+            web: 'yes'
+            runtime: nodejs:22
+            inputs:
+              LOG_LEVEL: debug
+              COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
+              ENABLE_TELEMETRY: true
+            annotations:
+              require-adobe-auth: false
+              raw-http: true
+              final: true
+          category-based-discount:
+            function: actions/category-based-discount/index.js
+            web: 'yes'
+            runtime: nodejs:22
+            inputs:
+              LOG_LEVEL: debug
+              COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
+              ENABLE_TELEMETRY: true
+            annotations:
+              require-adobe-auth: false
+              raw-http: true
+              final: true
+          cheapest-item-discount:
+            function: actions/cheapest-item-discount/index.js
+            web: 'yes'
+            runtime: nodejs:22
+            inputs:
+              LOG_LEVEL: debug
+              COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
+              ENABLE_TELEMETRY: true
+            annotations:
+              require-adobe-auth: false
+              raw-http: true
+              final: true
+          expensive-item-discount:
+            function: actions/expensive-item-discount/index.js
+            web: 'yes'
+            runtime: nodejs:22
+            inputs:
+              LOG_LEVEL: debug
+              COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
+              ENABLE_TELEMETRY: true
+            annotations:
+              require-adobe-auth: false
+              raw-http: true
+              final: true
+          cheapest-quantity-discount:
+            function: actions/cheapest-quantity-discount/index.js
+            web: 'yes'
+            runtime: nodejs:22
+            inputs:
+              LOG_LEVEL: debug
+              COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
+              ENABLE_TELEMETRY: true
+            annotations:
+              require-adobe-auth: false
+              raw-http: true
+              final: true
+          step-price-discount:
+            function: actions/step-price-discount/index.js
+            web: 'yes'
+            runtime: nodejs:22
+            inputs:
+              LOG_LEVEL: debug
+              COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
+              ENABLE_TELEMETRY: true
+            annotations:
+              require-adobe-auth: false
+              raw-http: true
+              final: true
+          multi-condition-discount:
+            function: actions/multi-condition-discount/index.js
+            web: 'yes'
+            runtime: nodejs:22
+            inputs:
+              LOG_LEVEL: debug
+              COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
+              ENABLE_TELEMETRY: true
+            annotations:
+              require-adobe-auth: false
+              raw-http: true
+              final: true
+          tiered_total_spend_discount:
+            function: actions/tiered_total_spend_discount/index.js
+            web: 'yes'
+            runtime: nodejs:22
+            inputs:
+              LOG_LEVEL: debug
+              COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
+              ENABLE_TELEMETRY: true
+            annotations:
+              require-adobe-auth: false
+              raw-http: true
+              final: true
           # https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/use-cases/
           consume:
             function: actions/commerce-events/consume.js
