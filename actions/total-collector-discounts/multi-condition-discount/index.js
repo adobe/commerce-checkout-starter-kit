@@ -1,6 +1,6 @@
 /**
- * Tiered total-spend discount (`sales1.py`):
- * Spend $100+ → 10% off, Spend $200+ → 20% off.
+ * Multi-condition discount:
+ * Buy at least 5 items AND spend $200+ (base subtotal) → 25% off.
  * Applies promo proportionally to each line and stacks with existing line discounts.
  *
  * With `raw-http: true`, body is base64 in `__ow_body`. Verifies
@@ -10,34 +10,21 @@
 import {
   webhookErrorResponse,
   webhookVerify,
-} from "../../lib/adobe-commerce.js";
-import { HTTP_OK } from "../../lib/http.js";
+} from "../../../lib/adobe-commerce.js";
+import { HTTP_OK } from "../../../lib/http.js";
+import {
+  getExistingItemBaseDiscount,
+  getExistingItemDiscountAmount,
+  getShippingItems,
+  parseJsonBody,
+  round2,
+  zeroDiscountOperation,
+} from "../../../lib/total-collector-discounts.js";
 
-const TIERS = [
-  { minSubtotal: 200, percent: 20, label: "Spend $200+ → 20% off" },
-  { minSubtotal: 100, percent: 10, label: "Spend $100+ → 10% off" },
-];
-
-function parseJsonBody(params) {
-  if (!params.__ow_body) {
-    return null;
-  }
-  try {
-    return JSON.parse(atob(params.__ow_body));
-  } catch {
-    return null;
-  }
-}
-
-function round2(n) {
-  return Math.round(Number(n) * 100) / 100;
-}
-
-function getShippingItems(webhookData) {
-  const assignment =
-    webhookData.shippingAssignment ?? webhookData.shipping_assignment ?? {};
-  return Array.isArray(assignment.items) ? assignment.items : [];
-}
+const MIN_QTY = 5;
+const MIN_SUBTOTAL = 200;
+const DISCOUNT_PERCENT = 25;
+const RULE_LABEL = "Buy at least 5 items & spend $200 or more → 25% off";
 
 function lineAmounts(item) {
   const qty = Number(item?.qty ?? 0) || 0;
@@ -49,31 +36,32 @@ function lineAmounts(item) {
   };
 }
 
-function getExistingItemBaseDiscount(item) {
-  const raw =
-    item.base_discount_amount ??
-    item.baseDiscountAmount ??
-    item.base_discount ??
-    0;
-  return round2(Number(raw) || 0);
+function totalCartQty(items) {
+  return items.reduce((sum, item) => sum + (Number(item?.qty ?? 0) || 0), 0);
 }
 
-function getTierForSubtotal(baseSubtotal) {
-  for (const tier of TIERS) {
-    if (baseSubtotal >= tier.minSubtotal) {
-      return tier;
-    }
+function isEligible(items) {
+  if (!items.length) {
+    return false;
   }
-  return null;
+  const qty = totalCartQty(items);
+  const baseSubtotal = round2(
+    items.reduce((sum, item) => sum + lineAmounts(item).lineBase, 0),
+  );
+  return qty >= MIN_QTY && baseSubtotal >= MIN_SUBTOTAL;
 }
 
-function calculatePromoPerLine(items, percent) {
+/**
+ * Promo-only per-line 25% discounts before stacking existing amounts.
+ * Mirrors sales3a calculate_line_discounts_25.
+ */
+function calculatePromoPerLine(items) {
   let totalBase = 0;
   const perLine = [];
   for (let idx = 0; idx < items.length; idx++) {
     const { lineBase, lineStore } = lineAmounts(items[idx]);
-    const promoBase = round2(lineBase * (percent / 100));
-    const promoStore = round2(lineStore * (percent / 100));
+    const promoBase = round2(lineBase * (DISCOUNT_PERCENT / 100));
+    const promoStore = round2(lineStore * (DISCOUNT_PERCENT / 100));
     totalBase = round2(totalBase + promoBase);
     perLine.push({
       item_index: idx,
@@ -86,19 +74,7 @@ function calculatePromoPerLine(items, percent) {
   return { totalBase, perLine };
 }
 
-function zeroDiscountOperation() {
-  return {
-    op: "replace",
-    path: "result",
-    value: {
-      code: "discount",
-      base_discount: 0,
-      discount_description_array: {},
-    },
-  };
-}
-
-function collectTieredTotalSpendDiscount(params) {
+function collectMultiConditionDiscount(params) {
   try {
     const { success, error } = webhookVerify(params);
     if (!success) {
@@ -128,12 +104,7 @@ function collectTieredTotalSpendDiscount(params) {
       };
     }
 
-    const baseSubtotal = round2(
-      items.reduce((sum, item) => sum + lineAmounts(item).lineBase, 0),
-    );
-
-    const tier = getTierForSubtotal(baseSubtotal);
-    if (!tier) {
+    if (!isEligible(items)) {
       return {
         statusCode: HTTP_OK,
         headers: { "Content-Type": "application/json" },
@@ -141,10 +112,7 @@ function collectTieredTotalSpendDiscount(params) {
       };
     }
 
-    const { totalBase: totalPromoBase, perLine } = calculatePromoPerLine(
-      items,
-      tier.percent,
-    );
+    const { totalBase: totalPromoBase, perLine } = calculatePromoPerLine(items);
     if (totalPromoBase <= 0) {
       return {
         statusCode: HTTP_OK,
@@ -160,13 +128,28 @@ function collectTieredTotalSpendDiscount(params) {
         continue;
       }
       const idx = row.item_index;
-      const existing = getExistingItemBaseDiscount(items[idx]);
-      const combinedLine = round2(existing + row.base_discount);
+      const item = items[idx];
+      const combinedBase = round2(
+        getExistingItemBaseDiscount(item) + row.base_discount,
+      );
+      const combinedStore = round2(
+        getExistingItemDiscountAmount(item) + row.store_discount,
+      );
 
       operations.push({
         op: "replace",
         path: `shippingAssignment/items/${idx}/base_discount_amount`,
-        value: combinedLine,
+        value: combinedBase,
+      });
+      operations.push({
+        op: "replace",
+        path: `shippingAssignment/items/${idx}/discount_amount`,
+        value: combinedStore,
+      });
+      operations.push({
+        op: "replace",
+        path: `shippingAssignment/items/${idx}/discount_percent`,
+        value: DISCOUNT_PERCENT,
       });
     }
 
@@ -175,9 +158,8 @@ function collectTieredTotalSpendDiscount(params) {
       path: "result",
       value: {
         code: "discount",
-        // Cart result sends promo-only discount for this rule execution.
         base_discount: Number(totalPromoBase),
-        discount_description_array: { 1: tier.label },
+        discount_description_array: { 1: RULE_LABEL },
       },
     });
 
@@ -192,5 +174,5 @@ function collectTieredTotalSpendDiscount(params) {
 }
 
 export function main(params) {
-  return collectTieredTotalSpendDiscount(params);
+  return collectMultiConditionDiscount(params);
 }
