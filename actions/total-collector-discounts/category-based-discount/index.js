@@ -13,13 +13,14 @@ import {
 } from "../../../lib/adobe-commerce.js";
 import { HTTP_OK } from "../../../lib/http.js";
 import {
+  buildQuoteItemIndex,
   discountOperation,
   getExistingItemBaseDiscount,
   getExistingItemDiscountAmount,
   getShippingItems,
   itemCategoryFromSku,
-  itemIdentifierForLookup,
   parseJsonBody,
+  resolveQuoteLineForShippingItem,
   round2,
   zeroDiscountOperation,
 } from "../../../lib/total-collector-discounts.js";
@@ -36,37 +37,6 @@ function lineSubtotal(item) {
   const base = Number(item?.base_price ?? 0) || 0;
   const qty = Number(item?.qty ?? 0) || 0;
   return round2(base * qty);
-}
-
-function buildQuoteItemIndex(quoteItems) {
-  const byId = {};
-  const bySku = {};
-  for (const qi of quoteItems) {
-    if (!qi || typeof qi !== "object") {
-      continue;
-    }
-    if (qi.item_id != null) {
-      const idNum = Number(qi.item_id);
-      if (!Number.isNaN(idNum)) {
-        byId[idNum] = qi;
-      }
-    }
-    if (qi.sku) {
-      bySku[qi.sku] = qi;
-    }
-  }
-  return { byId, bySku };
-}
-
-function resolveQuoteLineForShippingItem(item, byId, bySku) {
-  const iid = itemIdentifierForLookup(item);
-  if (iid != null && byId[iid]) {
-    return byId[iid];
-  }
-  if (item.sku && bySku[item.sku]) {
-    return bySku[item.sku];
-  }
-  return null;
 }
 
 /**

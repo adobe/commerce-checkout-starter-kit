@@ -14,12 +14,13 @@ import {
 } from "../../../lib/adobe-commerce.js";
 import { HTTP_OK } from "../../../lib/http.js";
 import {
+  buildQuoteItemIndex,
   getExistingItemBaseDiscount,
   getExistingItemDiscountAmount,
   getShippingItems,
   itemCategoryFromSku,
-  itemIdentifierForLookup,
   parseJsonBody,
+  resolveQuoteLineForShippingItem,
   round2,
   zeroDiscountOperation,
 } from "../../../lib/total-collector-discounts.js";
@@ -30,37 +31,6 @@ const TARGET_CATEGORY_NAME = "wine";
 const DISCOUNT_PERCENT = 30;
 
 const RULE_LABEL = `Buy 3+ from ${TARGET_CATEGORY_NAME} (SKU) → ${DISCOUNT_PERCENT}% off full qty on most expensive line`;
-
-function buildQuoteItemIndex(quoteItems) {
-  const byId = {};
-  const bySku = {};
-  for (const qi of quoteItems) {
-    if (!qi || typeof qi !== "object") {
-      continue;
-    }
-    if (qi.item_id != null) {
-      const idNum = Number(qi.item_id);
-      if (!Number.isNaN(idNum)) {
-        byId[idNum] = qi;
-      }
-    }
-    if (qi.sku) {
-      bySku[qi.sku] = qi;
-    }
-  }
-  return { byId, bySku };
-}
-
-function resolveQuoteLineForShippingItem(item, byId, bySku) {
-  const iid = itemIdentifierForLookup(item);
-  if (iid != null && byId[iid]) {
-    return byId[iid];
-  }
-  if (item.sku && bySku[item.sku]) {
-    return bySku[item.sku];
-  }
-  return null;
-}
 
 function mergeQuoteProductOntoLine(item, qline) {
   const prod = item.product;

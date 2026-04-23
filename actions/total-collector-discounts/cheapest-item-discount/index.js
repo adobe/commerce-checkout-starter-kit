@@ -13,12 +13,13 @@ import {
 } from "../../../lib/adobe-commerce.js";
 import { HTTP_OK } from "../../../lib/http.js";
 import {
+  buildQuoteItemIndex,
   getExistingItemBaseDiscount,
   getExistingItemDiscountAmount,
   getShippingItems,
   itemCategoryFromSku,
-  itemIdentifierForLookup,
   parseJsonBody,
+  resolveQuoteLineForShippingItem,
   round2,
   zeroDiscountOperation,
 } from "../../../lib/total-collector-discounts.js";
@@ -28,37 +29,6 @@ const MIN_QTY = 3;
 const SHIRT_CATEGORY_NAME = "shirts";
 
 const RULE_LABEL = "Buy 3 shirts → cheapest free";
-
-function buildQuoteItemIndex(quoteItems) {
-  const byId = {};
-  const bySku = {};
-  for (const qi of quoteItems) {
-    if (!qi || typeof qi !== "object") {
-      continue;
-    }
-    if (qi.item_id != null) {
-      const idNum = Number(qi.item_id);
-      if (!Number.isNaN(idNum)) {
-        byId[idNum] = qi;
-      }
-    }
-    if (qi.sku) {
-      bySku[qi.sku] = qi;
-    }
-  }
-  return { byId, bySku };
-}
-
-function resolveQuoteLineForShippingItem(item, byId, bySku) {
-  const iid = itemIdentifierForLookup(item);
-  if (iid != null && byId[iid]) {
-    return byId[iid];
-  }
-  if (item.sku && bySku[item.sku]) {
-    return bySku[item.sku];
-  }
-  return null;
-}
 
 /**
  * @returns {{ totalNewBase: number, cheapestIndex: number, ruleLabel: string | null }}
