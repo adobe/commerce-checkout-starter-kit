@@ -18,6 +18,7 @@ import {
   getExistingItemDiscountAmount,
   getShippingItems,
   itemCategoryFromSku,
+  itemIdentifierForLookup,
   parseJsonBody,
   round2,
   zeroDiscountOperation,
@@ -29,20 +30,6 @@ const TARGET_CATEGORY_NAME = "wine";
 const DISCOUNT_PERCENT = 30;
 
 const RULE_LABEL = `Buy 3+ from ${TARGET_CATEGORY_NAME} (SKU) → ${DISCOUNT_PERCENT}% off full qty on most expensive line`;
-
-function itemIdentifierForLookup(item) {
-  for (const key of ["item_id", "id"]) {
-    const iid = item[key];
-    if (iid == null) {
-      continue;
-    }
-    const n = Number(iid);
-    if (!Number.isNaN(n)) {
-      return n;
-    }
-  }
-  return null;
-}
 
 function buildQuoteItemIndex(quoteItems) {
   const byId = {};

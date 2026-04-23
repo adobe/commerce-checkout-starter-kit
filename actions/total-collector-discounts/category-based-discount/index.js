@@ -18,6 +18,7 @@ import {
   getExistingItemDiscountAmount,
   getShippingItems,
   itemCategoryFromSku,
+  itemIdentifierForLookup,
   parseJsonBody,
   round2,
   zeroDiscountOperation,
@@ -35,20 +36,6 @@ function lineSubtotal(item) {
   const base = Number(item?.base_price ?? 0) || 0;
   const qty = Number(item?.qty ?? 0) || 0;
   return round2(base * qty);
-}
-
-function itemIdentifierForLookup(item) {
-  for (const key of ["item_id", "id"]) {
-    const iid = item[key];
-    if (iid == null) {
-      continue;
-    }
-    const n = Number(iid);
-    if (!Number.isNaN(n)) {
-      return n;
-    }
-  }
-  return null;
 }
 
 function buildQuoteItemIndex(quoteItems) {

@@ -17,6 +17,7 @@ import {
   getExistingItemDiscountAmount,
   getShippingItems,
   itemCategoryFromSku,
+  itemIdentifierForLookup,
   parseJsonBody,
   round2,
   zeroDiscountOperation,
@@ -27,20 +28,6 @@ const MIN_QTY = 3;
 const SHIRT_CATEGORY_NAME = "shirts";
 
 const RULE_LABEL = "Buy 3 shirts → cheapest free";
-
-function itemIdentifierForLookup(item) {
-  for (const key of ["item_id", "id"]) {
-    const iid = item[key];
-    if (iid == null) {
-      continue;
-    }
-    const n = Number(iid);
-    if (!Number.isNaN(n)) {
-      return n;
-    }
-  }
-  return null;
-}
 
 function buildQuoteItemIndex(quoteItems) {
   const byId = {};
