@@ -39,7 +39,10 @@
     },
     {
       "groupName": "aio-commerce-sdk",
-      "matchPackageNames": ["@adobe/aio-commerce-lib-*", "@adobe/aio-commerce-sdk*"],
+      "matchPackageNames": [
+        "@adobe/aio-commerce-lib-*",
+        "@adobe/aio-commerce-sdk*"
+      ],
       "matchUpdateTypes": ["major"],
       "automerge": false
     }
