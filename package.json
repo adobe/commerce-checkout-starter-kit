@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "dependencies": {
-    "@adobe/aio-lib-ims": "^7.0.2",
+    "@adobe/aio-lib-ims": "^8.0.0",
     "@adobe/aio-lib-telemetry": "^1.1.0",
     "@adobe/aio-sdk": "^6",
     "@adobe/exc-app": "^1.4.11",
