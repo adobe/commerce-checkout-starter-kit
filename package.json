@@ -12,7 +12,7 @@
     "@adobe/uix-guest": "^0.10.5",
     "cloudevents": "^10.0.0",
     "core-js": "^3.41.0",
-    "dotenv": "^16.4.5",
+    "dotenv": "^17.0.0",
     "got": "^11.8.6",
     "js-yaml": "^4.1.0",
     "oauth-1.0a": "^2.2.6",
