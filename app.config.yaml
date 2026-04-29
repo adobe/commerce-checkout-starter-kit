@@ -11,14 +11,14 @@ application:
           info:
             function: actions/commerce-checkout-starter-kit-info/index.js
             web: 'yes'
-            runtime: nodejs:22
+            runtime: nodejs:24
             annotations:
               require-adobe-auth: true
               final: true
           generic:
             function: actions/generic/index.js
             web: 'yes'
-            runtime: nodejs:22
+            runtime: nodejs:24
             inputs:
               LOG_LEVEL: debug
             annotations:
@@ -28,7 +28,7 @@ application:
           validate-payment:
             function: actions/validate-payment/index.js
             web: 'yes'
-            runtime: nodejs:22
+            runtime: nodejs:24
             inputs:
               LOG_LEVEL: debug
               COMMERCE_PAYMENT_METHOD_CODES: $COMMERCE_PAYMENT_METHOD_CODES
@@ -42,7 +42,7 @@ application:
           filter-payment:
             function: actions/filter-payment/index.js
             web: 'yes'
-            runtime: nodejs:22
+            runtime: nodejs:24
             inputs:
               LOG_LEVEL: debug
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
@@ -55,7 +55,7 @@ application:
           shipping-methods:
             function: actions/shipping-methods/index.js
             web: 'yes'
-            runtime: nodejs:22
+            runtime: nodejs:24
             inputs:
               LOG_LEVEL: debug
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
@@ -68,7 +68,7 @@ application:
           collect-taxes:
             function: actions/collect-taxes/index.js
             web: 'yes'
-            runtime: nodejs:22
+            runtime: nodejs:24
             inputs:
               LOG_LEVEL: debug
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
@@ -80,7 +80,7 @@ application:
           collect-adjustment-taxes:
             function: actions/collect-adjustment-taxes/index.js
             web: 'yes'
-            runtime: nodejs:22
+            runtime: nodejs:24
             inputs:
               LOG_LEVEL: debug
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
@@ -92,7 +92,7 @@ application:
           tiered-quantity-discount:
             function: actions/total-collector-discounts/tiered-quantity-discount/index.js
             web: 'yes'
-            runtime: nodejs:22
+            runtime: nodejs:24
             inputs:
               LOG_LEVEL: debug
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
@@ -104,7 +104,7 @@ application:
           tiered-category-discount:
             function: actions/total-collector-discounts/tiered-category-discount/index.js
             web: 'yes'
-            runtime: nodejs:22
+            runtime: nodejs:24
             inputs:
               LOG_LEVEL: debug
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
@@ -116,7 +116,7 @@ application:
           category-based-discount:
             function: actions/total-collector-discounts/category-based-discount/index.js
             web: 'yes'
-            runtime: nodejs:22
+            runtime: nodejs:24
             inputs:
               LOG_LEVEL: debug
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
@@ -128,7 +128,7 @@ application:
           cheapest-item-discount:
             function: actions/total-collector-discounts/cheapest-item-discount/index.js
             web: 'yes'
-            runtime: nodejs:22
+            runtime: nodejs:24
             inputs:
               LOG_LEVEL: debug
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
@@ -140,7 +140,7 @@ application:
           expensive-item-discount:
             function: actions/total-collector-discounts/expensive-item-discount/index.js
             web: 'yes'
-            runtime: nodejs:22
+            runtime: nodejs:24
             inputs:
               LOG_LEVEL: debug
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
@@ -152,7 +152,7 @@ application:
           cheapest-quantity-discount:
             function: actions/total-collector-discounts/cheapest-quantity-discount/index.js
             web: 'yes'
-            runtime: nodejs:22
+            runtime: nodejs:24
             inputs:
               LOG_LEVEL: debug
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
@@ -164,7 +164,7 @@ application:
           step-price-discount:
             function: actions/total-collector-discounts/step-price-discount/index.js
             web: 'yes'
-            runtime: nodejs:22
+            runtime: nodejs:24
             inputs:
               LOG_LEVEL: debug
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
@@ -176,7 +176,7 @@ application:
           multi-condition-discount:
             function: actions/total-collector-discounts/multi-condition-discount/index.js
             web: 'yes'
-            runtime: nodejs:22
+            runtime: nodejs:24
             inputs:
               LOG_LEVEL: debug
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
@@ -188,7 +188,7 @@ application:
           tiered-total-spend-discount:
             function: actions/total-collector-discounts/tiered-total-spend-discount/index.js
             web: 'yes'
-            runtime: nodejs:22
+            runtime: nodejs:24
             inputs:
               LOG_LEVEL: debug
               COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
@@ -201,7 +201,7 @@ application:
           consume:
             function: actions/commerce-events/consume.js
             web: 'no'
-            runtime: nodejs:22
+            runtime: nodejs:24
             inputs:
               LOG_LEVEL: debug
             annotations:
@@ -213,7 +213,7 @@ application:
           publish:
             function: actions/3rd-party-events/publish.js
             web: 'yes'
-            runtime: nodejs:22
+            runtime: nodejs:24
             inputs:
               LOG_LEVEL: debug
               # IMS credentials
@@ -236,7 +236,7 @@ application:
           consume:
             function: actions/3rd-party-events/consume.js
             web: 'no'
-            runtime: nodejs:22
+            runtime: nodejs:24
             inputs:
               LOG_LEVEL: debug
             annotations:
