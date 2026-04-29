@@ -297,7 +297,7 @@ async function configureEvents(
   }
 }
 
-export { main, configureEvents };
+export { configureEvents, main };
 
 // Run if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {

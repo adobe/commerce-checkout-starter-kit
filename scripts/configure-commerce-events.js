@@ -286,7 +286,7 @@ function readWorkspaceConfig(filePath) {
   return JSON.parse(fileContent);
 }
 
-export { main, configureCommerceEvents };
+export { configureCommerceEvents, main };
 
 // Run if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
