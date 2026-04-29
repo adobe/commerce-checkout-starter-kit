@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-  "extends": ["ultracite/core", "ultracite/react"],
+  "extends": ["ultracite/biome/core", "ultracite/biome/react"],
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -9,7 +9,6 @@
   "files": {
     "ignoreUnknown": true,
     "includes": [
-      "**",
       "!!**/.github/CONTRIBUTING.md",
       "!!**/.github/ISSUE_TEMPLATE.md",
       "!!**/.github/PULL_REQUEST_TEMPLATE.md",

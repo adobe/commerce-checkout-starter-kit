@@ -93,4 +93,4 @@ function isWebhookSuccessful(result) {
   return false;
 }
 
-export { telemetryConfig, isWebhookSuccessful, localCollectorConfig };
+export { isWebhookSuccessful, localCollectorConfig, telemetryConfig };

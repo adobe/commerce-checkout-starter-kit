@@ -104,7 +104,7 @@ export function checkMissingRequestInputs(
  */
 export function getBearerToken(params) {
   if (params.__ow_headers?.authorization?.startsWith("Bearer ")) {
-    return params.__ow_headers.authorization.substring("Bearer ".length);
+    return params.__ow_headers.authorization.slice("Bearer ".length);
   }
 }
 /**

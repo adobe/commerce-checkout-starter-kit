@@ -17,25 +17,25 @@ body {
 
 /** Custom Sidebar Styling **/
 .SideNav {
-  list-style-type: none;
+  height: 100%;
+  padding: 0;
   margin: 0;
   margin-bottom: 0px;
-  padding: 0;
   outline: none;
-  height: 100%;
+  list-style-type: none;
 }
 
 .SideNav-item {
-  list-style-type: none;
   margin: var(--spectrum-global-dimension-size-50) 0;
+  list-style-type: none;
 }
 
 .SideNav-itemLink {
   position: relative;
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: start;
-  box-sizing: border-box;
   width: 100%;
   min-height: var(
     --spectrum-alias-single-line-height,
@@ -43,26 +43,26 @@ body {
   );
   padding: var(--spectrum-global-dimension-size-65)
     var(--spectrum-global-dimension-size-150);
-  border-radius: var(
-    --spectrum-alias-border-radius-regular,
-    var(--spectrum-global-dimension-size-50)
-  );
   font-size: var(
     --spectrum-alias-font-size-default,
     var(--spectrum-global-dimension-font-size-100)
   );
-  font-weight: var(--spectrum-global-font-weight-regular, 400);
   font-style: normal;
-  text-decoration: none;
+  font-weight: var(--spectrum-global-font-weight-regular, 400);
+  color: var(
+    --spectrum-alias-text-color,
+    var(--spectrum-global-color-gray-800)
+  );
   word-break: break-word;
+  text-decoration: none;
   cursor: pointer;
   background-color: var(
     --spectrum-alias-background-color-transparent,
     transparent
   );
-  color: var(
-    --spectrum-alias-text-color,
-    var(--spectrum-global-color-gray-800)
+  border-radius: var(
+    --spectrum-alias-border-radius-regular,
+    var(--spectrum-global-dimension-size-50)
   );
 }
 

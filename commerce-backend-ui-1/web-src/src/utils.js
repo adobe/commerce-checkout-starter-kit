@@ -19,7 +19,6 @@ governing permissions and limitations under the License.
  * @param {object|null} payload The optional request payload
  * @returns {Promise<object>} The parsed JSON response from the backend
  */
-// biome-ignore lint/nursery/useMaxParams: just for demo purposes
 export async function callAction(
   props,
   action,
