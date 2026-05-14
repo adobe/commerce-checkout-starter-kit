@@ -205,7 +205,6 @@ application:
             inputs:
               LOG_LEVEL: debug
             annotations:
-              require-adobe-auth: true
               final: true
       3rd-party-events:
         license: Apache-2.0
@@ -240,7 +239,6 @@ application:
             inputs:
               LOG_LEVEL: debug
             annotations:
-              require-adobe-auth: true
               final: true
   # https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/configure/#configure-eventing
   events:
