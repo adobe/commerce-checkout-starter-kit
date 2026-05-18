@@ -138,7 +138,7 @@ application:
               raw-http: true
               final: true
           custom-price:
-            function: actions/total-collector-discounts/custom-price/index.js
+            function: actions/total-collector-subtotal/custom-price/index.js
             web: 'yes'
             runtime: nodejs:22
             inputs:
@@ -150,7 +150,7 @@ application:
               raw-http: true
               final: true
           item-price-update:
-            function: actions/total-collector-discounts/item-price-update/index.js
+            function: actions/total-collector-subtotal/item-price-update/index.js
             web: 'yes'
             runtime: nodejs:22
             inputs:
