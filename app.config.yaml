@@ -137,6 +137,30 @@ application:
               require-adobe-auth: false
               raw-http: true
               final: true
+          custom-price:
+            function: actions/total-collector-discounts/custom-price/index.js
+            web: 'yes'
+            runtime: nodejs:22
+            inputs:
+              LOG_LEVEL: debug
+              COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
+              ENABLE_TELEMETRY: true
+            annotations:
+              require-adobe-auth: false
+              raw-http: true
+              final: true
+          item-price-update:
+            function: actions/total-collector-discounts/item-price-update/index.js
+            web: 'yes'
+            runtime: nodejs:22
+            inputs:
+              LOG_LEVEL: debug
+              COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
+              ENABLE_TELEMETRY: true
+            annotations:
+              require-adobe-auth: false
+              raw-http: true
+              final: true
           expensive-item-discount:
             function: actions/total-collector-discounts/expensive-item-discount/index.js
             web: 'yes'
