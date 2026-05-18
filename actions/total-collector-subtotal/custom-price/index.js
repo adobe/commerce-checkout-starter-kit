@@ -16,7 +16,11 @@ import {
   round2,
 } from "../../../lib/total-collector-discounts.js";
 
-/** SKU → custom base price overrides. Replace with your own pricing logic. */
+/**
+ * Per-SKU absolute price overrides that replace Adobe Commerce catalog pricing entirely.
+ * Use item-price-update instead for additional reductions stacked on top of existing
+ * group or catalog prices.
+ */
 const PRICE_OVERRIDES = {
   "WS12-XS-Blue": 15.0,
 };

@@ -17,26 +17,12 @@ import {
 } from "../../../lib/total-collector-discounts.js";
 
 /**
- * Return the custom base price for an item, or null to leave the price unchanged.
- *
- * `item` fields available (from shippingAssignment.items):
- *   item_id       — quote item ID (use this in price_updates)
- *   sku           — child SKU for configurables (e.g. "IMAGEFORCEC5140-print_finish-Standard Flat Rate")
- *   base_price    — current unit base price in store base currency
- *   price         — current unit price in store display currency
- *   qty           — quantity in cart
- *   product_type  — "simple" | "configurable" | "bundle" etc.
- *
- * Replace with a lookup against your external pricing system, B2B catalog,
- * or customer-group contract table.
- *
- * @param {object} item
- * @param {object} quote
- * @returns {number|null}
+ * Applies an additional discount on top of the Adobe Commerce computed base_price
+ * (after catalog rules and group pricing). Returns null to leave the price unchanged.
+ * Use custom-price instead for a fixed contract price that fully replaces catalog pricing.
  */
 function resolveCustomPrice(item, quote) {
-  // Example: apply a flat 25% B2B contract discount for configurable products
-  // in customer group 1 (Wholesale). Replace with your own logic.
+  // Example: additional 25% B2B contract reduction for group-1 configurables. Replace with your own logic.
   const customerGroupId = Number(quote?.customer_group_id ?? -1);
   if (customerGroupId !== 1) {
     return null;
