@@ -54,7 +54,7 @@
     "sync-oauth-credentials": "node scripts/sync-oauth-credentials.js"
   },
   "engines": {
-    "node": "^22.0.0"
+    "node": "^24.0.0"
   },
   "lint-staged": {
     "*": [
