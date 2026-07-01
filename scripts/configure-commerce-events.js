@@ -15,7 +15,7 @@ import path from "node:path";
 
 import { Core, Events } from "@adobe/aio-sdk";
 import dotenv from "dotenv";
-import yaml from "js-yaml";
+import { dump, load } from "js-yaml";
 
 import { resolveCredentials } from "../lib/adobe-auth.js";
 import { getAdobeCommerceClient } from "../lib/adobe-commerce.js";
@@ -66,9 +66,7 @@ async function main(workspaceFile) {
     return;
   }
 
-  const eventProvidersSpec = yaml.load(
-    fs.readFileSync(eventProvidersPath, "utf8"),
-  );
+  const eventProvidersSpec = load(fs.readFileSync(eventProvidersPath, "utf8"));
   const commerceProviderSpec = eventProvidersSpec?.event_providers.find(
     (providerSpec) => providerSpec.provider_metadata === "dx_commerce_events",
   );
@@ -76,7 +74,7 @@ async function main(workspaceFile) {
     logger.warn(
       `Cannot find the matched commerce provider spec for provider ID ${provider.id} at ${eventProvidersPath}. ` +
         "Please update the event provider info as follows:\n",
-      yaml.dump({
+      dump({
         event_providers: [
           {
             label: provider.label,

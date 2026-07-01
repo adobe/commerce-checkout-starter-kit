@@ -13,7 +13,7 @@ governing permissions and limitations under the License.
 import fs from "node:fs";
 
 import { Core } from "@adobe/aio-sdk";
-import yaml from "js-yaml";
+import { load } from "js-yaml";
 
 import { getAdobeCommerceClient } from "../lib/adobe-commerce.js";
 
@@ -29,7 +29,7 @@ const logger = Core.Logger("create-tax-integrations", {
 export async function main(configFilePath) {
   logger.info("Reading tax configuration file...");
   const fileContents = fs.readFileSync(configFilePath, "utf8");
-  const data = yaml.load(fileContents);
+  const data = load(fileContents);
   logger.info("Creating tax integrations...");
   const createdTaxIntegrations = [];
 
