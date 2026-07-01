@@ -14,7 +14,7 @@ import fs from "node:fs";
 
 import { Core, Events } from "@adobe/aio-sdk";
 import dotenv from "dotenv";
-import yaml from "js-yaml";
+import { load } from "js-yaml";
 import { v4 as uuidv4 } from "uuid";
 
 import { resolveCredentials } from "../lib/adobe-auth.js";
@@ -48,9 +48,7 @@ async function main() {
     );
     return;
   }
-  const eventProvidersSpec = yaml.load(
-    fs.readFileSync(eventProvidersPath, "utf8"),
-  );
+  const eventProvidersSpec = load(fs.readFileSync(eventProvidersPath, "utf8"));
 
   const {
     org: { id: organizationId },

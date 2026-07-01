@@ -12,7 +12,7 @@ governing permissions and limitations under the License.
 
 import fs from "node:fs";
 
-import yaml from "js-yaml";
+import { load } from "js-yaml";
 
 import { getAdobeCommerceClient } from "../lib/adobe-commerce.js";
 
@@ -24,7 +24,7 @@ import { getAdobeCommerceClient } from "../lib/adobe-commerce.js";
 export async function main(configFilePath) {
   console.info("Reading payment configuration file...");
   const fileContents = fs.readFileSync(configFilePath, "utf8");
-  const data = yaml.load(fileContents);
+  const data = load(fileContents);
   console.info("Creating payment methods...");
   const createdPaymentMethods = [];
 
