@@ -1,7 +1,7 @@
 /**
  * Multi-condition discount:
  * Buy at least 5 items AND spend $200+ (base subtotal) → 25% off.
- * Applies promo proportionally to each line and stacks with existing line discounts.
+ * When eligible, returns a single `result` replace with percent and all line ids.
  *
  * With `raw-http: true`, body is base64 in `__ow_body`. Verifies
  * `x-adobe-commerce-webhook-signature` like `collect-taxes` (requires
@@ -13,8 +13,8 @@ import {
 } from "../../../lib/adobe-commerce.js";
 import { HTTP_OK } from "../../../lib/http.js";
 import {
-  getExistingItemBaseDiscount,
-  getExistingItemDiscountAmount,
+  discountResultOperation,
+  getShippingAssignmentItemIds,
   getShippingItems,
   parseJsonBody,
   round2,
@@ -29,10 +29,8 @@ const RULE_LABEL = "Buy at least 5 items & spend $200 or more → 25% off";
 function lineAmounts(item) {
   const qty = Number(item?.qty ?? 0) || 0;
   const basePrice = Number(item?.base_price ?? 0) || 0;
-  const storePrice = Number(item?.price ?? item?.base_price ?? 0) || 0;
   return {
     lineBase: round2(basePrice * qty),
-    lineStore: round2(storePrice * qty),
   };
 }
 
@@ -49,29 +47,6 @@ function isEligible(items) {
     items.reduce((sum, item) => sum + lineAmounts(item).lineBase, 0),
   );
   return qty >= MIN_QTY && baseSubtotal >= MIN_SUBTOTAL;
-}
-
-/**
- * Promo-only per-line 25% discounts before stacking existing amounts.
- * Mirrors sales3a calculate_line_discounts_25.
- */
-function calculatePromoPerLine(items) {
-  let totalBase = 0;
-  const perLine = [];
-  for (let idx = 0; idx < items.length; idx++) {
-    const { lineBase, lineStore } = lineAmounts(items[idx]);
-    const promoBase = round2(lineBase * (DISCOUNT_PERCENT / 100));
-    const promoStore = round2(lineStore * (DISCOUNT_PERCENT / 100));
-    totalBase = round2(totalBase + promoBase);
-    perLine.push({
-      item_index: idx,
-      line_base: lineBase,
-      line_store: lineStore,
-      base_discount: promoBase,
-      store_discount: promoStore,
-    });
-  }
-  return { totalBase, perLine };
 }
 
 function collectMultiConditionDiscount(params) {
@@ -112,8 +87,11 @@ function collectMultiConditionDiscount(params) {
       };
     }
 
-    const { totalBase: totalPromoBase, perLine } = calculatePromoPerLine(items);
-    if (totalPromoBase <= 0) {
+    const discountItemIds = getShippingAssignmentItemIds(items).filter(
+      (id) => !Number.isNaN(id),
+    );
+
+    if (!discountItemIds.length) {
       return {
         statusCode: HTTP_OK,
         headers: { "Content-Type": "application/json" },
@@ -121,52 +99,16 @@ function collectMultiConditionDiscount(params) {
       };
     }
 
-    const operations = [];
-
-    for (const row of perLine) {
-      if (row.base_discount <= 0) {
-        continue;
-      }
-      const idx = row.item_index;
-      const item = items[idx];
-      const combinedBase = round2(
-        getExistingItemBaseDiscount(item) + row.base_discount,
-      );
-      const combinedStore = round2(
-        getExistingItemDiscountAmount(item) + row.store_discount,
-      );
-
-      operations.push({
-        op: "replace",
-        path: `shippingAssignment/items/${idx}/base_discount_amount`,
-        value: combinedBase,
-      });
-      operations.push({
-        op: "replace",
-        path: `shippingAssignment/items/${idx}/discount_amount`,
-        value: combinedStore,
-      });
-      operations.push({
-        op: "replace",
-        path: `shippingAssignment/items/${idx}/discount_percent`,
-        value: DISCOUNT_PERCENT,
-      });
-    }
-
-    operations.push({
-      op: "replace",
-      path: "result",
-      value: {
-        code: "discount",
-        base_discount: Number(totalPromoBase),
-        discount_description_array: { 1: RULE_LABEL },
-      },
-    });
-
     return {
       statusCode: HTTP_OK,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(operations),
+      body: JSON.stringify([
+        discountResultOperation(
+          DISCOUNT_PERCENT,
+          { 1: RULE_LABEL },
+          discountItemIds,
+        ),
+      ]),
     };
   } catch (err) {
     return webhookErrorResponse(`Server error: ${err.message}`);
