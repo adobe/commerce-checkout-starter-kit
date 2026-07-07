@@ -1,6 +1,14 @@
 import { defineConfig } from "@adobe/aio-commerce-lib-app/config";
 
+// biome-ignore assist/source/useSortedKeys: keep metadata at top level
 export default defineConfig({
+  metadata: {
+    description:
+      "Out-of-process shipping methods and carrier setup for the Adobe Commerce checkout starter kit.",
+    displayName: "Checkout Shipping Method",
+    id: "checkout-shipping-method",
+    version: "1.0.0",
+  },
   installation: {
     customInstallationSteps: [
       {
@@ -10,13 +18,6 @@ export default defineConfig({
         script: "./scripts/create-shipping-carriers.js",
       },
     ],
-  },
-  metadata: {
-    description:
-      "Out-of-process shipping methods and carrier setup for the Adobe Commerce checkout starter kit.",
-    displayName: "Checkout Shipping Method",
-    id: "checkout-shipping-method",
-    version: "1.0.0",
   },
   webhooks: [
     {

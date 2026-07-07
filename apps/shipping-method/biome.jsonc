@@ -1,16 +1,20 @@
 {
+  // remove once root biome.jsonc is deleted
   "root": false,
-  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.2/schema.json",
   "extends": ["ultracite/biome/core"],
-  "vcs": {
-    "enabled": true,
-    "clientKind": "git",
-    "useIgnoreFile": true
-  },
+
   "files": {
     "ignoreUnknown": true,
     "includes": ["!**/.generated"]
   },
+
+  "json": {
+    "formatter": {
+      "trailingCommas": "none"
+    }
+  },
+
   "javascript": {
     "formatter": {
       "arrowParentheses": "always",
@@ -21,6 +25,39 @@
       "trailingCommas": "all"
     }
   },
+
+  "linter": {
+    "rules": {
+      "performance": {
+        "noNamespaceImport": "off"
+      },
+
+      "style": {
+        "useConsistentMemberAccessibility": {
+          "level": "error",
+          "options": {
+            "accessibility": "explicit"
+          }
+        },
+
+        "useImportType": {
+          "level": "error",
+          "fix": "safe",
+          "options": {
+            "style": "separatedType"
+          }
+        },
+
+        "useConsistentTypeDefinitions": {
+          "level": "error",
+          "options": {
+            "style": "type"
+          }
+        }
+      }
+    }
+  },
+
   "assist": {
     "enabled": true,
     "actions": {
@@ -40,6 +77,7 @@
               ":BLANK_LINE:",
               { "type": false, "source": [":PATH:"] },
               ":BLANK_LINE:",
+
               { "type": true, "source": [":BUN:", ":NODE:"] },
               {
                 "type": true,
