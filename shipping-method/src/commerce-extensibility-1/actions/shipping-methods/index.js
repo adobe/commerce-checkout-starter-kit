@@ -1,7 +1,7 @@
-import { HTTP_OK } from "@adobe/aio-commerce-sdk/core/responses";
 import {
   addOperation,
   exceptionOperation,
+  ok,
 } from "@adobe/aio-commerce-sdk/webhooks/responses";
 import {
   getInstrumentationHelpers,
@@ -10,7 +10,6 @@ import {
 
 import { checkoutMetrics } from "../checkout-metrics.js";
 import { isWebhookSuccessful, telemetryConfig } from "../telemetry.js";
-import { webhookVerify } from "./webhook.js";
 
 /**
  * This action returns the list of out-of-process shipping methods for the given request.
@@ -26,24 +25,7 @@ function shippingMethods(params) {
   logger.debug("Starting shipping methods process");
 
   try {
-    const { success, error } = webhookVerify(params);
-    if (!success) {
-      logger.error(`Webhook verification failed: ${error}`);
-      checkoutMetrics.shippingMethodsCounter.add(1, {
-        error_code: "verification_failed",
-        status: "error",
-      });
-      return {
-        body: exceptionOperation(
-          `Failed to verify the webhook signature: ${error}`,
-        ),
-        statusCode: HTTP_OK,
-      };
-    }
-
-    // in the case when "raw-http: true" the body needs to be decoded and converted to JSON
-    const payload = JSON.parse(atob(params.__ow_body));
-    const { rateRequest: request } = payload;
+    const { rateRequest: request } = params;
 
     const {
       dest_country_id: destCountryId = "US",
@@ -168,20 +150,14 @@ function shippingMethods(params) {
 
     checkoutMetrics.shippingMethodsCounter.add(1, { status: "success" });
 
-    return {
-      body: JSON.stringify(operations),
-      statusCode: HTTP_OK,
-    };
+    return ok(operations);
   } catch (error) {
     logger.error("Error in shipping methods:", error);
     checkoutMetrics.shippingMethodsCounter.add(1, {
       error_code: "exception",
       status: "error",
     });
-    return {
-      body: exceptionOperation(`Server error: ${error.message}`),
-      statusCode: HTTP_OK,
-    };
+    return ok(exceptionOperation(`Server error: ${error.message}`));
   }
 }
 

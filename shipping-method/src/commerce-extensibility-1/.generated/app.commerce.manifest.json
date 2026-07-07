@@ -2,7 +2,7 @@
   "installation": {
     "customInstallationSteps": [
       {
-        "description": "Creates the out-of-process shipping carriers defined in shipping-carriers.yaml.",
+        "description": "Creates the out-of-process shipping carriers defined in create-shipping-carriers.js.",
         "name": "Create Shipping Carriers",
         "script": "./scripts/create-shipping-carriers.js"
       }
@@ -22,7 +22,7 @@
         "paas"
       ],
       "label": "Add DPS Shipping Rates (PaaS)",
-      "requireAdobeAuth": false,
+      "requireAdobeAuth": true,
       "runtimeAction": "shipping-method/shipping-methods",
       "webhook": {
         "batch_name": "dps",
@@ -43,7 +43,7 @@
         "saas"
       ],
       "label": "Add DPS Shipping Rates (SaaS)",
-      "requireAdobeAuth": false,
+      "requireAdobeAuth": true,
       "runtimeAction": "shipping-method/shipping-methods",
       "webhook": {
         "batch_name": "dps",

@@ -1,5 +1,6 @@
 {
   "name": "checkout-shipping-method",
+  "description": "Out-of-process shipping methods and carrier setup for the Adobe Commerce checkout starter kit.",
   "version": "1.0.0",
   "type": "module",
   "private": true,
@@ -7,16 +8,9 @@
     "node": "^24.0.0"
   },
   "scripts": {
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "lint:check": "npx biome lint .",
-    "lint": "npx biome lint --write .",
-    "format:check": "npx biome format .",
-    "format": "npx biome format --write .",
+    "test": "vitest run --coverage",
     "code:check": "npx biome check .",
     "code:fix": "npx biome check --write .",
-    "get-shipping-carriers": "node scripts/get-shipping-carriers.js",
     "postinstall": "npx aio-commerce-lib-app hooks postinstall"
   },
   "dependencies": {
@@ -29,11 +23,9 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.0",
     "@vitest/coverage-v8": "^4.0.7",
-    "nock": "^14.0.5",
     "ultracite": "^7.0.0",
     "vitest": "^4.0.7"
   },
-  "description": "Out-of-process shipping methods and carrier setup for the Adobe Commerce checkout starter kit.",
   "imports": {
     "#app.commerce.config": "./src/commerce-extensibility-1/.generated/app.commerce.config.js"
   }

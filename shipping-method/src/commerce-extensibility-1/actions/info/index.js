@@ -1,4 +1,4 @@
-import { HTTP_OK } from "@adobe/aio-commerce-sdk/core/responses";
+import { ok } from "@adobe/aio-commerce-sdk/core/responses";
 
 /**
  * Please DO NOT DELETE this action; future functionalities planned for upcoming starter kit releases may stop working.
@@ -7,5 +7,5 @@ import { HTTP_OK } from "@adobe/aio-commerce-sdk/core/responses";
  * @returns {object} returns a response object
  */
 export function main(_params) {
-  return { statusCode: HTTP_OK };
+  return ok();
 }

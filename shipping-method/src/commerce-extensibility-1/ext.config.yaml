@@ -1,6 +1,6 @@
 # The [pre-app-build] hooks are auto-generated. Do not remove or manually edit.
 hooks:
-  pre-app-build: EXTENSION=extensibility/1 npx aio-commerce-lib-app hooks pre-app-build
+  pre-app-build: EXTENSION=extensibility/1 npx aio-commerce-lib-app hooks pre-app-build && EXTENSION=extensibility/1 pnpm exec aio-commerce-lib-app hooks pre-app-build
 
 operations:
   # These worker processes definitions are auto-generated. Do not remove or manually edit.
@@ -72,9 +72,7 @@ runtimeManifest:
           runtime: nodejs:24
           inputs:
             LOG_LEVEL: debug
-            COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
             ENABLE_TELEMETRY: true
           annotations:
-            require-adobe-auth: false
-            raw-http: true
+            require-adobe-auth: true
             final: true

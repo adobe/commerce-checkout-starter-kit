@@ -17,20 +17,10 @@ for:
   `AIO_COMMERCE_AUTH_IMS_*` credentials the installation step and the webhook auth path rely on)
 
 During `aio app deploy`, the **Create Shipping Carriers** installation step runs automatically and
-creates every carrier defined in [`shipping-carriers.yaml`](./shipping-carriers.yaml) on the
-associated Commerce instance. To inspect what's currently registered without re-running install:
+creates every carrier defined in [`scripts/create-shipping-carriers.js`](./scripts/create-shipping-carriers.js)
+on the associated Commerce instance.
 
-```bash
-npm run get-shipping-carriers
-```
-
-(This is a local dev-only helper — it needs `AIO_COMMERCE_API_BASE_URL` in your `.env`, plus either
-the same `AIO_COMMERCE_AUTH_IMS_*` credentials the install step already uses, or
-`AIO_COMMERCE_AUTH_INTEGRATION_*` for PaaS with a Commerce integration instead of IMS; see
-[`env.dist`](./env.dist). It uses `@adobe/aio-commerce-lib-api`'s `AdobeCommerceHttpClient` +
-`resolveCommerceHttpClientParams` — no hand-rolled Commerce client.)
-
-## Webhook subscription and signature setup
+## Webhook subscription and auth setup
 
 `app.commerce.config.ts` declares two `webhooks` entries for `shipping-methods` (one `env: ["paas"]`,
 one `env: ["saas"]`, since the `webhook_method` string itself differs between the two — Commerce
@@ -38,25 +28,18 @@ drops the `magento.` segment on SaaS). At install/association time, App Manageme
 deployed action's public Runtime URL and subscribes it to Commerce automatically via the
 [Webhooks REST API](https://developer.adobe.com/commerce/extensibility/webhooks/api/#subscribe-a-webhook)
 — no manual "System > Webhooks > Webhooks Subscriptions" step and no manual `webhooks.xml` editing
-for either environment. Both entries set `requireAdobeAuth: false` to match this action's
-`require-adobe-auth: false` annotation (it's authenticated via Commerce's own webhook signature, not
-Adobe IMS), so the SDK doesn't attach unnecessary `developer_console_oauth` credentials to the
-subscription it creates.
+for either environment.
 
-What the declarative config does **not** automate — signature verification is a separate Commerce
-security feature this action's own code checks against, invisible to the subscription mechanism
-above, and still needs manual setup:
+Both entries set `requireAdobeAuth: true` to match this action's `require-adobe-auth: true`
+annotation (see `src/commerce-extensibility-1/ext.config.yaml`): Commerce authenticates its calls to
+this action with an Adobe IMS token (`developer_console_oauth`), which the SDK provisions onto the
+subscription automatically. There's no webhook signature to configure — no Digital Signature setup
+in Commerce Admin, no public key in `.env`.
 
-1. In Adobe Commerce, go to **Stores > Settings > Configuration > Adobe Services > Webhooks**.
-1. Enable **Digital Signature Configuration** and click **Regenerate Key Pair**.
-1. Add the generated **Public Key** to your `.env` as
-   [documented here](https://developer.adobe.com/commerce/extensibility/webhooks/signature-verification/#verify-the-signature-in-the-app-builder-action):
-
-   ```env
-   COMMERCE_WEBHOOKS_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----
-   XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-   -----END PUBLIC KEY-----"
-   ```
+This requires `magento/module-adobe-commerce-webhooks` **>= 1.13.0** on the target Commerce instance
+— that's the version that added the Webhooks Subscriber REST API to PaaS (it had previously been
+SaaS-only) along with IMS/OAuth-based webhook auth. Older PaaS instances will need that module
+updated before this app's automatic webhook subscription will work.
 
 See the [shipping use-cases documentation](https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/shipping-use-cases/)
 for how to customize the rates returned by `shipping-methods`.
@@ -64,7 +47,7 @@ for how to customize the rates returned by `shipping-methods`.
 ## Validation
 
 1. Deploy and associate the app.
-1. Confirm `npm run get-shipping-carriers` lists the carriers from `shipping-carriers.yaml`.
+1. In Commerce Admin, confirm the carriers defined in `create-shipping-carriers.js` are registered.
 1. Place an order in Commerce and confirm the custom shipping methods appear at checkout.
 
 ## Auth pattern note

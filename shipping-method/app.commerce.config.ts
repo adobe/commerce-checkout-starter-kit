@@ -5,7 +5,7 @@ export default defineConfig({
     customInstallationSteps: [
       {
         description:
-          "Creates the out-of-process shipping carriers defined in shipping-carriers.yaml.",
+          "Creates the out-of-process shipping carriers defined in create-shipping-carriers.js.",
         name: "Create Shipping Carriers",
         script: "./scripts/create-shipping-carriers.js",
       },
@@ -20,18 +20,12 @@ export default defineConfig({
   },
   webhooks: [
     {
-      // "append", not "modification": shipping-methods only ever calls addOperation (never
-      // replaceOperation/removeOperation) — see src/commerce-extensibility-1/actions/shipping-methods/index.js.
       category: "append",
       description:
         "Adds out-of-process DPS shipping rates to the cart's available shipping methods (PaaS).",
       env: ["paas"],
       label: "Add DPS Shipping Rates (PaaS)",
-      // Mirrors this action's require-adobe-auth: false annotation (see
-      // src/commerce-extensibility-1/ext.config.yaml) — it's a raw-http action authenticated via
-      // Commerce's own webhook signature, not Adobe IMS, so the SDK must not attach
-      // developer_console_oauth credentials to the subscription it creates in Commerce.
-      requireAdobeAuth: false,
+      requireAdobeAuth: true,
       runtimeAction: "shipping-method/shipping-methods",
       webhook: {
         batch_name: "dps",
@@ -47,14 +41,12 @@ export default defineConfig({
       },
     },
     {
-      // "append", not "modification": shipping-methods only ever calls addOperation (never
-      // replaceOperation/removeOperation) — see src/commerce-extensibility-1/actions/shipping-methods/index.js.
       category: "append",
       description:
         "Adds out-of-process DPS shipping rates to the cart's available shipping methods (SaaS).",
       env: ["saas"],
       label: "Add DPS Shipping Rates (SaaS)",
-      requireAdobeAuth: false,
+      requireAdobeAuth: true,
       runtimeAction: "shipping-method/shipping-methods",
       webhook: {
         batch_name: "dps",
