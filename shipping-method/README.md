@@ -27,7 +27,22 @@ npm run get-shipping-carriers
 (This is a local dev-only helper — it needs `COMMERCE_BASE_URL` plus either `OAUTH_*` or
 `COMMERCE_CONSUMER_*` credentials in your `.env`; see [`env.dist`](./env.dist).)
 
-## Webhook signature setup
+## Webhook subscription and signature setup
+
+`app.commerce.config.ts` declares two `webhooks` entries for `shipping-methods` (one `env: ["paas"]`,
+one `env: ["saas"]`, since the `webhook_method` string itself differs between the two — Commerce
+drops the `magento.` segment on SaaS). At install/association time, App Management resolves the
+deployed action's public Runtime URL and subscribes it to Commerce automatically via the
+[Webhooks REST API](https://developer.adobe.com/commerce/extensibility/webhooks/api/#subscribe-a-webhook)
+— no manual "System > Webhooks > Webhooks Subscriptions" step and no manual `webhooks.xml` editing
+for either environment. Both entries set `requireAdobeAuth: false` to match this action's
+`require-adobe-auth: false` annotation (it's authenticated via Commerce's own webhook signature, not
+Adobe IMS), so the SDK doesn't attach unnecessary `developer_console_oauth` credentials to the
+subscription it creates.
+
+What the declarative config does **not** automate — signature verification is a separate Commerce
+security feature this action's own code checks against, invisible to the subscription mechanism
+above, and still needs manual setup:
 
 1. In Adobe Commerce, go to **Stores > Settings > Configuration > Adobe Services > Webhooks**.
 1. Enable **Digital Signature Configuration** and click **Regenerate Key Pair**.
@@ -40,24 +55,8 @@ npm run get-shipping-carriers
    -----END PUBLIC KEY-----"
    ```
 
-1. After deploying, [create the webhook](https://developer.adobe.com/commerce/extensibility/webhooks/create-webhooks/)
-   pointing at `shipping-method/shipping-methods` (registered manually — see "Why not an automated
-   installation step" below):
-   - For SaaS: register under **System > Webhooks > Webhooks Subscriptions**.
-   - For PaaS: use `webhooks.xml`, replacing the URL with your deployed action's URL.
-
 See the [shipping use-cases documentation](https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/shipping-use-cases/)
 for how to customize the rates returned by `shipping-methods`.
-
-### Why not an automated installation step
-
-`@adobe/aio-commerce-lib-webhooks/api`'s `subscribeWebhook` could in principle turn this into a
-`customInstallationStep`, but it targets webhooks declared via `app.commerce.config.ts`'s native
-`webhooks` array — a different, IMS-authenticated action-registration path than the
-`raw-http: true` / `require-adobe-auth: false` + hand-rolled-signature pattern this action uses (see
-the design spec's "Auth strategy for runtime (webhook) actions"). Adopting it here would mean
-maintaining two different webhook mechanisms side by side, so the manual registration step above is
-kept instead.
 
 ## Validation
 
