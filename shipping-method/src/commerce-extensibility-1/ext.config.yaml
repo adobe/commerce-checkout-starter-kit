@@ -44,3 +44,18 @@ runtimeManifest:
           annotations:
             require-adobe-auth: true
             final: true
+    shipping-method:
+      license: Apache-2.0
+      actions:
+        shipping-methods:
+          function: actions/shipping-methods/index.js
+          web: 'yes'
+          runtime: nodejs:24
+          inputs:
+            LOG_LEVEL: debug
+            COMMERCE_WEBHOOKS_PUBLIC_KEY: $COMMERCE_WEBHOOKS_PUBLIC_KEY
+            ENABLE_TELEMETRY: true
+          annotations:
+            require-adobe-auth: false
+            raw-http: true
+            final: true
