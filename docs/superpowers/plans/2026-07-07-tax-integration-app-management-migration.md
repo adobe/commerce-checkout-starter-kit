@@ -300,6 +300,7 @@ export default defineConfig({
         "actions/**/*.js",
         "lib/**/*.js",
         "scripts/**/*.js",
+        "app.commerce.config.ts",
         "src/**/actions/**/*.js",
         "src/**/web-src/src/lib/**/*.js",
       ],
@@ -1854,7 +1855,7 @@ The switch from a machine-credential backend proxy to a direct, admin-IMS-token 
 
 **Scope decisions made for this phase** (both explicitly optional per the design spec):
 
-- **`enableAdminUiSdk()`/`registerExtension()` as a `customInstallationStep`:** `@adobe/aio-commerce-lib-admin-ui/api`'s `createAdminUiApiClient` could turn the Admin UI SDK's Commerce-side enablement into an install step instead of a manual Commerce Admin action. **Decision: skip it in this plan.** This phase already carries three separate open risks (Spectrum S2 component parity, the CORS validation gate, and the admin-ui package's experimental status) — adding a new network-calling install step on top of that compounds scope without a proportionate benefit yet. The root README's existing guidance (`composer require "magento/commerce-backend-sdk": ">=3.0"` plus completing Adobe's Admin UI SDK installation process) remains the documented manual fallback in Task 22's README. Revisit as a follow-up once the primary functional migration and the CORS decision are validated.
+- **`enableAdminUiSdk()`/`registerExtension()` as a `customInstallationStep`:** `@adobe/aio-commerce-lib-admin-ui/api`'s `createAdminUiApiClient` could turn the Admin UI SDK's Commerce-side enablement into an install step instead of a manual Commerce Admin action. **Decision: skip it in this plan.** This phase already carries three separate open risks (Spectrum S2 component parity, the CORS validation gate, and the admin-ui package's experimental status) — adding a new network-calling install step on top of that compounds scope without a proportionate benefit yet. The root README's existing guidance (`composer require "magento/commerce-backend-sdk": ">=3.0"` plus completing Adobe's Admin UI SDK installation process) remains the documented manual fallback in Task 23's README. Revisit as a follow-up once the primary functional migration and the CORS decision are validated.
 - **Grid columns / order-view buttons / mass actions wire-contract builders (`parseGridRequest`/`okGridResponse`, `parseOrderViewButtonRequest`/`okOrderViewButtonResponse`, `parseMassActionRequest`/`okMassActionResponse`):** **Not applicable here.** The tax Admin UI is, and remains, a single custom menu page (`TaxClassesPage`/`TaxClassDialog`) with no grid columns, order-view buttons, or mass actions declared on `commerce/backend-ui/2` — those three extension types don't exist in this app's `adminUi` config (only `adminUi.menu`, added in Task 14), so their wire-contract builders have no handler to attach to. Do not force them in.
 
 ### Task 13: Scaffold the `commerce/backend-ui/2` extension
@@ -2612,7 +2613,7 @@ Run: `cd tax-integration && npx aio app deploy --force-build --force-deploy`, th
 
 - [ ] **Step 2: Branch on the result**
 
-  - **If the requests succeed** (Commerce returns the data with no CORS error in the console): no further action — Tasks 17/18's direct-call implementation stands. Document this outcome in `tax-integration/README.md` (Task 22) so the next contributor doesn't second-guess it.
+  - **If the requests succeed** (Commerce returns the data with no CORS error in the console): no further action — Tasks 17/18's direct-call implementation stands. Document this outcome in `tax-integration/README.md` (Task 23) so the next contributor doesn't second-guess it.
   - **If the browser blocks the requests with a CORS error**: implement the fallback below.
 
 - [ ] **Step 3 (fallback branch only): add a minimal proxy action that forwards the admin's own IMS token**, *not* machine `OAUTH_*` credentials (unlike the old `commerce/index.js`, which used the app's service-account credentials) — create `tax-integration/src/commerce-backend-ui-2/actions/commerce-tax-classes/index.js`. `@adobe/aio-commerce-sdk/core/headers`'s `parseBearerToken` is a clean fit for validating the incoming `Authorization` header (rejecting anything that isn't a well-formed Bearer token before it's forwarded to Commerce) — it's a pure function with no wire-format ambiguity. For the response envelope, use `ok()` from `@adobe/aio-commerce-sdk/core/responses` for the success path only (verified — Tasks 5/6 already confirm `ok()` produces the flat `{statusCode, body}` shape OpenWhisk web actions expect); its `badRequest`/`internalServerError` counterparts return a nested `{type: "error", error: {statusCode, body}}` envelope instead, which OpenWhisk's web-action dispatch does not unwrap on its own — since there's no confirmed wrapper for that shape in this app, the error paths below use plain object literals rather than asserting an unverified integration detail:
@@ -2677,7 +2678,7 @@ git add -A tax-integration
 git commit -m "tax-integration: record CORS validation outcome for direct Commerce REST calls"
 ```
 
-(If Step 2 resolved to "succeeds", this commit has no code changes beyond the README note from Task 22 — skip committing here and fold the note into Task 22's commit instead.)
+(If Step 2 resolved to "succeeds", this commit has no code changes beyond the README note from Task 23 — skip committing here and fold the note into Task 23's commit instead.)
 
 ---
 
@@ -2691,7 +2692,7 @@ The design spec asks every domain app to attempt swapping its runtime webhook ac
 
 **Files:**
 - Test: `tax-integration/test/actions/no-commerce-client.test.js`
-- Modify: `tax-integration/README.md` (Task 22 folds this in)
+- Modify: `tax-integration/README.md` (Task 23 folds this in)
 
 **Interfaces:**
 - None — this task only adds a regression guard, no production code changes.
@@ -2752,21 +2753,254 @@ git commit -m "tax-integration: guard collect-taxes/collect-adjustment-taxes aga
 
 ---
 
-## Phase 7 — Full test run and README
+## Phase 7 — Webhook subscriptions, full test run, and README
 
-### Task 21: Run the full test suite and coverage for `tax-integration/`
+### Task 21: Declare webhook subscriptions in `app.commerce.config.ts`
+
+`@adobe/aio-commerce-lib-app`'s `defineConfig` has a top-level `webhooks` array (schema: `source/config/schema/webhooks.ts` in the `aio-commerce-sdk` monorepo) that auto-registers a runtime action as a Commerce webhook subscriber at install time — no custom installation-step code needed. This supersedes any assumption elsewhere in this plan that "Create Webhooks" stays a manual README step (see Task 23).
+
+Per the design spec's "Webhook subscriptions (declarative `webhooks` config)" section, the `webhook_method` string differs between PaaS and SaaS for both tax actions (only the `"magento."` prefix changes), so each action needs **two** env-scoped entries (`env: ["paas"]` and `env: ["saas"]`) — four entries total. The values below are sourced directly from `AdobeDocs/commerce-extensibility`, not fabricated. Field names follow the SDK schema's snake_case (`webhook_method`, `webhook_type`, `batch_name`, `hook_name`, `soft_timeout`, `fallback_error_message`) — not the camelCase names used in `webhooks.xml` PaaS examples.
+
+| Action | env | `webhook_method` |
+|---|---|---|
+| `collect-taxes` | `paas` | `plugin.magento.out_of_process_tax_management.api.oop_tax_collection.collect_taxes` |
+| `collect-taxes` | `saas` | `plugin.out_of_process_tax_management.api.oop_tax_collection.collect_taxes` |
+| `collect-adjustment-taxes` | `paas` | `plugin.magento.out_of_process_tax_management.api.oop_credit_memo_tax_collection.collect_taxes` |
+| `collect-adjustment-taxes` | `saas` | `plugin.out_of_process_tax_management.api.oop_credit_memo_tax_collection.collect_taxes` |
+
+All four entries share: `webhook_type: "before"`, `batch_name: "collect_taxes"`, `hook_name: "collect_taxes"`, `method: "POST"`, `timeout: 10_000`, `soft_timeout: 2000`, `priority: 100`, `required: true`. `fallback_error_message` differs per action: `"Tax calculation failed. Please try again later."` for `collect-taxes`, `"Adjustment tax calculation failed. Please try again later."` for `collect-adjustment-taxes`.
+
+**Files:**
+- Modify: `tax-integration/app.commerce.config.ts` (add top-level `webhooks` array)
+- Test: `tax-integration/test/app.commerce.config.test.js`
+
+**Interfaces:**
+- Consumes: `runtimeAction` values `"commerce-checkout-starter-kit/collect-taxes"` and `"commerce-checkout-starter-kit/collect-adjustment-taxes"`, matching the exact `<package>/<action>` names wired into `app.config.yaml` in Task 8.
+- Produces: the `webhooks` array on the default-exported config, read by `aio-commerce-lib-app`'s install workflow — no other task consumes this programmatically.
+
+- [ ] **Step 1: Write the failing test**
+
+```js
+// tax-integration/test/app.commerce.config.test.js
+/*
+Copyright 2026 Adobe. All rights reserved.
+This file is licensed to you under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License. You may obtain a copy
+of the License at http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed under
+the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
+OF ANY KIND, either express or implied. See the License for the specific language
+governing permissions and limitations under the License.
+*/
+
+import { describe, expect, test } from "vitest";
+
+import config from "../app.commerce.config.ts";
+
+const SHARED_FIELDS = {
+  webhook_type: "before",
+  batch_name: "collect_taxes",
+  hook_name: "collect_taxes",
+  method: "POST",
+  timeout: 10_000,
+  soft_timeout: 2000,
+  priority: 100,
+  required: true,
+};
+
+describe("app.commerce.config.ts webhooks", () => {
+  test("declares exactly 4 webhook entries total", () => {
+    expect(config.webhooks).toHaveLength(4);
+  });
+
+  test("declares PaaS and SaaS entries for collect-taxes", () => {
+    const entries = config.webhooks.filter(
+      (entry) =>
+        entry.runtimeAction === "commerce-checkout-starter-kit/collect-taxes",
+    );
+    expect(entries).toHaveLength(2);
+
+    const paas = entries.find((entry) => entry.env?.includes("paas"));
+    expect(paas.webhook).toMatchObject({
+      ...SHARED_FIELDS,
+      webhook_method:
+        "plugin.magento.out_of_process_tax_management.api.oop_tax_collection.collect_taxes",
+      fallback_error_message: "Tax calculation failed. Please try again later.",
+    });
+
+    const saas = entries.find((entry) => entry.env?.includes("saas"));
+    expect(saas.webhook).toMatchObject({
+      ...SHARED_FIELDS,
+      webhook_method:
+        "plugin.out_of_process_tax_management.api.oop_tax_collection.collect_taxes",
+      fallback_error_message: "Tax calculation failed. Please try again later.",
+    });
+  });
+
+  test("declares PaaS and SaaS entries for collect-adjustment-taxes", () => {
+    const entries = config.webhooks.filter(
+      (entry) =>
+        entry.runtimeAction ===
+        "commerce-checkout-starter-kit/collect-adjustment-taxes",
+    );
+    expect(entries).toHaveLength(2);
+
+    const paas = entries.find((entry) => entry.env?.includes("paas"));
+    expect(paas.webhook).toMatchObject({
+      ...SHARED_FIELDS,
+      webhook_method:
+        "plugin.magento.out_of_process_tax_management.api.oop_credit_memo_tax_collection.collect_taxes",
+      fallback_error_message:
+        "Adjustment tax calculation failed. Please try again later.",
+    });
+
+    const saas = entries.find((entry) => entry.env?.includes("saas"));
+    expect(saas.webhook).toMatchObject({
+      ...SHARED_FIELDS,
+      webhook_method:
+        "plugin.out_of_process_tax_management.api.oop_credit_memo_tax_collection.collect_taxes",
+      fallback_error_message:
+        "Adjustment tax calculation failed. Please try again later.",
+    });
+  });
+});
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+Run: `cd tax-integration && npx vitest run test/app.commerce.config.test.js`
+Expected: FAIL — `expected undefined to have a length of 4` (no `webhooks` key on the config yet)
+
+- [ ] **Step 3: Add the `webhooks` array to `tax-integration/app.commerce.config.ts`**
+
+Add a top-level `webhooks` key to the `defineConfig({...})` call (alongside `metadata`, `installation`, `adminUi`):
+
+```ts
+  webhooks: [
+    {
+      label: "Collect taxes (PaaS)",
+      description:
+        "Subscribes collect-taxes to the PaaS out-of-process tax collection webhook.",
+      env: ["paas"],
+      runtimeAction: "commerce-checkout-starter-kit/collect-taxes",
+      requireAdobeAuth: false,
+      webhook: {
+        webhook_method:
+          "plugin.magento.out_of_process_tax_management.api.oop_tax_collection.collect_taxes",
+        webhook_type: "before",
+        batch_name: "collect_taxes",
+        hook_name: "collect_taxes",
+        method: "POST",
+        timeout: 10_000,
+        soft_timeout: 2000,
+        priority: 100,
+        required: true,
+        fallback_error_message: "Tax calculation failed. Please try again later.",
+      },
+    },
+    {
+      label: "Collect taxes (SaaS)",
+      description:
+        "Subscribes collect-taxes to the SaaS out-of-process tax collection webhook.",
+      env: ["saas"],
+      runtimeAction: "commerce-checkout-starter-kit/collect-taxes",
+      requireAdobeAuth: false,
+      webhook: {
+        webhook_method:
+          "plugin.out_of_process_tax_management.api.oop_tax_collection.collect_taxes",
+        webhook_type: "before",
+        batch_name: "collect_taxes",
+        hook_name: "collect_taxes",
+        method: "POST",
+        timeout: 10_000,
+        soft_timeout: 2000,
+        priority: 100,
+        required: true,
+        fallback_error_message: "Tax calculation failed. Please try again later.",
+      },
+    },
+    {
+      label: "Collect adjustment taxes (PaaS)",
+      description:
+        "Subscribes collect-adjustment-taxes to the PaaS out-of-process credit-memo tax collection webhook.",
+      env: ["paas"],
+      runtimeAction: "commerce-checkout-starter-kit/collect-adjustment-taxes",
+      requireAdobeAuth: false,
+      webhook: {
+        webhook_method:
+          "plugin.magento.out_of_process_tax_management.api.oop_credit_memo_tax_collection.collect_taxes",
+        webhook_type: "before",
+        batch_name: "collect_taxes",
+        hook_name: "collect_taxes",
+        method: "POST",
+        timeout: 10_000,
+        soft_timeout: 2000,
+        priority: 100,
+        required: true,
+        fallback_error_message:
+          "Adjustment tax calculation failed. Please try again later.",
+      },
+    },
+    {
+      label: "Collect adjustment taxes (SaaS)",
+      description:
+        "Subscribes collect-adjustment-taxes to the SaaS out-of-process credit-memo tax collection webhook.",
+      env: ["saas"],
+      runtimeAction: "commerce-checkout-starter-kit/collect-adjustment-taxes",
+      requireAdobeAuth: false,
+      webhook: {
+        webhook_method:
+          "plugin.out_of_process_tax_management.api.oop_credit_memo_tax_collection.collect_taxes",
+        webhook_type: "before",
+        batch_name: "collect_taxes",
+        hook_name: "collect_taxes",
+        method: "POST",
+        timeout: 10_000,
+        soft_timeout: 2000,
+        priority: 100,
+        required: true,
+        fallback_error_message:
+          "Adjustment tax calculation failed. Please try again later.",
+      },
+    },
+  ],
+```
+
+`requireAdobeAuth: false` mirrors the `require-adobe-auth: false` annotation already on both actions in `app.config.yaml` (Task 8) — these are Commerce-invoked `raw-http` webhooks, not IMS-authenticated Runtime calls, so the subscription config shouldn't assume an Adobe IMS token is required either.
+
+- [ ] **Step 4: Run the test to verify it passes**
+
+Run: `cd tax-integration && npx vitest run test/app.commerce.config.test.js`
+Expected: PASS (3 tests)
+
+- [ ] **Step 5: Typecheck and build**
+
+Run: `cd tax-integration && npm run typecheck && npx aio app build`
+Expected: both succeed (validates the `webhooks` array against `WebhooksSchema`)
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add tax-integration/app.commerce.config.ts tax-integration/test/app.commerce.config.test.js
+git commit -m "tax-integration: declare collect-taxes/collect-adjustment-taxes webhook subscriptions"
+```
+
+---
+
+### Task 22: Run the full test suite and coverage for `tax-integration/`
 
 **Files:** none (verification only)
 
 - [ ] **Step 1: Run the full suite**
 
 Run: `cd tax-integration && npm test`
-Expected: all tests pass (webhook helpers, both webhook actions, install step, Commerce-REST helpers, no-Commerce-client guard)
+Expected: all tests pass (webhook helpers, both webhook actions, install step, webhook subscription config, Commerce-REST helpers, no-Commerce-client guard)
 
 - [ ] **Step 2: Run coverage**
 
 Run: `cd tax-integration && npm run test:coverage`
-Expected: report generated with no failures; `lib/webhook.js`, both action files, and `scripts/create-tax-integrations.js` show meaningful coverage
+Expected: report generated with no failures; `lib/webhook.js`, both action files, `scripts/create-tax-integrations.js`, and `app.commerce.config.ts` show meaningful coverage
 
 - [ ] **Step 3: Run lint and format checks**
 
@@ -2789,9 +3023,9 @@ git commit -m "tax-integration: fix lint/format findings"
 
 ---
 
-### Task 22: Write `tax-integration/README.md`
+### Task 23: Write `tax-integration/README.md`
 
-Per the design spec, this follows the App Management install/build/deploy/association flow by linking to Adobe's docs rather than re-documenting it, keeping only tax-specific guidance: webhook signature setup, the tax-use-cases doc link, Admin UI usage, and validation steps. It also folds in the CORS decision recorded in Task 19 and the auth-swap decision recorded in Task 20.
+Per the design spec, this follows the App Management install/build/deploy/association flow by linking to Adobe's docs rather than re-documenting it, keeping only tax-specific guidance: webhook signature setup, the tax-use-cases doc link, Admin UI usage, and validation steps. It also folds in the CORS decision recorded in Task 19, the auth-swap decision recorded in Task 20, and reflects that webhook *subscription* (as opposed to signature verification) is now automatic per Task 21 — no manual "Create Webhooks" step remains.
 
 **Files:**
 - Create: `tax-integration/README.md`
@@ -2844,7 +3078,18 @@ associate this app with your Commerce instance and run its custom installation s
 ("Create tax integrations"), which registers the integrations defined in
 [`tax-integrations.yaml`](./tax-integrations.yaml).
 
+## Webhook subscriptions
+
+`collect-taxes` and `collect-adjustment-taxes` are subscribed to Commerce automatically at install
+time via the declarative `webhooks` array in [`app.commerce.config.ts`](./app.commerce.config.ts)
+— App Management resolves each action's deployed Runtime URL and registers it against the correct
+webhook method for your instance's flavor (PaaS or SaaS) as part of association. There is no
+manual "Create Webhooks" step to follow.
+
 ## Configure webhook signature verification
+
+The one piece App Management doesn't cover is enabling and sharing the Commerce webhook signing
+key — that's a Commerce Admin configuration step, not an app-association step, so it stays manual:
 
 1. In Adobe Commerce, go to **Stores > Settings > Configuration > Adobe Services > Webhooks**.
 2. Enable **Digital Signature Configuration** and click **Regenerate Key Pair**.
@@ -2856,14 +3101,6 @@ associate this app with your Commerce instance and run its custom installation s
    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
    -----END PUBLIC KEY-----"
    ```
-
-4. After deploying, [create the webhooks](https://developer.adobe.com/commerce/extensibility/webhooks/create-webhooks/):
-   - `collect-taxes`: for SaaS, register against
-     `plugin.magento.out_of_process_tax_management.api.oop_tax_collection.collect_taxes` in
-     **System > Webhooks > Webhooks Subscriptions**. For PaaS, use `webhooks.xml` with your
-     deployed action's URL.
-   - `collect-adjustment-taxes`: register against the corresponding adjustment-tax webhook method
-     the same way.
 
 See the [tax use cases documentation](https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/tax-use-cases/)
 for the full webhook contract and sample payloads.
@@ -2924,10 +3161,11 @@ git commit -m "tax-integration: add README with App Management flow and tax-spec
 - Beta SDK package versions pinned exactly per the design spec's "SDK packages (beta)" table (`aio-commerce-lib-app@1.8.0-beta-...`, `aio-commerce-sdk@1.4.0-beta-...`, `aio-commerce-lib-admin-ui@0.2.0-beta-...`) — Task 1.
 - `@adobe/aio-commerce-sdk/core/*` adopted where a clean drop-in (`HTTP_OK` in `telemetry.js`, Task 4; `parseBearerToken`/`ok` in Task 19's conditional CORS-fallback proxy action) and explicitly not forced elsewhere (`lib/http.js` stays for the untouched info action; `allNonEmpty` has no natural home in this app's scope) — Tasks 3, 4, 19.
 - Auth-swap gated on `shipping-method/`'s spike, decision point present — Task 20.
-- README following App Management flow, tax-specific guidance only, including the beta-dependency and experimental-admin-ui disclosure — Task 22.
-- Tests moved/added alongside code, new tests for the rewritten install step — Tasks 5, 6, 11, 16, 20, throughout.
+- Declarative `webhooks` config: 4 env-scoped entries (2 per action, PaaS + SaaS) with the exact confirmed `webhook_method`/`batch_name`/`hook_name`/timing/`fallback_error_message` values, replacing the manual "Create Webhooks" README step — Task 21, folded into the README at Task 23.
+- README following App Management flow, tax-specific guidance only, including the beta-dependency and experimental-admin-ui disclosure, and the now-automatic webhook subscription — Task 23.
+- Tests moved/added alongside code, new tests for the rewritten install step and the webhook subscription config — Tasks 5, 6, 11, 16, 20, 21, throughout.
 - No root-level file touched — enforced as a Global Constraint and never violated by any task's file list.
 
-**Placeholder scan:** no "TBD"/"handle it"/"similar to Task N" — the two HTML-comment placeholders in Task 22's README are intentional and are explicitly filled in by Task 19's outcome in Task 22 Step 2, not left dangling.
+**Placeholder scan:** no "TBD"/"handle it"/"similar to Task N" — the two HTML-comment placeholders in Task 23's README are intentional and are explicitly filled in by Task 19's outcome in Task 23 Step 2, not left dangling.
 
-**Type/name consistency:** `createTaxIntegrations(client, data)` (Task 11's test, Task 12's implementation) — consistent. `fetchCommerceTaxClasses(commerceHost, imsToken)` / `createOrUpdateCommerceTaxClass(commerceHost, imsToken, taxClass)` (Task 16's test, Task 17's implementation, Task 18's usage) — consistent. `webhookVerify` (Task 3) and `HTTP_OK` (Task 3, info-action-only) import paths match across Tasks 5, 6, 7. `addOperation`/`replaceOperation`/`exceptionOperation`/`ok` from `@adobe/aio-commerce-sdk/webhooks/responses` (Tasks 5, 6) and `MENU_STORES` from `@adobe/aio-commerce-lib-admin-ui/menu` (Task 14, corrected from an earlier draft that wrongly sourced it from `@adobe/aio-commerce-sdk/admin-ui/menu`) use the exact subpaths confirmed against the `aio-commerce-sdk` monorepo source.
+**Type/name consistency:** `createTaxIntegrations(client, data)` (Task 11's test, Task 12's implementation) — consistent. `fetchCommerceTaxClasses(commerceHost, imsToken)` / `createOrUpdateCommerceTaxClass(commerceHost, imsToken, taxClass)` (Task 16's test, Task 17's implementation, Task 18's usage) — consistent. `webhookVerify` (Task 3) and `HTTP_OK` (Task 3, info-action-only) import paths match across Tasks 5, 6, 7. `addOperation`/`replaceOperation`/`exceptionOperation`/`ok` from `@adobe/aio-commerce-sdk/webhooks/responses` (Tasks 5, 6) and `MENU_STORES` from `@adobe/aio-commerce-lib-admin-ui/menu` (Task 14, corrected from an earlier draft that wrongly sourced it from `@adobe/aio-commerce-sdk/admin-ui/menu`) use the exact subpaths confirmed against the `aio-commerce-sdk` monorepo source. Task 21's `webhooks[].runtimeAction` values (`"commerce-checkout-starter-kit/collect-taxes"`, `"commerce-checkout-starter-kit/collect-adjustment-taxes"`) use the exact `<package>/<action>` name wired into `app.config.yaml` by Task 8 (`commerce-checkout-starter-kit` package, unchanged from root, "do not change" tracking-action naming aside) — consistent.
