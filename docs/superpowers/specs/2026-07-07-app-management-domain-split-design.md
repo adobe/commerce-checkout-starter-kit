@@ -219,6 +219,46 @@ Mechanically, this means wiring `AIO_COMMERCE_AUTH_IMS_CLIENT_ID` /
 Note: `totals-collector/` never calls Commerce at all (pure webhook payload transforms), so this
 auth swap is not applicable there regardless of how the spike goes.
 
+## Webhook subscriptions (declarative `webhooks` config)
+
+`@adobe/aio-commerce-lib-app`'s `defineConfig` has a top-level `webhooks` array (see the SDK's
+"Webhooks Configuration" docs) that declares `{ runtimeAction, webhook: { webhook_method,
+webhook_type, batch_name, hook_name, ... } }` entries. The SDK resolves the deployed action's
+public Runtime URL and subscribes it to Commerce automatically at install time. This supersedes
+the "keep Create Webhooks as a manual README step" decision that shipping/payment/tax's plans
+originally made when they only evaluated the lower-level `subscribeWebhook` API — the declarative
+`webhooks` field needs no custom installation-step code at all.
+
+The values below are sourced directly from the `AdobeDocs/commerce-extensibility` repo (the source
+of developer.adobe.com's checkout starter kit use-case docs), not fabricated or inferred:
+
+| App | Action | `webhook_method` (PaaS) | `webhook_method` (SaaS) | `webhook_type` | `batch_name` / `hook_name` (PaaS) | `batch_name` / `hook_name` (SaaS) |
+|---|---|---|---|---|---|---|
+| `payment-method/` | `validate-payment` | `observer.sales_order_place_before` | same | `before` | `out_of_process_payment_methods` / `validate_payment` | `validate_payment` / `oope_payment_methods_sales_order_place_before` |
+| `payment-method/` | `filter-payment` | `plugin.magento.out_of_process_payment_methods.api.payment_method_filter.get_list` | `plugin.out_of_process_payment_methods.api.payment_method_filter.get_list` | `after` | `out_of_process_payment_methods` / `payment_method_filter` | same |
+| `shipping-method/` | `shipping-methods` | `plugin.magento.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates` | `plugin.out_of_process_shipping_methods.api.shipping_rate_repository.get_rates` | `after` | `dps` / `add_shipping_rates_dps` | same |
+| `tax-integration/` | `collect-taxes` | `plugin.magento.out_of_process_tax_management.api.oop_tax_collection.collect_taxes` | `plugin.out_of_process_tax_management.api.oop_tax_collection.collect_taxes` | `before` | `collect_taxes` / `collect_taxes` | same |
+| `tax-integration/` | `collect-adjustment-taxes` | `plugin.magento.out_of_process_tax_management.api.oop_credit_memo_tax_collection.collect_taxes` | `plugin.out_of_process_tax_management.api.oop_credit_memo_tax_collection.collect_taxes` | `before` | `collect_taxes` / `collect_taxes` | same |
+| `totals-collector/` | one of the 9 discount actions (see below) | `plugin.magento.out_of_process_totals_collector.api.get_total_modifications.execute` | `plugin.out_of_process_totals_collector.api.get_total_modifications.execute` | `after` | `totals_collector` / `totals_collector` | same |
+
+Because the `webhook_method` string itself differs between PaaS and SaaS in every case except
+`validate-payment` (where `batch_name`/`hook_name` also differ), each action needs **two**
+env-scoped `webhooks` entries (`env: ["paas"]` and `env: ["saas"]`), not one — even where only the
+`"magento."` prefix changes. Additional per-action fields to preserve (from the confirmed XML
+examples): `method: "POST"`, `timeout`/`softTimeout`, `priority`, `required`, and
+`fallbackErrorMessage` (e.g. tax's is `"Tax calculation failed. Please try again later."`).
+
+**`totals-collector/` special case**: unlike the other three domains, Commerce only has *one*
+`get_total_modifications.execute` subscription slot — the 9 discount actions
+(`tiered-quantity-discount`, `tiered-category-discount`, `category-based-discount`,
+`cheapest-item-discount`, `expensive-item-discount`, `cheapest-quantity-discount`,
+`step-price-discount`, `multi-condition-discount`, `tiered-total-spend-discount`) are alternative
+example implementations of the same webhook contract, not nine simultaneously-active webhooks. The
+declarative config declares **one** `webhooks` entry pointing at a single default action (e.g.
+`tiered-quantity-discount`), clearly commented in both the config and the README as a swappable
+placeholder — the developer changes `runtimeAction` to whichever of the 9 examples they actually
+want live.
+
 ## Docs
 
 Each app gets its own `README.md`, following the App Management flow for install, build/deploy,
