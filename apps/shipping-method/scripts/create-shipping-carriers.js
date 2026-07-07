@@ -2,8 +2,6 @@ import { getCommerceClient } from "@adobe/aio-commerce-lib-app";
 import { defineCustomInstallationStep } from "@adobe/aio-commerce-lib-app/management";
 import { resolveImsAuthParams } from "@adobe/aio-commerce-lib-auth";
 
-const CARRIER_NOT_FOUND_PATTERN = /does not exist|not found/i;
-
 const SHIPPING_CARRIERS = [
   {
     carrier: {
@@ -33,11 +31,7 @@ const SHIPPING_CARRIERS = [
 
 function isNotFoundError(error) {
   const statusCode = error?.response?.statusCode ?? error?.response?.status;
-  if (statusCode === 404) {
-    return true;
-  }
-
-  return CARRIER_NOT_FOUND_PATTERN.test(error?.message ?? "");
+  return statusCode === 404;
 }
 
 /**

@@ -77,6 +77,7 @@ describe("create-shipping-carriers install step", () => {
     const notFound = new Error(
       'Out of process shipping carrier with code "DPS" does not exist.',
     );
+    notFound.response = { statusCode: 404 };
     const deleteMock = vi
       .fn()
       .mockReturnValueOnce({ json: () => Promise.reject(notFound) })
