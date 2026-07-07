@@ -3,23 +3,27 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     coverage: {
-      exclude: ["node_modules/", "dist/", "test/"],
-      include: ["src/**/*.js", "lib/**/*.js", "scripts/**/*.js"],
+      exclude: [
+        "**/node_modules/**",
+        "**/dist/**",
+        "**/build/**",
+        "**/test/**",
+        "**/*.d.ts",
+        "**/*.config.*",
+        "**/*.test.*",
+        "**/*.spec.*",
+      ],
       provider: "v8",
-      reporter: ["text", "lcov", "html"],
-    },
-    environment: "node",
-    exclude: ["node_modules", "dist"],
-    include: ["test/**/*.test.js"],
-    server: {
-      deps: {
-        inline: [
-          "@adobe/aio-commerce-lib-app",
-          "@adobe/aio-commerce-lib-config",
-        ],
+
+      reporter: ["text", "json", "html"],
+      thresholds: {
+        branches: 70,
+        functions: 70,
+        lines: 70,
+        statements: 70,
       },
     },
-    setupFiles: ["./vitest.setup.js"],
-    testTimeout: 10_000,
+    environment: "node",
+    globals: true,
   },
 });
