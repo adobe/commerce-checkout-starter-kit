@@ -28,6 +28,47 @@ Adobe ships official tooling for exactly this kind of migration as Claude Code p
 or driving those plugins for this work — this migration is done by hand, using the plugins' schema
 and docs (`@adobe/aio-commerce-lib-app`) as the reference for the target shape.
 
+## SDK packages (beta)
+
+The released versions of the Commerce SDK packages don't yet include everything this migration
+needs, so all four apps pin **beta** versions until the real releases ship:
+
+| Package | Version | Used for | Which apps |
+|---|---|---|---|
+| `@adobe/aio-commerce-lib-app` | `1.8.0-beta-20260702145741` | `app.commerce.config.ts`, `defineConfig`, `defineCustomInstallationStep`, association-based `getCommerceClient`/`getCommerceInstance` | all four |
+| `@adobe/aio-commerce-sdk` | `1.4.0-beta-20260702145741` | Meta-package re-exporting `@adobe/aio-commerce-lib-webhooks` (webhook operation/response builders, via `@adobe/aio-commerce-sdk/webhooks/responses`) and `@adobe/aio-commerce-lib-core` (generic action response/params/header helpers, via `@adobe/aio-commerce-sdk/core/*`) | all four |
+| `@adobe/aio-commerce-lib-admin-ui` | `0.2.0-beta-20260702145741` | Experimental `commerce/backend-ui/2` wire-contract builders (grid columns, order-view-buttons, mass actions), the ACL permission client, and the Admin UI SDK extension registration API client | `tax-integration/` only (the only app with an Admin UI extension) |
+
+Neither `@adobe/aio-commerce-lib-webhooks` nor `@adobe/aio-commerce-lib-core` need to be installed
+directly — they're consumed through the `@adobe/aio-commerce-sdk` meta-package's subpath exports.
+
+This changes two things from the original plan:
+
+- **Webhook responses**: the hand-rolled `webhookSuccessResponse`/`webhookErrorResponse` in
+  `lib/adobe-commerce.js`, and the ad-hoc discount-operation object builders in
+  `lib/total-collector-discounts.js` (`zeroDiscountOperation`, `discountOperation`), are replaced
+  by `@adobe/aio-commerce-sdk/webhooks/responses`' typed builders (`successOperation`,
+  `exceptionOperation`, `addOperation`, `replaceOperation`, `removeOperation`, wrapped in `ok()`).
+  `webhookVerify` (the `x-adobe-commerce-webhook-signature` check) has **no SDK equivalent** and
+  stays hand-rolled — none of the three new packages implement webhook signature verification.
+- **Generic action utilities**: `lib/http.js`'s status constants and `actions/utils.js`'s
+  `checkMissingRequestInputs`/`errorResponse`/`getBearerToken` helpers are candidates to be
+  replaced by `@adobe/aio-commerce-sdk/core/responses` (`ok`, `badRequest`, etc.),
+  `@adobe/aio-commerce-sdk/core/params` (`allNonEmpty`), and `@adobe/aio-commerce-sdk/core/headers`
+  (`parseBearerToken`) wherever they're a clean drop-in.
+
+It also opens up two optional installation-step enhancements, worth using where they fit cleanly:
+
+- `@adobe/aio-commerce-lib-webhooks/api`'s `subscribeWebhook`/`unsubscribeWebhook` could turn the
+  manual "Create Webhooks" README step (SaaS path) into a `customInstallationStep`, instead of
+  documentation the developer has to follow by hand.
+- `@adobe/aio-commerce-lib-admin-ui/api`'s `enableAdminUiSdk`/`registerExtension` could turn
+  `tax-integration/`'s Admin UI SDK enablement into a `customInstallationStep` instead of a manual
+  Commerce Admin settings step.
+
+Both are additive conveniences, not requirements — if either doesn't fit cleanly into a given
+plan's scope, documenting the manual step in the README remains an acceptable fallback.
+
 ## Goals
 
 - Each commerce domain (shipping, payment, tax, fees) becomes its own App Builder / Developer
@@ -87,10 +128,11 @@ Every app additionally gets:
 - Its own copy of the `commerce-checkout-starter-kit/info` action (explicitly marked "do not
   change" — used for Adobe's own usage tracking). Small and duplicated per app rather than shared,
   since each domain is now a separately tracked deployment.
-- Its own copy of the webhook helpers currently in `lib/adobe-commerce.js`
-  (`webhookVerify`, `webhookSuccessResponse`, `webhookErrorResponse`), split out from the
-  Commerce-HTTP-client parts of that file so the `totals-collector/` app doesn't need to carry
-  Commerce API client code it never uses.
+- Its own copy of `webhookVerify` (signature check) split out from the Commerce-HTTP-client parts
+  of `lib/adobe-commerce.js`, so the `totals-collector/` app doesn't need to carry Commerce API
+  client code it never uses. `webhookSuccessResponse`/`webhookErrorResponse` are **not** carried
+  forward — see "SDK packages (beta)" above, they're replaced by
+  `@adobe/aio-commerce-sdk/webhooks/responses`.
 
 ## Dropped entirely (not migrated to any domain app)
 
