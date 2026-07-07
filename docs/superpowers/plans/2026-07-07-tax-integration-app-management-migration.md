@@ -41,10 +41,9 @@ tax-integration/
     checkout-metrics.js                          # copied, tax-only counters
     collect-taxes/index.js                       # moved, response envelope rebuilt on SDK webhook-response builders
     collect-adjustment-taxes/index.js             # moved, response envelope rebuilt on SDK webhook-response builders
-    commerce-checkout-starter-kit-info/index.js   # duplicated verbatim, "do not change" — still imports lib/http.js
+    commerce-checkout-starter-kit-info/index.js   # duplicated, tracking behavior unchanged; HTTP_OK now from the SDK
   lib/
     webhook.js                                   # webhookVerify only (signature check; no SDK equivalent)
-    http.js                                       # HTTP_OK only, kept solely for the untouched info action's import
   scripts/
     create-tax-integrations.js                   # rewritten as defineCustomInstallationStep
   src/
@@ -326,39 +325,20 @@ git commit -m "tax-integration: add vitest config and setup"
 
 ## Phase 2 — Webhook helpers and HTTP constants
 
-### Task 3: Extract `webhookVerify` into `tax-integration/lib/webhook.js`; keep a minimal `lib/http.js` for the untouched info action
+### Task 3: Extract `webhookVerify` into `tax-integration/lib/webhook.js`
 
 The root `lib/adobe-commerce.js` mixes webhook-signature helpers with the legacy hand-rolled OAuth1/IMS Commerce HTTP client (`getAdobeCommerceClient`). Per the design spec's "SDK packages (beta)" section, `webhookSuccessResponse`/`webhookErrorResponse` are **not** carried forward at all — none of the three new beta SDK packages implement webhook signature verification, but `@adobe/aio-commerce-sdk/webhooks/responses` **does** provide typed response-envelope builders, which Tasks 5 and 6 use directly inside the two webhook actions instead of a shared `webhookSuccessResponse`/`webhookErrorResponse` pair. Only `webhookVerify` (the signature check, which has no SDK equivalent) is extracted here.
 
-`lib/http.js` is still created, but scoped down to just `HTTP_OK` — it exists solely because Task 7's `commerce-checkout-starter-kit-info` action is explicitly "do not change" and its unchanged source still does `import { HTTP_OK } from "../../lib/http.js";`. Every other consumer (`telemetry.js`, both webhook actions) switches to `HTTP_OK` from `@adobe/aio-commerce-sdk/core/responses` in later tasks — a clean drop-in, since it's the exact same value (`200`) under the same name.
+`lib/http.js` is **not** carried forward at all — not even trimmed to one constant. Root `lib/http.js`'s `HTTP_OK` is just `200` under the name `HTTP_OK`, and `@adobe/aio-commerce-sdk/core/responses` exports the exact same value under the exact same name. Every consumer in this app — `telemetry.js` (Task 4), both webhook actions (Tasks 5, 6), and Task 7's `commerce-checkout-starter-kit-info` action — imports `HTTP_OK` from `@adobe/aio-commerce-sdk/core/responses` instead. "Do not change" for the info action means its *tracking behavior* (`{statusCode: HTTP_OK}`, still 200) is frozen, not that its import statement is frozen while the whole file is already being relocated into a new app; there's no reason to carry a redundant local constants file forward just to preserve one import line.
 
 **Files:**
-- Create: `tax-integration/lib/http.js`
 - Create: `tax-integration/lib/webhook.js`
 - Test: `tax-integration/test/lib/webhook.test.js`
 
 **Interfaces:**
-- Produces: `webhookVerify(params): {success: boolean, error?: string}` — consumed by Task 5 and Task 6. `HTTP_OK = 200` from `lib/http.js` — consumed only by Task 7's untouched info action.
+- Produces: `webhookVerify(params): {success: boolean, error?: string}` — consumed by Task 5 and Task 6.
 
-- [ ] **Step 1: Create `tax-integration/lib/http.js`** (trimmed to the one constant the info action needs; not the full copy of root `lib/http.js`, since nothing else in this app uses the other four constants)
-
-```js
-/*
-Copyright 2024 Adobe. All rights reserved.
-This file is licensed to you under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License. You may obtain a copy
-of the License at http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software distributed under
-the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
-OF ANY KIND, either express or implied. See the License for the specific language
-governing permissions and limitations under the License.
-*/
-
-export const HTTP_OK = 200;
-```
-
-- [ ] **Step 2: Write the failing test for `webhook.js`** (ported from `test/lib/adobe-commerce.test.js`'s `webhookVerify` describe block — the `getAdobeCommerceClient` tests are intentionally dropped, since that client isn't moving; the old `webhookSuccessResponse`/`webhookErrorResponse` describe block is intentionally dropped too, since those functions no longer exist)
+- [ ] **Step 1: Write the failing test for `webhook.js`** (ported from `test/lib/adobe-commerce.test.js`'s `webhookVerify` describe block — the `getAdobeCommerceClient` tests are intentionally dropped, since that client isn't moving; the old `webhookSuccessResponse`/`webhookErrorResponse` describe block is intentionally dropped too, since those functions no longer exist)
 
 ```js
 // tax-integration/test/lib/webhook.test.js
@@ -449,12 +429,12 @@ describe("webhookVerify", () => {
 });
 ```
 
-- [ ] **Step 3: Run the test to verify it fails**
+- [ ] **Step 2: Run the test to verify it fails**
 
 Run: `cd tax-integration && npx vitest run test/lib/webhook.test.js`
 Expected: FAIL — `Cannot find module '../../lib/webhook.js'`
 
-- [ ] **Step 4: Create `tax-integration/lib/webhook.js`** (`webhookVerify` only, unchanged logic, no dependency on `http.js` since it never returns a full response envelope — it just reports `{success, error?}`)
+- [ ] **Step 3: Create `tax-integration/lib/webhook.js`** (`webhookVerify` only, unchanged logic, no dependency on `http.js` — it never returns a full response envelope, it just reports `{success, error?}`)
 
 ```js
 /*
@@ -521,15 +501,15 @@ export function webhookVerify({
 }
 ```
 
-- [ ] **Step 5: Run the test to verify it passes**
+- [ ] **Step 4: Run the test to verify it passes**
 
 Run: `cd tax-integration && npx vitest run test/lib/webhook.test.js`
 Expected: PASS (5 tests)
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add tax-integration/lib/http.js tax-integration/lib/webhook.js tax-integration/test/lib/webhook.test.js
+git add tax-integration/lib/webhook.js tax-integration/test/lib/webhook.test.js
 git commit -m "tax-integration: extract webhookVerify; drop webhookSuccessResponse/webhookErrorResponse per SDK packages (beta)"
 ```
 
@@ -1323,12 +1303,12 @@ git commit -m "tax-integration: move collect-adjustment-taxes action, rebuilt on
 
 ### Task 7: Duplicate the `commerce-checkout-starter-kit/info` tracking action
 
-The design spec is explicit: this action must not change. Duplicate it byte-for-byte.
+The design spec is explicit: this action's *tracking behavior* must not change — it must keep returning `{statusCode: HTTP_OK}` with `HTTP_OK` equal to `200`. That constraint is about behavior, not about literally freezing the import statement while the whole file is being relocated into a new app anyway: `HTTP_OK` now comes from `@adobe/aio-commerce-sdk/core/responses` instead of a local `lib/http.js` (which this app doesn't otherwise need — see Task 3) — the exact same value, `200`, under the exact same name.
 
 **Files:**
 - Create: `tax-integration/actions/commerce-checkout-starter-kit-info/index.js`
 
-- [ ] **Step 1: Create the file, identical to the root's** `actions/commerce-checkout-starter-kit-info/index.js`
+- [ ] **Step 1: Create the file** — identical to the root's `actions/commerce-checkout-starter-kit-info/index.js` except the `HTTP_OK` import source
 
 ```js
 /*
@@ -1343,7 +1323,7 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { HTTP_OK } from "../../lib/http.js";
+import { HTTP_OK } from "@adobe/aio-commerce-sdk/core/responses";
 
 /**
  * Please DO NOT DELETE this action; future functionalities planned for upcoming starter kit releases may stop working.
@@ -1356,10 +1336,10 @@ export function main(_params) {
 }
 ```
 
-- [ ] **Step 2: Diff against the source to confirm byte-for-byte parity** (except the copyright header, which is unchanged too)
+- [ ] **Step 2: Confirm the tracking behavior is unchanged** — the only diff from root's source should be the import line
 
 Run: `diff <(tail -n +1 actions/commerce-checkout-starter-kit-info/index.js) <(tail -n +1 tax-integration/actions/commerce-checkout-starter-kit-info/index.js)` (run from repo root)
-Expected: no output (files identical)
+Expected: exactly one line differs — the `import { HTTP_OK } from ...` line; everything else (the `main` function body, the "DO NOT DELETE" comment, the returned `{statusCode: HTTP_OK}` shape and value) is identical
 
 - [ ] **Step 3: Commit**
 
@@ -3156,10 +3136,10 @@ git commit -m "tax-integration: add README with App Management flow and tax-spec
 - `create-tax-integrations.js` rewritten as `defineCustomInstallationStep` using `getCommerceClient(resolveImsAuthParams(context.params))` — Task 12.
 - `tax-integrations.yaml` moved — Task 10.
 - Admin UI v1→v2 migration, explicit dedicated phase — Phase 5 (Tasks 13-19), including the experimental-package risk disclosure and the two explicit scope decisions (skip `enableAdminUiSdk`/`registerExtension`; grid/mass-action/order-view-button builders not applicable).
-- `commerce-checkout-starter-kit/info` duplicated unchanged — Task 7.
+- `commerce-checkout-starter-kit/info` duplicated with tracking behavior unchanged (`{statusCode: HTTP_OK}`, still 200); only its `HTTP_OK` import source changes, to `@adobe/aio-commerce-sdk/core/responses` — Task 7.
 - `webhookVerify` split out of `lib/adobe-commerce.js`; `webhookSuccessResponse`/`webhookErrorResponse` dropped and replaced by `@adobe/aio-commerce-sdk/webhooks/responses`'s typed builders (`addOperation`/`replaceOperation`/`exceptionOperation`/`ok`) inside the two webhook actions themselves — Tasks 3, 5, 6.
 - Beta SDK package versions pinned exactly per the design spec's "SDK packages (beta)" table (`aio-commerce-lib-app@1.8.0-beta-...`, `aio-commerce-sdk@1.4.0-beta-...`, `aio-commerce-lib-admin-ui@0.2.0-beta-...`) — Task 1.
-- `@adobe/aio-commerce-sdk/core/*` adopted where a clean drop-in (`HTTP_OK` in `telemetry.js`, Task 4; `parseBearerToken`/`ok` in Task 19's conditional CORS-fallback proxy action) and explicitly not forced elsewhere (`lib/http.js` stays for the untouched info action; `allNonEmpty` has no natural home in this app's scope) — Tasks 3, 4, 19.
+- `@adobe/aio-commerce-sdk/core/*` adopted wherever a clean drop-in — `HTTP_OK` in `telemetry.js` (Task 4) *and* in the info action (Task 7), replacing `lib/http.js` entirely rather than keeping a local file just to preserve one import line; `parseBearerToken`/`ok` in Task 19's conditional CORS-fallback proxy action — and explicitly not forced where it doesn't fit (`allNonEmpty` has no natural home in this app's scope) — Tasks 3, 4, 7, 19.
 - Auth-swap gated on `shipping-method/`'s spike, decision point present — Task 20.
 - Declarative `webhooks` config: 4 env-scoped entries (2 per action, PaaS + SaaS) with the exact confirmed `webhook_method`/`batch_name`/`hook_name`/timing/`fallback_error_message` values, replacing the manual "Create Webhooks" README step — Task 21, folded into the README at Task 23.
 - README following App Management flow, tax-specific guidance only, including the beta-dependency and experimental-admin-ui disclosure, and the now-automatic webhook subscription — Task 23.
@@ -3168,4 +3148,4 @@ git commit -m "tax-integration: add README with App Management flow and tax-spec
 
 **Placeholder scan:** no "TBD"/"handle it"/"similar to Task N" — the two HTML-comment placeholders in Task 23's README are intentional and are explicitly filled in by Task 19's outcome in Task 23 Step 2, not left dangling.
 
-**Type/name consistency:** `createTaxIntegrations(client, data)` (Task 11's test, Task 12's implementation) — consistent. `fetchCommerceTaxClasses(commerceHost, imsToken)` / `createOrUpdateCommerceTaxClass(commerceHost, imsToken, taxClass)` (Task 16's test, Task 17's implementation, Task 18's usage) — consistent. `webhookVerify` (Task 3) and `HTTP_OK` (Task 3, info-action-only) import paths match across Tasks 5, 6, 7. `addOperation`/`replaceOperation`/`exceptionOperation`/`ok` from `@adobe/aio-commerce-sdk/webhooks/responses` (Tasks 5, 6) and `MENU_STORES` from `@adobe/aio-commerce-lib-admin-ui/menu` (Task 14, corrected from an earlier draft that wrongly sourced it from `@adobe/aio-commerce-sdk/admin-ui/menu`) use the exact subpaths confirmed against the `aio-commerce-sdk` monorepo source. Task 21's `webhooks[].runtimeAction` values (`"commerce-checkout-starter-kit/collect-taxes"`, `"commerce-checkout-starter-kit/collect-adjustment-taxes"`) use the exact `<package>/<action>` name wired into `app.config.yaml` by Task 8 (`commerce-checkout-starter-kit` package, unchanged from root, "do not change" tracking-action naming aside) — consistent.
+**Type/name consistency:** `createTaxIntegrations(client, data)` (Task 11's test, Task 12's implementation) — consistent. `fetchCommerceTaxClasses(commerceHost, imsToken)` / `createOrUpdateCommerceTaxClass(commerceHost, imsToken, taxClass)` (Task 16's test, Task 17's implementation, Task 18's usage) — consistent. `webhookVerify` from `lib/webhook.js` (Task 3) is consumed identically by Tasks 5 and 6; `HTTP_OK` from `@adobe/aio-commerce-sdk/core/responses` (no local `lib/http.js` at all, per Task 3's revision) is consumed identically by `telemetry.js` (Task 4) and the info action (Task 7) — same import source, same name, same value everywhere it appears. `addOperation`/`replaceOperation`/`exceptionOperation`/`ok` from `@adobe/aio-commerce-sdk/webhooks/responses` (Tasks 5, 6) and `MENU_STORES` from `@adobe/aio-commerce-lib-admin-ui/menu` (Task 14, corrected from an earlier draft that wrongly sourced it from `@adobe/aio-commerce-sdk/admin-ui/menu`) use the exact subpaths confirmed against the `aio-commerce-sdk` monorepo source. Task 21's `webhooks[].runtimeAction` values (`"commerce-checkout-starter-kit/collect-taxes"`, `"commerce-checkout-starter-kit/collect-adjustment-taxes"`) use the exact `<package>/<action>` name wired into `app.config.yaml` by Task 8 (`commerce-checkout-starter-kit` package, unchanged from root, "do not change" tracking-action naming aside) — consistent.
