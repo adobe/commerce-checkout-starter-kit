@@ -49,17 +49,3 @@ for how to customize the rates returned by `shipping-methods`.
 1. Deploy and associate the app.
 1. In Commerce Admin, confirm the carriers defined in `create-shipping-carriers.js` are registered.
 1. Place an order in Commerce and confirm the custom shipping methods appear at checkout.
-
-## Auth pattern note
-
-This app validated whether Adobe Commerce App Management's association-based Commerce client
-(`getCommerceClient`/`getCommerceInstance`) can be used from a `raw-http: true` /
-`require-adobe-auth: false` webhook action. **Result: GO** —
-`resolveImsAuthParams`/`getCommerceClient` work correctly given only the params such an action
-actually receives; validated against the real Adobe IMS token endpoint
-(`ims-na1.adobelogin.com/ims/token/v2`) with intentionally invalid credentials, which produced a
-clean, fast auth rejection rather than a hang or a raw-http-specific failure. See the "Spike result"
-section in `docs/superpowers/plans/2026-07-07-shipping-method-app-management.md` for the full
-writeup, including test-harness deviations encountered while validating this. The
-`shipping-methods` action itself does not call Commerce today, so this finding is informational for
-the payment and tax domain apps rather than something this app's own behavior depends on.

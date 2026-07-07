@@ -1,6 +1,6 @@
 # The [pre-app-build] hooks are auto-generated. Do not remove or manually edit.
 hooks:
-  pre-app-build: EXTENSION=extensibility/1 npx aio-commerce-lib-app hooks pre-app-build && EXTENSION=extensibility/1 pnpm exec aio-commerce-lib-app hooks pre-app-build
+  pre-app-build: EXTENSION=extensibility/1 npx aio-commerce-lib-app hooks pre-app-build
 
 operations:
   # These worker processes definitions are auto-generated. Do not remove or manually edit.

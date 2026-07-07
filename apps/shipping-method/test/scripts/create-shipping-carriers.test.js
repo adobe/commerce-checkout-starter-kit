@@ -12,7 +12,7 @@ const createShippingCarriers = (
   await import("../../scripts/create-shipping-carriers.js")
 ).default;
 
-function mockClient(response1, response2) {
+function mockPostClient(response1, response2) {
   getCommerceClient.mockResolvedValue({
     post: vi
       .fn()
@@ -39,25 +39,70 @@ describe("create-shipping-carriers install step", () => {
   });
 
   test("creates every carrier defined in shipping-carriers.yaml", async () => {
-    mockClient({}, {});
+    mockPostClient({}, {});
 
-    const result = await createShippingCarriers({}, context);
+    const result = await createShippingCarriers.install({}, context);
 
     expect(result).toEqual(["DPS", "Fedex"]);
   });
 
-  test("skips carriers whose creation call throws", async () => {
+  test("throws when carrier creation fails", async () => {
+    const error = new Error("Commerce unavailable");
     getCommerceClient.mockResolvedValue({
-      post: vi
-        .fn()
-        .mockReturnValueOnce({ json: () => Promise.resolve({}) })
-        .mockReturnValueOnce({
-          json: () => Promise.reject(new Error("already exists")),
-        }),
+      post: vi.fn().mockReturnValueOnce({ json: () => Promise.reject(error) }),
     });
 
-    const result = await createShippingCarriers({}, context);
+    await expect(createShippingCarriers.install({}, context)).rejects.toThrow(
+      "Commerce unavailable",
+    );
+    expect(context.logger.error).toHaveBeenCalledWith(
+      "Failed to create shipping carrier DPS: Commerce unavailable",
+    );
+  });
 
-    expect(result).toEqual(["DPS"]);
+  test("deletes every carrier by code during uninstall", async () => {
+    const deleteMock = vi
+      .fn()
+      .mockReturnValueOnce({ json: () => Promise.resolve(true) })
+      .mockReturnValueOnce({ json: () => Promise.resolve(true) });
+    getCommerceClient.mockResolvedValue({ delete: deleteMock });
+
+    await createShippingCarriers.uninstall({}, context);
+
+    expect(deleteMock).toHaveBeenCalledWith("V1/oope_shipping_carrier/DPS");
+    expect(deleteMock).toHaveBeenCalledWith("V1/oope_shipping_carrier/Fedex");
+  });
+
+  test("skips carriers that are already absent during uninstall", async () => {
+    const notFound = new Error(
+      'Out of process shipping carrier with code "DPS" does not exist.',
+    );
+    const deleteMock = vi
+      .fn()
+      .mockReturnValueOnce({ json: () => Promise.reject(notFound) })
+      .mockReturnValueOnce({ json: () => Promise.resolve(true) });
+    getCommerceClient.mockResolvedValue({ delete: deleteMock });
+
+    await createShippingCarriers.uninstall({}, context);
+
+    expect(context.logger.warn).toHaveBeenCalledWith(
+      "Shipping carrier DPS does not exist",
+    );
+  });
+
+  test("throws when carrier deletion fails for a non-idempotent reason", async () => {
+    const error = new Error("Commerce unavailable");
+    getCommerceClient.mockResolvedValue({
+      delete: vi
+        .fn()
+        .mockReturnValueOnce({ json: () => Promise.reject(error) }),
+    });
+
+    await expect(createShippingCarriers.uninstall({}, context)).rejects.toThrow(
+      "Commerce unavailable",
+    );
+    expect(context.logger.error).toHaveBeenCalledWith(
+      "Failed to delete shipping carrier DPS: Commerce unavailable",
+    );
   });
 });
