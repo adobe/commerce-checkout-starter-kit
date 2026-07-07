@@ -51,34 +51,36 @@ and docs (`@adobe/aio-commerce-lib-app`) as the reference for the target shape.
 
 ## Target repo layout
 
+Each domain app is a **top-level directory** in the repo (not nested under a shared `apps/`
+parent):
+
 ```
-apps/
-  shipping/
-  payment/
-  tax/
-  fees/
+shipping-method/
+payment-method/
+tax-integration/
+totals-collector/
 ```
 
-Each `apps/<domain>/` directory is fully self-contained: its own `package.json`, `app.config.yaml`,
+Each of these directories is fully self-contained: its own `package.json`, `app.config.yaml`,
 `app.commerce.config.ts`, `biome.jsonc`, `vitest.config.js`, and (if needed) its own
 husky/lint-staged setup. There is **no shared root-level tooling** — this was an explicit choice
 over npm workspaces, prioritizing full independence per app (including the ability to later split
 into separate repos) over reduced duplication.
 
-The final PR removes the root-level monolith entirely: `actions/`, `lib/`, `scripts/`, `hooks/`,
-`app.config.yaml`, `payment-methods.yaml`, `shipping-carriers.yaml`, `tax-integrations.yaml`,
-`events.config.yaml`, `extension-manifest.json`, root `package.json`, `env.dist`, `test/`, `e2e/`,
-and `commerce-backend-ui-1/`. The root `README.md` is replaced with a short index pointing to the
-four `apps/<domain>/README.md` files.
+The final PR removes the (now-superseded) monolithic root-level app entirely: `actions/`, `lib/`,
+`scripts/`, `hooks/`, `app.config.yaml`, `payment-methods.yaml`, `shipping-carriers.yaml`,
+`tax-integrations.yaml`, `events.config.yaml`, `extension-manifest.json`, root `package.json`,
+`env.dist`, `test/`, `e2e/`, and `commerce-backend-ui-1/`. The root `README.md` is replaced with a
+short index pointing to the four domain directories' `README.md` files.
 
 ## Per-domain content mapping
 
-| App | Actions | Install script → custom installation step | Config file | Extras |
-|---|---|---|---|---|
-| **shipping** | `shipping-methods` | `create-shipping-carriers.js` (`get-shipping-carriers.js` kept as a plain helper script, not an installation step) | `shipping-carriers.yaml` | — |
-| **payment** | `validate-payment`, `filter-payment` | `create-payment-methods.js` | `payment-methods.yaml` | — |
-| **tax** | `collect-taxes`, `collect-adjustment-taxes` | `create-tax-integrations.js` | `tax-integrations.yaml` | Admin UI extension migrated from `commerce/backend-ui/1` (`commerce-backend-ui-1/`) to `commerce/backend-ui/2`. Its actual content — `TaxClassDialog.js` / `TaxClassesPage.js` — is tax-domain functionality, not generic infrastructure, so it belongs here. |
-| **fees** | `total-collector-discounts/*` (9 actions: `tiered-quantity-discount`, `tiered-category-discount`, `category-based-discount`, `cheapest-item-discount`, `expensive-item-discount`, `cheapest-quantity-discount`, `step-price-discount`, `multi-condition-discount`, `tiered-total-spend-discount`) + `lib/total-collector-discounts.js` | none — there is no Commerce-side registration step for these today | — | No Commerce REST API calls at all; pure webhook payload transforms. Needs only webhook signature verification, not a Commerce HTTP client. |
+| Domain | Folder | Actions | Install script → custom installation step | Config file | Extras |
+|---|---|---|---|---|---|
+| Shipping | `shipping-method/` | `shipping-methods` | `create-shipping-carriers.js` (`get-shipping-carriers.js` kept as a plain helper script, not an installation step) | `shipping-carriers.yaml` | — |
+| Payment | `payment-method/` | `validate-payment`, `filter-payment` | `create-payment-methods.js` | `payment-methods.yaml` | — |
+| Tax | `tax-integration/` | `collect-taxes`, `collect-adjustment-taxes` | `create-tax-integrations.js` | `tax-integrations.yaml` | Admin UI extension migrated from `commerce/backend-ui/1` (`commerce-backend-ui-1/`) to `commerce/backend-ui/2`. Its actual content — `TaxClassDialog.js` / `TaxClassesPage.js` — is tax-domain functionality, not generic infrastructure, so it belongs here. |
+| Fees | `totals-collector/` | `total-collector-discounts/*` (9 actions: `tiered-quantity-discount`, `tiered-category-discount`, `category-based-discount`, `cheapest-item-discount`, `expensive-item-discount`, `cheapest-quantity-discount`, `step-price-discount`, `multi-condition-discount`, `tiered-total-spend-discount`) + `lib/total-collector-discounts.js` | none — there is no Commerce-side registration step for these today | — | No Commerce REST API calls at all; pure webhook payload transforms. Needs only webhook signature verification, not a Commerce HTTP client. |
 
 Every app additionally gets:
 
@@ -87,8 +89,8 @@ Every app additionally gets:
   since each domain is now a separately tracked deployment.
 - Its own copy of the webhook helpers currently in `lib/adobe-commerce.js`
   (`webhookVerify`, `webhookSuccessResponse`, `webhookErrorResponse`), split out from the
-  Commerce-HTTP-client parts of that file so the fees app doesn't need to carry Commerce API client
-  code it never uses.
+  Commerce-HTTP-client parts of that file so the `totals-collector/` app doesn't need to carry
+  Commerce API client code it never uses.
 
 ## Dropped entirely (not migrated to any domain app)
 
@@ -126,7 +128,7 @@ export default defineConfig({
       },
     ],
   },
-  // adminUi: { ... }   ← tax app only
+  // adminUi: { ... }   ← tax-integration app only
 });
 ```
 
@@ -151,8 +153,8 @@ contract (`source/management/installation/workflow/step.ts`).
 
 Beyond the installation steps, we will also attempt to swap the **runtime webhook actions**
 (`validate-payment`, `filter-payment`, `shipping-methods`, `collect-taxes`,
-`collect-adjustment-taxes`, and the fees discount actions where they call Commerce) from the
-hand-rolled `lib/adobe-commerce.js` OAuth1/IMS client to the SDK's association-based
+`collect-adjustment-taxes`, and the `totals-collector/` discount actions where they call Commerce)
+from the hand-rolled `lib/adobe-commerce.js` OAuth1/IMS client to the SDK's association-based
 `getCommerceClient`/`getCommerceInstance`.
 
 **This is explicitly unproven territory.** Investigation found zero documented or tested examples
@@ -160,9 +162,9 @@ of `getCommerceClient` being used inside a `raw-http: true` / `require-adobe-aut
 invoked directly by Commerce (as opposed to an IMS-authenticated Adobe I/O Runtime action). Adobe's
 own `commerce-app-migrate` tooling deliberately avoids this swap and keeps the legacy client for
 these actions. We're proceeding anyway per an explicit decision made during design, with a
-fallback: **shipping ships first** and doubles as the validation vehicle for this pattern. If
-`getCommerceClient` doesn't hold up for `shipping-methods` under real webhook traffic, we keep
-`lib/adobe-commerce.js`'s client for that action, document the gap, and skip the swap for
+fallback: **`shipping-method/` ships first** and doubles as the validation vehicle for this
+pattern. If `getCommerceClient` doesn't hold up for `shipping-methods` under real webhook traffic,
+we keep `lib/adobe-commerce.js`'s client for that action, document the gap, and skip the swap for
 payment/tax/fees rather than repeating a broken pattern three more times.
 
 Mechanically, this means wiring `AIO_COMMERCE_AUTH_IMS_CLIENT_ID` /
@@ -171,6 +173,9 @@ Mechanically, this means wiring `AIO_COMMERCE_AUTH_IMS_CLIENT_ID` /
 `AIO_COMMERCE_AUTH_IMS_SCOPES` as action `inputs` (replacing today's `OAUTH_*` inputs) and calling
 `getCommerceClient(resolveImsAuthParams(params))` from within the action handler, with
 `getCommerceInstance()` supplying the Commerce base URL in place of `COMMERCE_BASE_URL`.
+
+Note: `totals-collector/` never calls Commerce at all (pure webhook payload transforms), so this
+auth swap is not applicable there regardless of how the spike goes.
 
 ## Docs
 
@@ -190,17 +195,18 @@ Because the four domain apps share no code or tooling, they are built in **paral
 worktrees** (via the `wt` CLI), each on its own branch off `main`: `shipping`, `payment`, `tax`,
 `fees`. Each worktree gets its own implementation plan and is worked independently, so none of the
 four PRs blocks on another. The "remove monolith" PR is created last, after all four are merged to
-`main`, since it deletes root-level files that by then are superseded by `apps/<domain>/`.
+`main`, since it deletes root-level files that by then are superseded by the four new top-level
+domain directories.
 
 ## PR sequence
 
-1. **`apps/shipping`** — smallest domain (1 action, 1 install script). Establishes the
+1. **`shipping-method/`** — smallest domain (1 action, 1 install script). Establishes the
    `app.commerce.config.ts` + custom-installation-step pattern and validates the association-based
    auth approach for webhook actions before it's repeated elsewhere.
-2. **`apps/payment`** — applies the validated pattern from (1).
-3. **`apps/tax`** — applies the pattern, plus the Admin UI v1→v2 migration.
-4. **`apps/fees`** — applies the pattern; no Commerce API client needed, so this is mostly action
-   relocation plus dropping the Commerce-client dependency entirely.
+2. **`payment-method/`** — applies the validated pattern from (1).
+3. **`tax-integration/`** — applies the pattern, plus the Admin UI v1→v2 migration.
+4. **`totals-collector/`** — applies the pattern; no Commerce API client needed, so this is mostly
+   action relocation plus dropping the Commerce-client dependency entirely.
 5. **Remove the monolith** — delete all root-level app code, scripts, config, docs superseded by
    the four new apps.
 
@@ -210,7 +216,7 @@ proceed with the legacy client for webhook actions instead, noted as a follow-up
 ## Testing
 
 - Existing tests under `test/lib`, `test/scripts` move alongside the code they test into each
-  domain's `apps/<domain>/test/` directory.
+  domain's `<domain-folder>/test/` directory.
 - Tests for dropped scaffolding (`generic`, `3rd-party-events`, `commerce-events`) are deleted, not
   migrated.
 - New tests are added for each rewritten `defineCustomInstallationStep` script and for the
