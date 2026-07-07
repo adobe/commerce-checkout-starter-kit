@@ -24,8 +24,11 @@ associated Commerce instance. To inspect what's currently registered without re-
 npm run get-shipping-carriers
 ```
 
-(This is a local dev-only helper — it needs `COMMERCE_BASE_URL` plus either `OAUTH_*` or
-`COMMERCE_CONSUMER_*` credentials in your `.env`; see [`env.dist`](./env.dist).)
+(This is a local dev-only helper — it needs `AIO_COMMERCE_API_BASE_URL` in your `.env`, plus either
+the same `AIO_COMMERCE_AUTH_IMS_*` credentials the install step already uses, or
+`AIO_COMMERCE_AUTH_INTEGRATION_*` for PaaS with a Commerce integration instead of IMS; see
+[`env.dist`](./env.dist). It uses `@adobe/aio-commerce-lib-api`'s `AdobeCommerceHttpClient` +
+`resolveCommerceHttpClientParams` — no hand-rolled Commerce client.)
 
 ## Webhook subscription and signature setup
 

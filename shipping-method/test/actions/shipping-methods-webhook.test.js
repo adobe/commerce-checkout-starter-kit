@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 
 import { describe, expect, test } from "vitest";
 
-import { webhookVerify } from "../../lib/webhook.js";
+import { webhookVerify } from "../../src/commerce-extensibility-1/actions/shipping-methods/webhook.js";
 
 describe("webhookVerify", () => {
   const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {

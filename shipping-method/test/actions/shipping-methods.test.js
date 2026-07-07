@@ -1,10 +1,15 @@
 import { describe, expect, test, vi } from "vitest";
 
-vi.mock("../../lib/webhook.js", () => ({
-  webhookVerify: vi.fn(),
-}));
+vi.mock(
+  "../../src/commerce-extensibility-1/actions/shipping-methods/webhook.js",
+  () => ({
+    webhookVerify: vi.fn(),
+  }),
+);
 
-const { webhookVerify } = await import("../../lib/webhook.js");
+const { webhookVerify } = await import(
+  "../../src/commerce-extensibility-1/actions/shipping-methods/webhook.js"
+);
 const { main } = await import(
   "../../src/commerce-extensibility-1/actions/shipping-methods/index.js"
 );

@@ -8,9 +8,9 @@ import {
   instrumentEntrypoint,
 } from "@adobe/aio-lib-telemetry";
 
-import { webhookVerify } from "../../../../lib/webhook.js";
 import { checkoutMetrics } from "../checkout-metrics.js";
 import { isWebhookSuccessful, telemetryConfig } from "../telemetry.js";
+import { webhookVerify } from "./webhook.js";
 
 /**
  * This action returns the list of out-of-process shipping methods for the given request.

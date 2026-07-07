@@ -1,9 +1,13 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
-import { getAdobeCommerceClient } from "../../lib/commerce-client.js";
-import { main } from "../../scripts/get-shipping-carriers.js";
+vi.mock("@adobe/aio-commerce-lib-api", () => ({
+  AdobeCommerceHttpClient: vi.fn(),
+  resolveCommerceHttpClientParams: vi.fn((params) => params),
+}));
 
-vi.mock("../../lib/commerce-client.js");
+const { AdobeCommerceHttpClient, resolveCommerceHttpClientParams } =
+  await import("@adobe/aio-commerce-lib-api");
+const { main } = await import("../../scripts/get-shipping-carriers.js");
 
 describe("get-shipping-carriers", () => {
   beforeEach(() => {
@@ -12,11 +16,26 @@ describe("get-shipping-carriers", () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
   });
 
+  test("resolves client params from process.env", async () => {
+    // A regular function, not an arrow function: mockImplementation is invoked via `new`, and
+    // arrow functions cannot be constructors.
+    AdobeCommerceHttpClient.mockImplementation(function FakeClient() {
+      return { get: () => ({ json: () => Promise.resolve([]) }) };
+    });
+
+    await main();
+
+    expect(resolveCommerceHttpClientParams).toHaveBeenCalledWith(process.env);
+  });
+
   test("logs the fetched carriers on success", async () => {
-    getAdobeCommerceClient.mockResolvedValue({
-      getOopeShippingCarriers: vi
-        .fn()
-        .mockResolvedValue({ message: [{ code: "DPS" }], success: true }),
+    AdobeCommerceHttpClient.mockImplementation(function FakeClient() {
+      return {
+        get: (path) => {
+          expect(path).toBe("oope_shipping_carrier/");
+          return { json: () => Promise.resolve([{ code: "DPS" }]) };
+        },
+      };
     });
 
     await main();
@@ -27,16 +46,14 @@ describe("get-shipping-carriers", () => {
   });
 
   test("logs an error when the request fails", async () => {
-    getAdobeCommerceClient.mockResolvedValue({
-      getOopeShippingCarriers: vi
-        .fn()
-        .mockResolvedValue({ message: "boom", success: false }),
+    AdobeCommerceHttpClient.mockImplementation(function FakeClient() {
+      return { get: () => ({ json: () => Promise.reject(new Error("boom")) }) };
     });
 
     await main();
 
     expect(console.error).toHaveBeenCalledWith(
-      expect.stringContaining("Failed to retrieve shipping carriers"),
+      expect.stringContaining("Failed to retrieve shipping carriers: boom"),
     );
   });
 });
