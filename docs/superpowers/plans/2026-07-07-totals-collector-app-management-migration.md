@@ -73,8 +73,15 @@ These facts were confirmed by reading the current repo, the design spec's "SDK p
 - `replaceOperation(path, value, instance?)` → `{ op: "replace", path, value, ...(instance && { instance }) }`. With no `instance` argument, this is exactly `{ op: "replace", path, value }` — the same 3-key shape the hand-rolled code already produces.
 - `successOperation()` → `{ op: "success" }`. `addOperation`/`removeOperation` exist but are not needed by this domain (no action currently builds an `add`/`remove` op).
 - None of these builders touch HTTP transport, Commerce auth, or environment variables — confirmed by reading their source, which has zero imports beyond internal type definitions.
-- Because OpenWhisk/App Builder web actions already auto-JSON-serialize a non-string `body` and set `Content-Type: application/json` (this is the existing, already-shipped behavior other actions like `collect-taxes` rely on via `webhookSuccessResponse`/`webhookErrorResponse`, which likewise return an unstringified object body with no explicit headers), returning `ok(...)`'s `{type, statusCode, body}` object directly as an action's `main()` return value is behaviorally equivalent to the current hand-rolled `{statusCode, headers, body: JSON.stringify(...)}` pattern. The extra `type` field is not one of the fields OpenWhisk's web-action layer inspects (`statusCode`/`headers`/`body`/`error`) and is expected to be ignored. This equivalence is documented here as a traceable assumption (not independently verified against a live Commerce instance in this plan) — Task 8's README explicitly calls out re-verifying it during manual validation.
+- Because OpenWhisk/App Builder web actions already auto-JSON-serialize a non-string `body` and set `Content-Type: application/json` (this is the existing, already-shipped behavior other actions like `collect-taxes` rely on via `webhookSuccessResponse`/`webhookErrorResponse`, which likewise return an unstringified object body with no explicit headers), returning `ok(...)`'s `{type, statusCode, body}` object directly as an action's `main()` return value is behaviorally equivalent to the current hand-rolled `{statusCode, headers, body: JSON.stringify(...)}` pattern. The extra `type` field is not one of the fields OpenWhisk's web-action layer inspects (`statusCode`/`headers`/`body`/`error`) and is expected to be ignored. This equivalence is documented here as a traceable assumption (not independently verified against a live Commerce instance in this plan) — Task 9's README explicitly calls out re-verifying it during manual validation.
 - `@adobe/aio-commerce-sdk/core/*` (generic action `responses`/`params`/`headers` helpers, re-exporting `@adobe/aio-commerce-lib-core`) is **not** adopted anywhere in this plan: the only file in this domain that used `lib/http.js` for a *generic* HTTP status constant is the frozen `info` action (must not change), and none of the 9 discount actions perform bearer-token parsing or required-parameter checking that `core/params`/`core/headers` would replace. There is nothing left in this domain for `core/*` to cleanly replace once `lib/http.js`'s only other consumer (the discount actions' manual response objects) is migrated to `webhooks/responses`.
+
+**Webhook subscriptions — declarative `webhooks` config (confirmed against `@adobe/aio-commerce-lib-app`'s schema and the design spec's "Webhook subscriptions" section, sourced from `AdobeDocs/commerce-extensibility`):**
+
+- `defineConfig`'s top-level `webhooks` array auto-subscribes the deployed action's Runtime URL to Commerce at install time — no custom installation-step code needed. This supersedes the lower-level, imperative `subscribeWebhook`/`unsubscribeWebhook` API from `@adobe/aio-commerce-lib-webhooks/api`.
+- Each entry requires, at the entry level: `label` (string), `description` (string), `runtimeAction` (string), and optional `env` (array of `"paas"` and/or `"saas"` — omitted means all environments). Inside the nested `webhook` object, required fields are `webhook_method`, `webhook_type`, `batch_name`, `hook_name`, `method`; optional fields include `timeout`, `soft_timeout`, `fallback_error_message` (all **snake_case** — not `softTimeout`/`fallbackErrorMessage`).
+- **`totals-collector/` special case**: Commerce exposes exactly **one** `get_total_modifications.execute` subscription slot for the entire domain — the 9 discount actions are alternative example implementations of that one contract, not 9 independently-active webhooks. So this app declares exactly **one** logical webhook — two `webhooks[]` entries only because the `webhook_method` string differs between PaaS and SaaS — both pointing at the same single default `runtimeAction` (`totals-collector/tiered-quantity-discount`), clearly commented as a swappable placeholder in both the config (Task 8) and the README (Task 9).
+- Confirmed values: PaaS `webhook_method` is `plugin.magento.out_of_process_totals_collector.api.get_total_modifications.execute`; SaaS is `plugin.out_of_process_totals_collector.api.get_total_modifications.execute`. Both: `webhook_type: "after"`, `batch_name: "totals_collector"`, `hook_name: "totals_collector"`, `method: "POST"`, `timeout: 30000`, `soft_timeout: 1000`, `fallback_error_message: "We encountered an issue while calculating your discounts. Please contact the store owner for further assistance."`.
 
 ---
 
@@ -2280,7 +2287,174 @@ git commit -m "totals-collector: add app.commerce.config.ts with metadata-only c
 
 ---
 
-### Task 8: Write `totals-collector/README.md`
+### Task 8: Declare the totals-collector webhook subscription in `app.commerce.config.ts`
+
+**Files:**
+- Modify: `totals-collector/app.commerce.config.ts`
+- Modify: `totals-collector/test/app.commerce.config.test.js`
+
+**Interfaces:**
+- Consumes: nothing new (still `defineConfig` from `@adobe/aio-commerce-lib-app/config`, Task 7).
+- Produces: `config.webhooks` — a 2-entry array (`env: ["paas"]` and `env: ["saas"]`) that `@adobe/aio-commerce-lib-app`'s install workflow reads to auto-subscribe the deployed action's Runtime URL to Commerce at install time. No custom installation-step code is needed — see the design spec's "Webhook subscriptions (declarative `webhooks` config)" section.
+
+Per the design spec's `totals-collector/` special case: Commerce exposes exactly **one** `get_total_modifications.execute` subscription slot, and the 9 discount actions in this app are alternative example implementations of that same contract — not 9 independently-active webhooks. So this app declares exactly **one** logical webhook (two entries only because PaaS and SaaS use different `webhook_method` strings), pointing at a single default action (`tiered-quantity-discount`). Both the config comment below and the README (Task 9) must make unmistakably clear that this is a swappable placeholder: whoever deploys this app picks exactly one of the 9 actions to be the live `runtimeAction` — never more than one.
+
+Confirmed values (from the design spec's "Webhook subscriptions" table, sourced from `AdobeDocs/commerce-extensibility`):
+
+| Field | PaaS | SaaS |
+|---|---|---|
+| `webhook_method` | `plugin.magento.out_of_process_totals_collector.api.get_total_modifications.execute` | `plugin.out_of_process_totals_collector.api.get_total_modifications.execute` |
+| `webhook_type` | `after` | `after` |
+| `batch_name` | `totals_collector` | `totals_collector` |
+| `hook_name` | `totals_collector` | `totals_collector` |
+| `method` | `POST` | `POST` |
+| `timeout` | `30000` | `30000` |
+| `soft_timeout` | `1000` | `1000` |
+| `fallback_error_message` | `"We encountered an issue while calculating your discounts. Please contact the store owner for further assistance."` | same |
+
+The `webhooks[]` entry schema (`@adobe/aio-commerce-lib-app`'s `WebhookEntryWithRuntimeActionSchema`) requires, at the entry level: `label` (string), `description` (string), `runtimeAction` (string), optional `env` (array of `"paas"`/`"saas"`); and inside the nested `webhook` object: `webhook_method`, `webhook_type`, `batch_name`, `hook_name`, `method` (all required strings), plus optional `timeout`, `soft_timeout`, `fallback_error_message`. Field names on the nested `webhook` object are **snake_case** (`soft_timeout`, `fallback_error_message` — not `softTimeout`/`fallbackErrorMessage`).
+
+- [ ] **Step 1: Extend the failing test**
+
+Add this test to `totals-collector/test/app.commerce.config.test.js`, inside the existing `describe("app.commerce.config", ...)` block:
+
+```js
+  test("declares exactly one webhook subscription (PaaS + SaaS variants) pointing at a single swappable default discount action", () => {
+    expect(config.webhooks).toHaveLength(2);
+
+    const runtimeActions = new Set(
+      config.webhooks.map((entry) => entry.runtimeAction),
+    );
+    expect(runtimeActions).toEqual(
+      new Set(["totals-collector/tiered-quantity-discount"]),
+    );
+
+    const envs = config.webhooks.map((entry) => entry.env);
+    expect(envs).toEqual(expect.arrayContaining([["paas"], ["saas"]]));
+
+    const paasEntry = config.webhooks.find((entry) => entry.env[0] === "paas");
+    expect(paasEntry.webhook).toEqual({
+      webhook_method:
+        "plugin.magento.out_of_process_totals_collector.api.get_total_modifications.execute",
+      webhook_type: "after",
+      batch_name: "totals_collector",
+      hook_name: "totals_collector",
+      method: "POST",
+      timeout: 30_000,
+      soft_timeout: 1000,
+      fallback_error_message:
+        "We encountered an issue while calculating your discounts. Please contact the store owner for further assistance.",
+    });
+
+    const saasEntry = config.webhooks.find((entry) => entry.env[0] === "saas");
+    expect(saasEntry.webhook).toEqual({
+      ...paasEntry.webhook,
+      webhook_method:
+        "plugin.out_of_process_totals_collector.api.get_total_modifications.execute",
+    });
+  });
+```
+
+- [ ] **Step 2: Run the test to verify it fails**
+
+```bash
+cd totals-collector && npx vitest run test/app.commerce.config.test.js
+```
+
+Expected: FAIL — `config.webhooks` is `undefined` (no `webhooks` key declared yet).
+
+- [ ] **Step 3: Add the `webhooks` array to `totals-collector/app.commerce.config.ts`**
+
+Replace the `defineConfig({ metadata: {...} })` call with:
+
+```ts
+export default defineConfig({
+  metadata: {
+    id: "checkout-totals-collector",
+    displayName: "Checkout Totals Collector",
+    version: "1.0.0",
+    description:
+      "Adobe Commerce checkout starter kit discount webhook actions (cart totals collector rules).",
+  },
+  // Commerce exposes exactly ONE `get_total_modifications.execute` subscription slot for the
+  // entire totals-collector contract — the 9 actions under actions/ are alternative EXAMPLE
+  // implementations of that same contract, not 9 independently-active webhooks.
+  //
+  // PICK ONE: this `runtimeAction` is a swappable placeholder, defaulted to
+  // `tiered-quantity-discount`. Before deploying to a real store, change BOTH entries below to
+  // whichever single discount action you actually want live — never point this webhook at more
+  // than one action at a time.
+  webhooks: [
+    {
+      label: "Totals Collector Discount (PaaS)",
+      description:
+        "Adds discount JSON-patch operations to the cart totals collector response. Placeholder: swap runtimeAction for the one discount example you want live.",
+      runtimeAction: "totals-collector/tiered-quantity-discount",
+      env: ["paas"],
+      webhook: {
+        webhook_method:
+          "plugin.magento.out_of_process_totals_collector.api.get_total_modifications.execute",
+        webhook_type: "after",
+        batch_name: "totals_collector",
+        hook_name: "totals_collector",
+        method: "POST",
+        timeout: 30_000,
+        soft_timeout: 1000,
+        fallback_error_message:
+          "We encountered an issue while calculating your discounts. Please contact the store owner for further assistance.",
+      },
+    },
+    {
+      label: "Totals Collector Discount (SaaS)",
+      description:
+        "Adds discount JSON-patch operations to the cart totals collector response. Placeholder: swap runtimeAction for the one discount example you want live.",
+      runtimeAction: "totals-collector/tiered-quantity-discount",
+      env: ["saas"],
+      webhook: {
+        webhook_method:
+          "plugin.out_of_process_totals_collector.api.get_total_modifications.execute",
+        webhook_type: "after",
+        batch_name: "totals_collector",
+        hook_name: "totals_collector",
+        method: "POST",
+        timeout: 30_000,
+        soft_timeout: 1000,
+        fallback_error_message:
+          "We encountered an issue while calculating your discounts. Please contact the store owner for further assistance.",
+      },
+    },
+  ],
+});
+```
+
+Both entries' `runtimeAction` must always be kept identical to each other — they are the PaaS/SaaS variants of the *same* logical webhook, not two different webhooks. Anyone changing which discount action is live must update both entries together.
+
+- [ ] **Step 4: Run the test to verify it passes**
+
+```bash
+cd totals-collector && npx vitest run test/app.commerce.config.test.js
+```
+
+Expected: PASS — 2 tests.
+
+- [ ] **Step 5: Typecheck**
+
+```bash
+cd totals-collector && npm run typecheck
+```
+
+Expected: no output, exit code 0.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add totals-collector/app.commerce.config.ts totals-collector/test/app.commerce.config.test.js
+git commit -m "totals-collector: declare the get_total_modifications.execute webhook subscription"
+```
+
+---
+
+### Task 9: Write `totals-collector/README.md`
 
 **Files:**
 - Create: `totals-collector/README.md`
@@ -2297,8 +2471,9 @@ Discount webhook actions for the [Adobe Commerce checkout starter kit](../README
 into its own independently deployable [App Management](https://developer.adobe.com/commerce/extensibility/app-management/)
 app. This app has **no Commerce REST API dependency** — every action is a pure webhook payload
 transform: it reads the incoming Commerce webhook body and returns a JSON-patch-style discount
-operation, built with `@adobe/aio-commerce-sdk`'s webhook response helpers. There is no
-Commerce-side install/registration step for this domain.
+operation, built with `@adobe/aio-commerce-sdk`'s webhook response helpers. Its one Commerce
+webhook subscription is declared declaratively in `app.commerce.config.ts` and auto-registered at
+install time — see "Webhook Subscription" below — there is no custom installation-step code.
 
 ## Install, Build, Deploy, Association
 
@@ -2311,8 +2486,9 @@ than this README for the generic mechanics:
 - [Configure an application](https://developer.adobe.com/commerce/extensibility/app-management/configure/)
 
 `app.commerce.config.ts` in this directory is the source of truth for this app's identity
-(`metadata`). It intentionally declares no `installation.customInstallationSteps` — there is
-nothing to register on the Commerce side for these discount actions.
+(`metadata`) and its one webhook subscription (`webhooks`). It intentionally declares no
+`installation.customInstallationSteps` — there is no custom Commerce-side registration script for
+these discount actions, only the declarative webhook subscription described below.
 
 ## Prerequisites
 
@@ -2343,47 +2519,35 @@ the Adobe Commerce webhook signature on every request (`lib/webhooks.js`):
    -----END PUBLIC KEY-----"
    ```
 
-## Subscribe the Discount Webhooks
+## Webhook Subscription — Declarative Config, Pick One Action
 
-After deploying (see [Build and deploy](https://developer.adobe.com/commerce/extensibility/app-management/deploy/)),
-[create a webhook](https://developer.adobe.com/commerce/extensibility/webhooks/create-webhooks/)
-for each discount rule you want active, pointing at the corresponding deployed action. Unlike the
-tax/payment/shipping domains — which hook a single well-known Commerce out-of-process API — these
-are general-purpose cart/quote total-collector webhooks, so **you choose which Commerce plugin
-hook point each one subscribes to** based on the discount rule you're implementing (for example, a
-`before`/`after` hook around cart totals collection).
+Unlike the tax/payment/shipping domains, this app does **not** document a manual "Create
+Webhooks" step. Its `app.commerce.config.ts` declares a `webhooks` array — the App Management
+install workflow reads it and automatically subscribes the deployed action's Runtime URL to
+Commerce at install time. There is nothing to do by hand in the Commerce Admin for this.
 
-Follow the same `webhooks.xml` pattern used elsewhere in this project (see the root
-[checkout starter kit README's webhook example](../README.md)), substituting the `method`
-attribute for your chosen Commerce hook point and the `url` attribute for the deployed action:
+**Read this before deploying.** Commerce exposes exactly **one**
+`get_total_modifications.execute` subscription slot for this entire domain. The 9 actions under
+`actions/` are alternative *example* implementations of that same webhook contract — demonstrating
+9 different discount strategies — not 9 simultaneously-active webhooks. `app.commerce.config.ts`
+ships with both of its `webhooks[]` entries (PaaS and SaaS variants of the same logical webhook)
+pointing at `tiered-quantity-discount` as a **default placeholder**.
 
-```xml
-<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_AdobeCommerceWebhooks:etc/webhooks.xsd">
-    <method name="<your-chosen-commerce-hook-point>" type="before">
-        <hooks>
-            <batch name="tiered_quantity_discount">
-                <hook
-                    name="tiered_quantity_discount"
-                    url="https://<your_app_builder>.runtime.adobe.io/api/v1/web/totals-collector/tiered-quantity-discount"
-                    method="POST" timeout="10000" softTimeout="2000"
-                    priority="300" required="true" fallbackErrorMessage="Discount calculation failed. Please try again later."
-                    ttl="0"
-                />
-            </batch>
-        </hooks>
-    </method>
-</config>
-```
+Before deploying to a real store:
 
-For SaaS instances, register the equivalent webhook subscription in **System > Webhooks > Webhook
-Subscriptions** instead of editing `webhooks.xml` directly.
-
-Repeat for each of the 9 actions you want to enable:
+1. Decide which one of the 9 discount examples you actually want live (or use one as a starting
+   point for your own discount logic).
+2. In `app.commerce.config.ts`, change **both** `webhooks[]` entries' `runtimeAction` from
+   `totals-collector/tiered-quantity-discount` to `totals-collector/<your-chosen-action>`. Keep
+   the two entries' `runtimeAction` identical to each other — they must always point at the same
+   action.
+3. Deploy (see [Build and deploy](https://developer.adobe.com/commerce/extensibility/app-management/deploy/))
+   and [associate](https://developer.adobe.com/commerce/extensibility/app-management/association/)
+   the app with your Commerce instance — the install workflow subscribes the webhook for you.
 
 | Action | Deployed path |
 |---|---|
-| `tiered-quantity-discount` | `totals-collector/tiered-quantity-discount` |
+| `tiered-quantity-discount` (default placeholder) | `totals-collector/tiered-quantity-discount` |
 | `tiered-category-discount` | `totals-collector/tiered-category-discount` |
 | `category-based-discount` | `totals-collector/category-based-discount` |
 | `cheapest-item-discount` | `totals-collector/cheapest-item-discount` |
@@ -2395,8 +2559,10 @@ Repeat for each of the 9 actions you want to enable:
 
 ## Validation
 
-1. Enable one discount webhook (e.g. `tiered-quantity-discount`) against a test Commerce instance.
-2. Add items to a cart that satisfy that rule's condition (see the doc comment at the top of
+1. Confirm `app.commerce.config.ts`'s two `webhooks[]` entries both point at the one discount
+   action you intend to run live (see "Webhook Subscription" above) before associating the app
+   with a real Commerce instance.
+2. Add items to a cart that satisfy that action's condition (see the doc comment at the top of
    `actions/<action-name>/index.js` for the exact threshold and discount percentage).
 3. Confirm the cart/quote total reflects the expected discount, and that the response includes a
    `discount` result operation rather than an `exception` op.
@@ -2428,7 +2594,7 @@ git commit -m "totals-collector: add README following App Management flow"
 
 ---
 
-### Task 9: Full-suite verification and final sanity checks
+### Task 10: Full-suite verification and final sanity checks
 
 **Files:** none created; verification only.
 
@@ -2438,7 +2604,7 @@ git commit -m "totals-collector: add README following App Management flow"
 cd totals-collector && npm test
 ```
 
-Expected: PASS — all tests across `test/lib/webhooks.test.js`, `test/lib/total-collector-discounts.test.js`, `test/actions/total-collector-discounts.test.js`, `test/actions/commerce-checkout-starter-kit-info.test.js`, `test/app.commerce.config.test.js`.
+Expected: PASS — all tests across `test/lib/webhooks.test.js`, `test/lib/total-collector-discounts.test.js`, `test/actions/total-collector-discounts.test.js`, `test/actions/commerce-checkout-starter-kit-info.test.js`, `test/app.commerce.config.test.js` (including Task 8's webhook-subscription assertions).
 
 - [ ] **Step 2: Run lint and typecheck**
 
@@ -2470,7 +2636,22 @@ grep -rn 'statusCode: HTTP_OK\|JSON.stringify(\[' totals-collector/actions total
 
 Expected: no output — confirms no discount action or lib file still hand-builds a webhook response object or manually stringifies an operations array.
 
-- [ ] **Step 5: Confirm the app is self-contained (no imports reaching outside `totals-collector/`)**
+- [ ] **Step 5: Confirm the webhook subscription declares exactly one active action, consistently, across both env variants**
+
+```bash
+cd totals-collector && node -e "
+import('./app.commerce.config.ts').then(({ default: config }) => {
+  const actions = new Set(config.webhooks.map((entry) => entry.runtimeAction));
+  if (config.webhooks.length !== 2) throw new Error('expected exactly 2 webhooks entries (paas+saas), got ' + config.webhooks.length);
+  if (actions.size !== 1) throw new Error('PaaS/SaaS entries point at different runtimeActions: ' + [...actions].join(', '));
+  console.log('OK: single runtimeAction ->', [...actions][0]);
+});
+"
+```
+
+Expected: prints `OK: single runtimeAction -> totals-collector/tiered-quantity-discount` (or whichever single action a developer has since swapped it to) — never more than one distinct `runtimeAction` across the two entries. This is the automated guard for the "pick one" rule: Commerce has only one `get_total_modifications.execute` slot, so the two PaaS/SaaS entries must never diverge on which action they point at.
+
+- [ ] **Step 6: Confirm the app is self-contained (no imports reaching outside `totals-collector/`)**
 
 ```bash
 grep -rn 'from "\.\./\.\./\.\./' totals-collector --include="*.js" --include="*.ts" | grep -v node_modules
@@ -2478,7 +2659,7 @@ grep -rn 'from "\.\./\.\./\.\./' totals-collector --include="*.js" --include="*.
 
 Expected: no output — no relative import climbs out of `totals-collector/`.
 
-- [ ] **Step 6: Confirm no other domain or root-level file was modified**
+- [ ] **Step 7: Confirm no other domain or root-level file was modified**
 
 ```bash
 cd /Users/obarcelonapa/dev/github/adobe/commerce-checkout-starter-kit-worktrees/fees && git status --short | grep -v '^?? totals-collector/' | grep -v '^A  totals-collector/'
@@ -2486,7 +2667,7 @@ cd /Users/obarcelonapa/dev/github/adobe/commerce-checkout-starter-kit-worktrees/
 
 Expected: no output, confirming this plan's execution touches only `totals-collector/` (plus the earlier spec/plan doc commits already made in this worktree).
 
-- [ ] **Step 7: Final commit (if any of the above steps produced uncommitted fixes)**
+- [ ] **Step 8: Final commit (if any of the above steps produced uncommitted fixes)**
 
 ```bash
 cd /Users/obarcelonapa/dev/github/adobe/commerce-checkout-starter-kit-worktrees/fees
@@ -2507,6 +2688,6 @@ git commit -m "totals-collector: apply lint/format fixes"
 - `shipping-method/`, `payment-method/`, `tax-integration/` — planned independently in sibling worktrees. `tax-integration/` is the only one that adds `@adobe/aio-commerce-lib-admin-ui` — not relevant to this plan.
 - Removing the root-level monolith (`actions/`, `lib/`, `scripts/`, `hooks/`, root `app.config.yaml`, root `package.json`, `test/`, `e2e/`, `commerce-backend-ui-1/`) — happens in the final "remove the monolith" PR after all four domains are merged to `main`.
 - The association-based `getCommerceClient`/`getCommerceInstance` auth swap flagged as a risk in the design spec — not applicable to this domain since it never calls Commerce.
-- `@adobe/aio-commerce-lib-webhooks/api`'s `subscribeWebhook`/`unsubscribeWebhook` as a `customInstallationStep` — the spec lists this as an optional enhancement "worth using where it fits cleanly"; it does not fit here because this domain has no `installation` block at all (no Commerce-side registration step exists for these actions), so the manual "Subscribe the Discount Webhooks" README section (Task 8) remains the documented path.
+- `@adobe/aio-commerce-lib-webhooks/api`'s lower-level, imperative `subscribeWebhook`/`unsubscribeWebhook` functions as a `customInstallationStep` — not needed here because the declarative `webhooks` array (Task 8) already auto-subscribes at install time without any custom installation-step code; this domain still has no `installation` block at all (no Commerce-side registration step exists for these actions beyond the webhook subscription itself).
 - `@adobe/aio-commerce-sdk/core/*` generic action helpers — considered and explicitly not adopted; see the Source-of-truth section's last bullet for why.
 - Any change to discount calculation business logic inside the 9 actions (thresholds, percentages, eligibility rules).
