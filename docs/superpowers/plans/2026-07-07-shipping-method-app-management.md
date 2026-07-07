@@ -1832,12 +1832,61 @@ stating: the date, GO or NO-GO, the exact hosts the real auth flow contacted, an
 failure mode observed. This finding is consumed by Task 10 (README) and should be copied into the
 payment/tax domain plans before they attempt the same swap.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add shipping-method/test/spike/commerce-auth-spike.test.js shipping-method/package.json docs/superpowers/plans/2026-07-07-shipping-method-app-management.md
 git commit -m "shipping-method: validate association-based Commerce auth for raw-http actions"
 ```
+
+## Spike result (Task 8, run 2026-07-07)
+
+**GO.** `resolveImsAuthParams`/`getCommerceClient` work correctly when called with nothing but the
+params a `raw-http: true` / `require-adobe-auth: false` action actually receives.
+
+- `resolveImsAuthParams(FAKE_RAW_HTTP_PARAMS)` — passes, no throw, given only `__ow_*` envelope
+  fields plus `AIO_COMMERCE_AUTH_IMS_*` inputs (no Adobe-injected IMS/actor claims).
+- `getCommerceInstance()`'s association lookup (`@adobe/aio-commerce-lib-config`'s
+  `getSystemConfigByKey`) resolves cleanly once mocked; unmocked, it correctly throws
+  `AppNotAssociatedError` — expected, not a raw-http-specific problem, just "this test app isn't
+  actually associated."
+- The full chain — `resolveImsAuthParams` → `getCommerceClient` → an actual outbound HTTP
+  call — was validated **against the real network**, not mocked, after nock could not be made to
+  intercept `@adobe/aio-commerce-lib-app`'s bundled fetch client (see "Deviations from the plan"
+  below). With intentionally invalid IMS credentials, the call reached the real IMS token endpoint
+  at `https://ims-na1.adobelogin.com/ims/token/v2` in ~1.4s and got back a normal, well-formed IMS
+  `400 invalid_client` rejection — not a hang, not a crash, not a raw-http-shaped-params error. That
+  is exactly what a `raw-http`/`require-adobe-auth:false` incompatibility would *not* look like, and
+  exactly what "the mechanism works, only the fake credentials don't" looks like.
+- Manual testing against a real, associated Commerce/Developer-Console instance (Task 8 Step 4) was
+  **not performed** — this sandboxed execution environment has no Adobe Developer Console project,
+  workspace, or real Commerce sandbox to associate against. The real-network IMS call above is the
+  strongest evidence obtainable without that infrastructure.
+
+**Consequence for `shipping-methods`:** none — per the Key Finding above, it has no outbound
+Commerce call to swap. This GO is recorded for the payment/tax domain plans, where the analogous
+webhook actions may have a real call to swap.
+
+**Deviations from the plan encountered while running this task:**
+- The original unit-test design (mock `@adobe/aio-commerce-lib-config` + intercept the IMS/Commerce
+  HTTP calls with `nock`) needed `vitest.config.js`'s `test.server.deps.inline` set for
+  `@adobe/aio-commerce-lib-app` and `@adobe/aio-commerce-lib-config` before `vi.mock` would even
+  apply — Vitest externalizes deep `node_modules` dependencies by default, which silently no-ops
+  `vi.mock` for anything inside them.
+- Even with that fixed, `nock` could not be made to intercept the actual outbound call in the time
+  budgeted for this task — `@adobe/aio-commerce-lib-app`'s HTTP client is a custom bundled
+  fetch-based wrapper, not the plain `http`/`https`-module traffic `nock` patches by default.
+  Real network calls (confirmed reachable from this environment) turned out to be more informative
+  than continuing to chase the mock, since they exercise the actual SDK internals instead of a
+  guessed stand-in for them.
+- Discovered along the way: `vitest.setup.js`'s blanket `global.fetch = vi.fn()` (copied from the
+  monolith's own setup file in Task 1, unused by anything ported so far) was actively breaking the
+  real fetch-based client before nock even got a chance to run. Removed it from `vitest.setup.js`
+  (Task 1) since nothing in this app's own tests relies on it.
+- The spike's committed test (`test/spike/commerce-auth-spike.test.js`) therefore makes one real,
+  fast (~1.4s) network call to Adobe's real IMS endpoint with intentionally-invalid credentials on
+  every run, rather than being fully mocked. This is a deliberate, documented trade-off for this
+  specific validation test, not a pattern to copy into ordinary unit tests.
 
 ---
 

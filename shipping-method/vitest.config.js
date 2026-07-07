@@ -11,6 +11,14 @@ export default defineConfig({
     environment: "node",
     exclude: ["node_modules", "dist"],
     include: ["test/**/*.test.js"],
+    server: {
+      deps: {
+        inline: [
+          "@adobe/aio-commerce-lib-app",
+          "@adobe/aio-commerce-lib-config",
+        ],
+      },
+    },
     setupFiles: ["./vitest.setup.js"],
     testTimeout: 10_000,
   },
