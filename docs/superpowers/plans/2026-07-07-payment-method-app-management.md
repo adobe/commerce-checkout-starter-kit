@@ -4,9 +4,9 @@
 
 **Goal:** Extract the payment domain (`validate-payment`, `filter-payment`, `create-payment-methods.js`) out of the monolithic checkout starter kit into a fully self-contained, independently deployable App Management app at `payment-method/`, using `app.commerce.config.ts` as the source of truth and a `defineCustomInstallationStep` in place of the ad-hoc `npm run create-payment-methods` script.
 
-**Architecture:** `payment-method/` is a top-level directory (sibling of `actions/`, `lib/`, `scripts/` — NOT nested under any shared `apps/` parent) with its own `package.json`, `app.config.yaml`, `app.commerce.config.ts`, `biome.jsonc`, and `vitest.config.js`. It carries its own copies of the two webhook actions (byte-for-byte behavior, only import paths change), the `commerce-checkout-starter-kit/info` tracking action (untouched), and a small `lib/` with just the webhook-signature helpers (`webhookVerify`, `webhookSuccessResponse`, `webhookErrorResponse`) and the two HTTP status constants they use. The legacy hand-rolled OAuth1/IMS Commerce client (`getAdobeCommerceClient` in the current root `lib/adobe-commerce.js`) is **not** copied into `payment-method/` at all: the rewritten install script uses the new SDK's `getCommerceClient`, and the two webhook actions never call Commerce today, so there is nothing in this app that needs the legacy client. The root monolith is left untouched by this plan (it is deleted later, in the final "remove monolith" PR, per the design spec).
+**Architecture:** `payment-method/` is a top-level directory (sibling of `actions/`, `lib/`, `scripts/` — NOT nested under any shared `apps/` parent) with its own `package.json`, `app.config.yaml`, `app.commerce.config.ts`, `biome.jsonc`, and `vitest.config.js`. It carries its own copies of the two webhook actions (behavior-preserving, but their response bodies are now built with `@adobe/aio-commerce-sdk/webhooks/responses`' typed builders instead of hand-rolled object literals), the `commerce-checkout-starter-kit/info` tracking action (untouched), and a small `lib/webhook.js` with just the hand-rolled webhook-signature check (`webhookVerify` — the one piece with no SDK equivalent). The legacy hand-rolled OAuth1/IMS Commerce client (`getAdobeCommerceClient` in the current root `lib/adobe-commerce.js`) is **not** copied into `payment-method/` at all: the rewritten install script uses the new SDK's `getCommerceClient`, and the two webhook actions never call Commerce today, so there is nothing in this app that needs the legacy client. The root monolith is left untouched by this plan (it is deleted later, in the final "remove monolith" PR, per the design spec).
 
-**Tech Stack:** Node.js 24 (ESM, `"type": "module"`), Adobe I/O Runtime actions, `@adobe/aio-commerce-lib-app` (`defineConfig`, `defineCustomInstallationStep`, `getCommerceClient`), `@adobe/aio-commerce-lib-auth` (`resolveImsAuthParams`), `@adobe/aio-lib-telemetry`, Vitest 4, Biome 2 (via `ultracite`), `js-yaml`.
+**Tech Stack:** Node.js 24 (ESM, `"type": "module"`), Adobe I/O Runtime actions, `@adobe/aio-commerce-lib-app` (`defineConfig`, `defineCustomInstallationStep`, `getCommerceClient`), `@adobe/aio-commerce-lib-auth` (`resolveImsAuthParams`), `@adobe/aio-commerce-sdk` (`webhooks/responses`' `ok`/`successOperation`/`exceptionOperation`/`addOperation`; `core/responses`' `HTTP_OK`), `@adobe/aio-lib-telemetry`, Vitest 4, Biome 2 (via `ultracite`), `js-yaml`.
 
 ## Global Constraints
 
@@ -18,6 +18,8 @@
 - The `commerce-checkout-starter-kit/info` action must be relocated/duplicated verbatim — do not modify its logic. (Design spec, "Every app additionally gets".)
 - The runtime auth swap (`getCommerceClient`/`getCommerceInstance` replacing the legacy OAuth1/IMS client) for webhook actions is gated on `shipping-method/`'s validation spike succeeding. Never assume it succeeded. (Design spec, "Auth strategy for runtime (webhook) actions — flagged risk".)
 - The `defineCustomInstallationStep` pattern for the install script (`create-payment-methods.js`) is **not** part of that risk — it's a documented-safe pattern per `@adobe/aio-commerce-lib-app`'s own `InstallationContext.params` typing contract. Apply it unconditionally.
+- Pin `@adobe/aio-commerce-lib-app` to `1.8.0-beta-20260702145741` and `@adobe/aio-commerce-sdk` to `1.4.0-beta-20260702145741` in `payment-method/package.json` — the released versions of these packages don't yet include what this migration needs. (Design spec, "SDK packages (beta)".)
+- `validate-payment`/`filter-payment`'s webhook response bodies are built with `@adobe/aio-commerce-sdk/webhooks/responses`' `successOperation`/`exceptionOperation`/`addOperation` (wrapped in `ok()`) — the hand-rolled `webhookSuccessResponse`/`webhookErrorResponse` are **not** carried forward into `payment-method/`. `webhookVerify` (the signature check) has no SDK equivalent and stays hand-rolled, unchanged. (Design spec, "SDK packages (beta)".)
 
 ---
 
@@ -29,12 +31,19 @@ Everything below was verified by reading the actual source in this worktree (`/U
 
 **Why the "auth swap" is a documentation-only step here, not a code change:** The design spec's flagged-risk section lists `validate-payment`/`filter-payment` as swap candidates, but as verified above, neither action calls Commerce today, and app.config.yaml gives them no `OAUTH_*`/`COMMERCE_CONSUMER_*` inputs to swap. There is nothing to swap in this PR. Task 9 below adds the decision record so that if/when someone adds a Commerce call to these actions (e.g. filling in the "Check if the payment information is valid with the payment gateway" placeholder in `validate-payment`), they check `shipping-method/`'s outcome first instead of guessing.
 
+**Why `webhookSuccessResponse`/`webhookErrorResponse` are dropped, not just relocated:** The design spec's "SDK packages (beta)" section retires these two hand-rolled helpers in favor of `@adobe/aio-commerce-sdk/webhooks/responses`' typed operation builders. `webhookVerify` (the `x-adobe-commerce-webhook-signature` check) is unaffected — none of the three new SDK packages implement webhook signature verification, so it stays hand-rolled in `lib/webhook.js`, unchanged. See Task 3 and Task 4 below for the exact response-shape mapping.
+
 **New SDK contracts referenced (all read directly from source, for exact signatures):**
 - `defineConfig(config)` — `@adobe/aio-commerce-sdk/packages/aio-commerce-lib-app/source/config/lib/define.ts` — identity function for type inference only.
 - `defineCustomInstallationStep(handler)` — `.../source/management/installation/custom-installation/define.ts` — accepts `(config, context) => result` or `{ install, uninstall }`.
 - `ExecutionContext` (the `context` a step handler receives) — `.../source/management/installation/workflow/step.ts` — extends `InstallationContext` which guarantees `context.params.AIO_COMMERCE_AUTH_IMS_CLIENT_ID`, `AIO_COMMERCE_AUTH_IMS_CLIENT_SECRETS`, `AIO_COMMERCE_AUTH_IMS_TECHNICAL_ACCOUNT_ID`, `AIO_COMMERCE_AUTH_IMS_TECHNICAL_ACCOUNT_EMAIL`, `AIO_COMMERCE_AUTH_IMS_ORG_ID`, `AIO_COMMERCE_AUTH_IMS_SCOPES`, plus `context.logger`.
 - `getCommerceClient(auth, fetchOptions?)` — `.../source/access/commerce-instance.ts` — returns `Promise<AdobeCommerceHttpClient>`, a ky-based client (`.get/.post/.put/.delete/.patch(url, options)`, each returning a ky `Response`-like object you call `.json()` on). Throws on non-2xx responses (ky `HTTPError`), unlike the current `got`-based wrapper which returned `{ success, message }`.
 - `AdobeCommerceHttpClient` base path already includes the API version prefix (`V1` by default) and the PaaS `rest/<store_view_code>/` segment — call `client.post("oope_payment_method/", { json: paymentMethod })`, **not** `client.post("V1/oope_payment_method/", ...)`.
+- `successOperation()` / `exceptionOperation(message, exceptionClass?)` / `addOperation(path, value, instance?)` / `replaceOperation(path, value, instance?)` / `removeOperation(path)` — `@adobe/aio-commerce-sdk/webhooks/responses` (re-exports `@adobe/aio-commerce-lib-webhooks/responses`, source at `packages/aio-commerce-lib-webhooks/source/responses/operations/presets.ts`) — pure builders for the Commerce webhook operation shape: `successOperation()` → `{ op: "success" }`; `exceptionOperation(message)` → `{ op: "exception", message }`; `addOperation(path, value)` → `{ op: "add", path, value }`.
+- `ok(operations)` — same module (`.../source/responses/presets.ts`) — accepts a single operation or an array of operations and returns `{ type: "success", statusCode: 200, body: operations }`. It shadows `@adobe/aio-commerce-sdk/core/responses`' generic `ok()` (which instead expects `ok({ body, headers })`) with a webhook-specific signature — do not import both `ok`s into the same file under the same name. The extra `type: "success"` discriminator field is additive: Adobe I/O Runtime web actions only read `statusCode`/`body`/`headers` off the object a `main` function returns, so this doesn't change what Commerce receives over the wire.
+- `HTTP_OK` (and the other HTTP status constants) — `@adobe/aio-commerce-sdk/core/responses` (re-exports `@adobe/aio-commerce-lib-core/responses`, source at `packages/aio-commerce-lib-core/source/responses/presets.ts`) — same value (`200`) as the local `lib/http.js` constant it replaces. `lib/http.js` is dropped entirely in this plan (Task 3) since, once `webhookSuccessResponse`/`webhookErrorResponse` are gone, its only remaining consumers (`telemetry.js`'s `isWebhookSuccessful`, the `commerce-checkout-starter-kit-info` action) need nothing but this one constant.
+
+**Wire-format note for `filter-payment` — verify during implementation:** the current code manually does `body: JSON.stringify(operations)` for its success response, while its error paths (via `webhookErrorResponse`) pass an object body un-stringified — an existing inconsistency in the pre-migration code. Task 4's rewrite uses `ok(operations)` for both paths uniformly, which sets `body: operations` as the actual array, not a pre-stringified string. This is the normalization the design spec's "SDK packages (beta)" section calls for, not a business-logic change — but since this plan can't exercise a live raw-http deployment, Task 11's verification pass includes an explicit step to confirm Commerce still parses the array-of-operations response correctly after this change before considering the migration done.
 
 ---
 
@@ -60,8 +69,9 @@ Everything below was verified by reading the actual source in this worktree (`/U
   "type": "module",
   "private": true,
   "dependencies": {
-    "@adobe/aio-commerce-lib-app": "^0.1.0",
+    "@adobe/aio-commerce-lib-app": "1.8.0-beta-20260702145741",
     "@adobe/aio-commerce-lib-auth": "^0.1.0",
+    "@adobe/aio-commerce-sdk": "1.4.0-beta-20260702145741",
     "@adobe/aio-lib-telemetry": "^1.1.0",
     "@adobe/aio-sdk": "^6",
     "js-yaml": "^5.0.0"
@@ -90,7 +100,7 @@ Everything below was verified by reading the actual source in this worktree (`/U
 }
 ```
 
-Notes for the implementer: verify the exact published version numbers for `@adobe/aio-commerce-lib-app` and `@adobe/aio-commerce-lib-auth` on npm before finalizing (they were still pre-1.0 in `aio-commerce-sdk` at plan time) — run `npm view @adobe/aio-commerce-lib-app version` and `npm view @adobe/aio-commerce-lib-auth version` and pin to whatever is current, then `npm install` inside `payment-method/` to generate its own `package-lock.json`. There is no root `husky`/`lint-staged` wiring here — the design spec marks that as "if needed", and this app doesn't need a pre-commit hook of its own while it still lives inside the monolith's repo (the existing root `.husky/` continues to run `npm run code:fix` at the repo root scope for whatever's staged, including files under `payment-method/`, until the final "remove monolith" PR).
+Notes for the implementer: `@adobe/aio-commerce-lib-app` and `@adobe/aio-commerce-sdk` are pinned to the exact beta versions from the design spec's "SDK packages (beta)" table (`1.8.0-beta-20260702145741` and `1.4.0-beta-20260702145741` respectively) — do not use caret ranges for these two, and do not substitute a different beta timestamp. `@adobe/aio-commerce-lib-auth` is not in that beta table, so verify its current published version on npm before finalizing — run `npm view @adobe/aio-commerce-lib-auth version` and pin to whatever is current — then `npm install` inside `payment-method/` to generate its own `package-lock.json`. Neither `@adobe/aio-commerce-lib-webhooks` nor `@adobe/aio-commerce-lib-core` need to be installed directly — they're consumed through `@adobe/aio-commerce-sdk`'s `webhooks/*` and `core/*` subpath exports. There is no root `husky`/`lint-staged` wiring here — the design spec marks that as "if needed", and this app doesn't need a pre-commit hook of its own while it still lives inside the monolith's repo (the existing root `.husky/` continues to run `npm run code:fix` at the repo root scope for whatever's staged, including files under `payment-method/`, until the final "remove monolith" PR).
 
 - [ ] **Step 2: Create `payment-method/biome.jsonc`**
 
@@ -302,7 +312,7 @@ git commit -m "Scaffold payment-method app project files"
 
 - [ ] **Step 1: Create `payment-method/actions/commerce-checkout-starter-kit-info/index.js`**
 
-Copy verbatim from `actions/commerce-checkout-starter-kit-info/index.js`, only updating the relative import path to the new local `lib/http.js` (created in Task 3):
+Copy from `actions/commerce-checkout-starter-kit-info/index.js`, keeping the body byte-for-byte, only swapping the `HTTP_OK` import from the (now-dropped, see Task 3) local `lib/http.js` to `@adobe/aio-commerce-sdk/core/responses`, which exports the same constant (`HTTP_OK = 200`):
 
 ```js
 /*
@@ -317,7 +327,7 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { HTTP_OK } from "../../lib/http.js";
+import { HTTP_OK } from "@adobe/aio-commerce-sdk/core/responses";
 
 /**
  * Please DO NOT DELETE this action; future functionalities planned for upcoming starter kit releases may stop working.
@@ -330,7 +340,7 @@ export function main(_params) {
 }
 ```
 
-This is a straight relocation — the design spec explicitly says "do not change" this action. Task 3 creates `lib/http.js` before this file is exercised by tests.
+The design spec explicitly says "do not change" this action — the response behavior (`{ statusCode: 200 }`) is identical; only the source of the `HTTP_OK` constant changes, per the design spec's "SDK packages (beta)" section (`lib/http.js`'s status constants are a clean drop-in replacement by `@adobe/aio-commerce-sdk/core/responses`).
 
 - [ ] **Step 2: Commit**
 
@@ -341,44 +351,21 @@ git commit -m "Relocate commerce-checkout-starter-kit/info tracking action into 
 
 ---
 
-### Task 3: Split out webhook helpers into `payment-method/lib/`
+### Task 3: Split out `webhookVerify` into `payment-method/lib/webhook.js`
 
 **Files:**
-- Create: `payment-method/lib/http.js`
 - Create: `payment-method/lib/webhook.js`
 - Test: `payment-method/test/lib/webhook.test.js`
 
 **Interfaces:**
-- Produces: `HTTP_OK`, `HTTP_INTERNAL_ERROR` (and the other HTTP status constants) from `lib/http.js`; `webhookVerify(params)`, `webhookSuccessResponse()`, `webhookErrorResponse(message)` from `lib/webhook.js`. Both `validate-payment` and `filter-payment` (Task 4) import from these two files.
-- Consumes: nothing new — pure functions extracted unchanged from the root `lib/adobe-commerce.js` and `lib/http.js`.
+- Produces: `webhookVerify(params)` from `lib/webhook.js`. `validate-payment` and `filter-payment` (Task 4) import it for the signature check; they get their response-building functions (`ok`, `successOperation`, `exceptionOperation`, `addOperation`) directly from `@adobe/aio-commerce-sdk/webhooks/responses` instead (no local module for those — see "Context for the implementer").
+- Consumes: nothing new — `webhookVerify` extracted unchanged from the root `lib/adobe-commerce.js`.
 
-- [ ] **Step 1: Create `payment-method/lib/http.js`**
+There is no `payment-method/lib/http.js` in this plan: per the design spec's "SDK packages (beta)" section, `webhookSuccessResponse`/`webhookErrorResponse` (the only local consumers of the `HTTP_OK` constant inside a webhook-response object) are replaced by the SDK's `ok()`/`successOperation()`/`exceptionOperation()`, and the two remaining `HTTP_OK` consumers in this app (`telemetry.js`'s `isWebhookSuccessful`, the `commerce-checkout-starter-kit-info` action, both Task 4/Task 2) import it directly from `@adobe/aio-commerce-sdk/core/responses` instead.
 
-Copy verbatim from the root `lib/http.js`:
+- [ ] **Step 1: Create `payment-method/lib/webhook.js`**
 
-```js
-/*
-Copyright 2024 Adobe. All rights reserved.
-This file is licensed to you under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License. You may obtain a copy
-of the License at http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software distributed under
-the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
-OF ANY KIND, either express or implied. See the License for the specific language
-governing permissions and limitations under the License.
-*/
-
-export const HTTP_BAD_REQUEST = 400;
-export const HTTP_INTERNAL_ERROR = 500;
-export const HTTP_NOT_FOUND = 404;
-export const HTTP_OK = 200;
-export const HTTP_UNAUTHORIZED = 401;
-```
-
-- [ ] **Step 2: Create `payment-method/lib/webhook.js`**
-
-Extracted from the webhook-response and signature-verification functions in the root `lib/adobe-commerce.js` (the Commerce-HTTP-client parts of that file — `getAdobeCommerceClient`, `getCommerceHttpClient`, `oauth1aHeadersProvider` — are deliberately left out; see "Context for the implementer" above for why):
+Extracted from the signature-verification function in the root `lib/adobe-commerce.js` (the Commerce-HTTP-client parts of that file — `getAdobeCommerceClient`, `getCommerceHttpClient`, `oauth1aHeadersProvider` — are deliberately left out, see "Context for the implementer" above for why; and the response-building functions `webhookSuccessResponse`/`webhookErrorResponse` are deliberately left out too, replaced by the SDK per the design spec's "SDK packages (beta)" section):
 
 ```js
 /*
@@ -394,40 +381,6 @@ governing permissions and limitations under the License.
 */
 
 import crypto from "node:crypto";
-
-import { HTTP_OK } from "./http.js";
-
-/**
- * Returns webhook response error according to Adobe Commerce Webhooks spec.
- *
- * @param {string} message the error message.
- * @returns {object} the response object
- * @see https://developer.adobe.com/commerce/extensibility/webhooks/responses/#responses
- */
-export function webhookErrorResponse(message) {
-  return {
-    statusCode: HTTP_OK,
-    body: {
-      op: "exception",
-      message,
-    },
-  };
-}
-
-/**
- * Returns webhook response success according to Adobe Commerce Webhooks spec.
- *
- * @returns {object} the response object
- * @see https://developer.adobe.com/commerce/extensibility/webhooks/responses/#responses
- */
-export function webhookSuccessResponse() {
-  return {
-    statusCode: HTTP_OK,
-    body: {
-      op: "success",
-    },
-  };
-}
 
 /**
  * Verifies the signature of the webhook request.
@@ -476,7 +429,7 @@ export function webhookVerify({
 }
 ```
 
-- [ ] **Step 3: Write the migrated test file `payment-method/test/lib/webhook.test.js`**
+- [ ] **Step 2: Write the migrated test file `payment-method/test/lib/webhook.test.js`**
 
 This is the `webhookVerify` describe block from the root `test/lib/adobe-commerce.test.js`, moved and re-pointed at the new module. The `getAdobeCommerceClient` describe block from that same root file is **not** migrated — that function isn't part of `payment-method/` (see "Context for the implementer").
 
@@ -568,16 +521,16 @@ describe("webhookVerify", () => {
 });
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [ ] **Step 3: Run the test to verify it passes**
 
 Run: `cd payment-method && npx vitest run test/lib/webhook.test.js`
 Expected: `5 passed`
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add payment-method/lib/http.js payment-method/lib/webhook.js payment-method/test/lib/webhook.test.js
-git commit -m "Extract webhook signature helpers into payment-method/lib"
+git add payment-method/lib/webhook.js payment-method/test/lib/webhook.test.js
+git commit -m "Extract webhookVerify signature check into payment-method/lib"
 ```
 
 ---
@@ -591,7 +544,7 @@ git commit -m "Extract webhook signature helpers into payment-method/lib"
 - Create: `payment-method/actions/filter-payment/index.js`
 
 **Interfaces:**
-- Consumes: `webhookVerify`, `webhookSuccessResponse`, `webhookErrorResponse` from `../../lib/webhook.js` (Task 3); `HTTP_OK` from `../../lib/http.js` (Task 3).
+- Consumes: `webhookVerify` from `../../lib/webhook.js` (Task 3); `ok`, `successOperation`, `exceptionOperation`, `addOperation` from `@adobe/aio-commerce-sdk/webhooks/responses`; `HTTP_OK` from `@adobe/aio-commerce-sdk/core/responses`.
 - Produces: `main` (instrumented) exported from both action files, registered in `payment-method/app.config.yaml` in Task 6.
 
 - [ ] **Step 1: Create `payment-method/actions/checkout-metrics.js`**
@@ -647,7 +600,7 @@ Metric names (`checkout.validate_payment.requests_total`, `checkout.filter_payme
 
 - [ ] **Step 2: Create `payment-method/actions/telemetry.js`**
 
-Copy verbatim from the root `actions/telemetry.js`, only changing the `serviceName` so telemetry from this app is attributable separately from the other three domains, and pointing the `HTTP_OK` import at the local `lib/http.js`:
+Copy verbatim from the root `actions/telemetry.js`, changing the `serviceName` so telemetry from this app is attributable separately from the other three domains, and pointing the `HTTP_OK` import at `@adobe/aio-commerce-sdk/core/responses` (there is no local `lib/http.js` in this app — see Task 3):
 
 ```js
 /*
@@ -679,8 +632,7 @@ import {
   getAioRuntimeResource,
   getPresetInstrumentations,
 } from "@adobe/aio-lib-telemetry";
-
-import { HTTP_OK } from "../lib/http.js";
+import { HTTP_OK } from "@adobe/aio-commerce-sdk/core/responses";
 
 /** The telemetry configuration to be used across all payment-method actions */
 const telemetryConfig = defineTelemetryConfig((_params, _isDev) => {
@@ -719,7 +671,7 @@ Dropped `localCollectorConfig` (unused local-dev helper, commented out in the or
 
 - [ ] **Step 3: Create `payment-method/actions/validate-payment/index.js`**
 
-Copy verbatim from the root `actions/validate-payment/index.js`, only redirecting the webhook-helper import to the local `lib/webhook.js`:
+Copy from the root `actions/validate-payment/index.js`, keeping the control flow and messages byte-for-byte, but replacing every `webhookErrorResponse(message)` call with `ok(exceptionOperation(message))` and every `webhookSuccessResponse()` call with `ok(successOperation())` — both imported from `@adobe/aio-commerce-sdk/webhooks/responses` per the design spec's "SDK packages (beta)" section. `webhookVerify` still comes from the local `lib/webhook.js` (Task 3), unchanged:
 
 ```js
 /*
@@ -738,12 +690,13 @@ import {
   getInstrumentationHelpers,
   instrumentEntrypoint,
 } from "@adobe/aio-lib-telemetry";
-
 import {
-  webhookErrorResponse,
-  webhookSuccessResponse,
-  webhookVerify,
-} from "../../lib/webhook.js";
+  exceptionOperation,
+  ok,
+  successOperation,
+} from "@adobe/aio-commerce-sdk/webhooks/responses";
+
+import { webhookVerify } from "../../lib/webhook.js";
 import { checkoutMetrics } from "../checkout-metrics.js";
 import { isWebhookSuccessful, telemetryConfig } from "../telemetry.js";
 
@@ -752,7 +705,7 @@ import { isWebhookSuccessful, telemetryConfig } from "../telemetry.js";
  * It has to be configured as Commerce Webhook in the Adobe Commerce Admin.
  *
  * @param {object} params input parameters
- * @returns {Promise<{statusCode: number, body: {op: string}}>} the response object
+ * @returns {Promise<{type: string, statusCode: number, body: {op: string}}>} the response object
  * @see https://developer.adobe.com/commerce/extensibility/webhooks
  */
 function validatePayment(params) {
@@ -768,8 +721,8 @@ function validatePayment(params) {
         status: "error",
         error_code: "verification_failed",
       });
-      return webhookErrorResponse(
-        `Failed to verify the webhook signature: ${error}`,
+      return ok(
+        exceptionOperation(`Failed to verify the webhook signature: ${error}`),
       );
     }
 
@@ -798,7 +751,7 @@ function validatePayment(params) {
         status: "success",
         result: "not_supported",
       });
-      return webhookSuccessResponse();
+      return ok(successOperation());
     }
 
     if (!paymentInfo) {
@@ -812,8 +765,10 @@ function validatePayment(params) {
         status: "error",
         error_code: "missing_info",
       });
-      return webhookErrorResponse(
-        "payment_additional_information not found in the request",
+      return ok(
+        exceptionOperation(
+          "payment_additional_information not found in the request",
+        ),
       );
     }
 
@@ -826,14 +781,14 @@ function validatePayment(params) {
 
     checkoutMetrics.validatePaymentCounter.add(1, { status: "success" });
 
-    return webhookSuccessResponse();
+    return ok(successOperation());
   } catch (error) {
     logger.error("Error in payment validation:", error);
     checkoutMetrics.validatePaymentCounter.add(1, {
       status: "error",
       error_code: "exception",
     });
-    return webhookErrorResponse(`Server error: ${error.message}`);
+    return ok(exceptionOperation(`Server error: ${error.message}`));
   }
 }
 
@@ -844,9 +799,11 @@ export const main = instrumentEntrypoint(validatePayment, {
 });
 ```
 
+Response-shape mapping (verified against `packages/aio-commerce-lib-webhooks/source/responses/operations/presets.ts` and `.../responses/presets.ts` in `aio-commerce-sdk`): the original `webhookErrorResponse(message)` returned `{ statusCode: 200, body: { op: "exception", message } }`; `ok(exceptionOperation(message))` returns `{ type: "success", statusCode: 200, body: { op: "exception", message } }` — same `statusCode`/`body` Commerce reads, plus an additive `type` field that Adobe I/O Runtime ignores. Likewise `webhookSuccessResponse()` → `ok(successOperation())` maps `{ statusCode: 200, body: { op: "success" } }` to the same shape plus `type: "success"`.
+
 - [ ] **Step 4: Create `payment-method/actions/filter-payment/index.js`**
 
-Copy verbatim from the root `actions/filter-payment/index.js`, redirecting the webhook-helper import to `../../lib/webhook.js` and the `HTTP_OK` import to `../../lib/http.js`:
+Copy from the root `actions/filter-payment/index.js`, keeping the filtering logic byte-for-byte, but: (a) replace `webhookErrorResponse(message)` with `ok(exceptionOperation(message))`; (b) replace the local `createPaymentRemovalOperation(paymentCode)` helper with a direct call to the SDK's `addOperation("result", { code: paymentCode })` — it's the same shape (`{ op: "add", path: "result", value: { code: paymentCode } }`), so the local wrapper is no longer needed; (c) replace the final `{ statusCode: HTTP_OK, body: JSON.stringify(operations) }` with `ok(operations)`, which passes the array through as an actual array/object body instead of a pre-stringified string — see the "Wire-format note" in "Context for the implementer" above, and verify this in Task 11:
 
 ```js
 /*
@@ -865,9 +822,13 @@ import {
   getInstrumentationHelpers,
   instrumentEntrypoint,
 } from "@adobe/aio-lib-telemetry";
+import {
+  addOperation,
+  exceptionOperation,
+  ok,
+} from "@adobe/aio-commerce-sdk/webhooks/responses";
 
-import { webhookErrorResponse, webhookVerify } from "../../lib/webhook.js";
-import { HTTP_OK } from "../../lib/http.js";
+import { webhookVerify } from "../../lib/webhook.js";
 import { checkoutMetrics } from "../checkout-metrics.js";
 import { isWebhookSuccessful, telemetryConfig } from "../telemetry.js";
 
@@ -877,7 +838,7 @@ import { isWebhookSuccessful, telemetryConfig } from "../telemetry.js";
  * It has to be configured as Commerce Webhook in the Adobe Commerce Admin.
  *
  * @param {object} params the input parameters
- * @returns {Promise<{statusCode: number, body: {op: string}}>} the response object
+ * @returns {Promise<{type: string, statusCode: number, body: object}>} the response object
  * @see https://developer.adobe.com/commerce/extensibility/webhooks
  */
 function filterPayment(params) {
@@ -893,8 +854,8 @@ function filterPayment(params) {
         status: "error",
         error_code: "verification_failed",
       });
-      return webhookErrorResponse(
-        `Failed to verify the webhook signature: ${error}`,
+      return ok(
+        exceptionOperation(`Failed to verify the webhook signature: ${error}`),
       );
     }
 
@@ -910,7 +871,7 @@ function filterPayment(params) {
     const operations = [];
 
     // The payment method can be filtered out based on some conditions.
-    operations.push(createPaymentRemovalOperation("checkmo"));
+    operations.push(addOperation("result", { code: "checkmo" }));
 
     // If the Commerce customer is logged in, the payload contains customer data otherwise the customer is set to null
     // In the next example, the payment method is filtered out based on Customer group id
@@ -922,7 +883,7 @@ function filterPayment(params) {
       Object.hasOwn(Customer, "group_id") &&
       Customer.group_id === "1"
     ) {
-      operations.push(createPaymentRemovalOperation("cashondelivery"));
+      operations.push(addOperation("result", { code: "cashondelivery" }));
     }
 
     // The payment method can be filtered out based on product custom attribute values.
@@ -936,7 +897,7 @@ function filterPayment(params) {
         cartItem?.product?.attributes ?? {};
 
       if (country.toLowerCase() === "china") {
-        operations.push(createPaymentRemovalOperation("banktransfer"));
+        operations.push(addOperation("result", { code: "banktransfer" }));
       }
     }
 
@@ -944,34 +905,15 @@ function filterPayment(params) {
 
     checkoutMetrics.filterPaymentCounter.add(1, { status: "success" });
 
-    return {
-      statusCode: HTTP_OK,
-      body: JSON.stringify(operations),
-    };
+    return ok(operations);
   } catch (error) {
     logger.error("Error in payment filtering:", error);
     checkoutMetrics.filterPaymentCounter.add(1, {
       status: "error",
       error_code: "exception",
     });
-    return webhookErrorResponse(`Server error: ${error.message}`);
+    return ok(exceptionOperation(`Server error: ${error.message}`));
   }
-}
-
-/**
- * Creates a payment removal operation
- *
- * @param {string} paymentCode - The code of the payment method that needs to be filtered out
- * @returns {object} The payment removal operation object
- */
-function createPaymentRemovalOperation(paymentCode) {
-  return {
-    op: "add",
-    path: "result",
-    value: {
-      code: paymentCode,
-    },
-  };
 }
 
 // Export the instrumented function as main
@@ -981,6 +923,8 @@ export const main = instrumentEntrypoint(filterPayment, {
 });
 ```
 
+Response-shape mapping: `createPaymentRemovalOperation(paymentCode)` returned `{ op: "add", path: "result", value: { code: paymentCode } }` — exactly `addOperation("result", { code: paymentCode })`'s output, so the helper is now a redundant wrapper and is dropped (DRY). The original success return was `{ statusCode: 200, body: JSON.stringify(operations) }` (a string); `ok(operations)` returns `{ type: "success", statusCode: 200, body: operations }` (the actual array). `telemetry.js`'s `isWebhookSuccessful(result)` still works unmodified against this: `typeof result.body === "object"` is `true` for an array too, and `result.body.op` is `undefined` on an array (no top-level `op` field), so `undefined !== "exception"` correctly reports success.
+
 - [ ] **Step 5: Commit**
 
 ```bash
@@ -988,7 +932,7 @@ git add payment-method/actions/checkout-metrics.js payment-method/actions/teleme
 git commit -m "Relocate validate-payment and filter-payment actions into payment-method"
 ```
 
-No new tests here: there were no pre-existing tests for `validate-payment`/`filter-payment` in the root repo (`test/scripts/create-payment-methods.test.js` and `test/lib/adobe-commerce.test.js` are the only payment-touching test files, both handled in Task 3 and Task 8) — nothing to move for these two action files, and the design spec's non-goal ("no change to checkout business logic") means this plan doesn't add new behavioral tests for unchanged logic.
+No new tests here: there were no pre-existing tests for `validate-payment`/`filter-payment` in the root repo (`test/scripts/create-payment-methods.test.js` and `test/lib/adobe-commerce.test.js` are the only payment-touching test files, both handled in Task 3 and Task 8) — nothing to move for these two action files. The checkout business logic itself is unchanged (design spec non-goal), but the response-*building* mechanism did change (hand-rolled objects → SDK builders); Task 11's verification pass includes a manual check of the actual emitted response shapes for both actions before considering this task done, in lieu of adding new telemetry-mocked test scaffolding that doesn't exist anywhere else in this app.
 
 ---
 
@@ -1457,9 +1401,10 @@ This task exists because the design spec explicitly lists `validate-payment`/`fi
 
 `validate-payment` and `filter-payment` do not call the Adobe Commerce REST API
 today — they only verify the incoming webhook signature (`webhookVerify`) and
-return a webhook response (`webhookSuccessResponse`/`webhookErrorResponse`).
-Neither action instantiates a Commerce HTTP client, so there is currently
-nothing to swap between the legacy hand-rolled OAuth1/IMS client and the SDK's
+return a webhook operation response built with `@adobe/aio-commerce-sdk/webhooks/responses`
+(`ok`, `successOperation`, `exceptionOperation`, `addOperation`). Neither
+action instantiates a Commerce HTTP client, so there is currently nothing to
+swap between the legacy hand-rolled OAuth1/IMS client and the SDK's
 association-based `getCommerceClient`/`getCommerceInstance`.
 
 The install-time script (`scripts/create-payment-methods.js`) already uses the
@@ -1584,6 +1529,17 @@ pointing at your deployed action URLs:
 - `filter-payment`: register on the payment method list webhook, to filter
   out-of-process payment methods from checkout.
 
+This step is manual, not a custom installation step. The SDK's
+`@adobe/aio-commerce-lib-webhooks/api` `subscribeWebhook` could in principle
+automate it, but `validate-payment`'s exact `webhook_method` name is
+payment-gateway-specific (it varies per out-of-process payment method type,
+not a single well-known constant), so automating it would mean either
+guessing an unverified Commerce API contract or adding a new configuration
+input just to hold that method name. Given that risk for a documentation-only
+convenience, this app keeps the manual step; revisit if a later domain (e.g.
+`tax-integration/`, which has fixed, well-known webhook method names) proves
+the automated pattern out first.
+
 ## Runtime auth strategy
 
 `validate-payment` and `filter-payment` don't call the Commerce REST API
@@ -1621,6 +1577,30 @@ git commit -m "Add payment-method README"
 
 Run: `cd payment-method && npm test`
 Expected: all test files pass (`test/lib/webhook.test.js` — 5 tests, `test/scripts/create-payment-methods.test.js` — 3 tests).
+
+- [ ] **Step 1a: Manually verify the new webhook response shapes**
+
+Task 4 swapped `validate-payment`/`filter-payment`'s hand-rolled `webhookSuccessResponse`/`webhookErrorResponse` for the SDK's `ok`/`successOperation`/`exceptionOperation`/`addOperation` builders. There are no pre-existing tests for these two actions to catch a regression here, so drive them directly with a throwaway script before considering the migration done:
+
+```bash
+cd payment-method
+node -e '
+import("@adobe/aio-commerce-sdk/webhooks/responses").then(({ ok, successOperation, exceptionOperation, addOperation }) => {
+  console.log(JSON.stringify(ok(successOperation())));
+  console.log(JSON.stringify(ok(exceptionOperation("test error"))));
+  console.log(JSON.stringify(ok([addOperation("result", { code: "checkmo" })])));
+});
+'
+```
+
+Expected output (three lines):
+```
+{"type":"success","statusCode":200,"body":{"op":"success"}}
+{"type":"success","statusCode":200,"body":{"op":"exception","message":"test error"}}
+{"type":"success","statusCode":200,"body":[{"op":"add","path":"result","value":{"code":"checkmo"}}]}
+```
+
+Confirm `statusCode` is `200` and `body` carries the same `op`/`message`/`path`/`value` fields Commerce's webhook contract expects (per https://developer.adobe.com/commerce/extensibility/webhooks/responses/#responses) in all three cases — the extra top-level `type` field is additive and Adobe I/O Runtime ignores it. Pay particular attention to the third line: it must be a JSON array under `body`, not a JSON-encoded string (this is the wire-format change flagged in "Context for the implementer" for `filter-payment`) — if this ever needs to become a pre-stringified string again, wrap it explicitly (`JSON.stringify(ok(operations))` is wrong, since the SDK's `ok()` already returns a plain object — the return value from `filter-payment`'s handler should be the object from `ok(operations)` as-is).
 
 - [ ] **Step 2: Run lint/format checks**
 
@@ -1661,7 +1641,12 @@ git commit -m "Add payment-method implementation plan; sync updated domain-split
 - README following App Management flow, payment-specific guidance only → Task 10.
 - Tests moved + new install-step tests → Task 3 (webhook tests), Task 8 (new install-step tests).
 - Folder is `payment-method/` at repo root, not `apps/payment/` → applied throughout after the coordinator's correction.
+- `@adobe/aio-commerce-sdk@1.4.0-beta-20260702145741` added as a dependency, `@adobe/aio-commerce-lib-app` pinned to `1.8.0-beta-20260702145741` → Task 1.
+- `webhookSuccessResponse`/`webhookErrorResponse` dropped, replaced by `@adobe/aio-commerce-sdk/webhooks/responses`' `successOperation`/`exceptionOperation`/`addOperation` wrapped in `ok()`, with both actions' response shapes mapped explicitly → Task 3 (removal), Task 4 (`validate-payment`/`filter-payment` rewrite with shape-mapping notes).
+- `webhookVerify` unaffected, still hand-rolled → Task 3.
+- `@adobe/aio-commerce-sdk/core/*` adopted only where a clean drop-in: `HTTP_OK` from `core/responses` replaces the now-dropped local `lib/http.js` → Task 2, Task 3, Task 4. `actions/utils.js`'s helpers were not touched — neither `validate-payment` nor `filter-payment` ever imported them, so there's nothing to replace there.
+- `subscribeWebhook` optional enhancement considered and explicitly declined (payment-gateway-specific webhook method name for `validate-payment` isn't a safe constant to automate against), decision documented in the README rather than silently skipped → Task 10.
 
 **Placeholder scan** — no "TBD"/"handle appropriately" left; every step shows complete file contents or an exact command with expected output.
 
-**Type/name consistency** — `webhookVerify`/`webhookSuccessResponse`/`webhookErrorResponse` and `HTTP_OK` names match between Task 3 (definition) and Task 4 (consumption). `createPaymentMethodsStep.install(config, context)` signature matches between Task 8's test and implementation. `context.params`/`context.logger`/`context.configFilePath` naming is consistent between the test and the script.
+**Type/name consistency** — `webhookVerify` and `HTTP_OK` names match between Task 3/Task 2 (definition/import source) and Task 4 (consumption). `ok`/`successOperation`/`exceptionOperation`/`addOperation` import names and call shapes are consistent between the "Context for the implementer" contract list and Task 4's `validate-payment`/`filter-payment` rewrites. `createPaymentMethodsStep.install(config, context)` signature matches between Task 8's test and implementation (unaffected by this revision — the install step never used the webhook-response helpers). `context.params`/`context.logger`/`context.configFilePath` naming is consistent between the test and the script.
