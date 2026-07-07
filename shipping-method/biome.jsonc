@@ -1,0 +1,62 @@
+{
+  // "root: false" (not "fully independent" in the strict sense) is required so this config
+  // merges with the outer monolith's root biome.jsonc instead of conflicting with it. Biome 2.x
+  // refuses to run when two "root" configs are both in scope for one invocation, which the
+  // outer repo's husky/lint-staged pre-commit hook (npm run code:fix, repo-wide) triggers on
+  // every commit that touches files under this directory. This app's own rules below still
+  // apply on top of the merge; standalone runs from within shipping-method/ are unaffected.
+  "root": false,
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "extends": ["ultracite/biome/core"],
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignoreUnknown": true,
+    "includes": ["!**/.generated"]
+  },
+  "javascript": {
+    "formatter": {
+      "arrowParentheses": "always",
+      "bracketSameLine": true,
+      "jsxQuoteStyle": "double",
+      "quoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "all"
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": {
+          "level": "on",
+          "options": {
+            "groups": [
+              { "type": false, "source": [":BUN:", ":NODE:"] },
+              ":BLANK_LINE:",
+              {
+                "type": false,
+                "source": [":PACKAGE:", ":PACKAGE_WITH_PROTOCOL:"]
+              },
+              ":BLANK_LINE:",
+              { "type": false, "source": [":ALIAS:"] },
+              ":BLANK_LINE:",
+              { "type": false, "source": [":PATH:"] },
+              ":BLANK_LINE:",
+              { "type": true, "source": [":BUN:", ":NODE:"] },
+              {
+                "type": true,
+                "source": [":PACKAGE:", ":PACKAGE_WITH_PROTOCOL:"]
+              },
+              { "type": true, "source": [":ALIAS:"] },
+              { "type": true, "source": [":PATH:"] }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

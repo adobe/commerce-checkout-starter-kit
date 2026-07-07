@@ -1,0 +1,37 @@
+
+# The [pre-app-build] hooks are auto-generated. Do not remove or manually edit.
+hooks:
+  pre-app-build: EXTENSION=extensibility/1 npx aio-commerce-lib-app hooks pre-app-build
+
+operations:
+  # These worker processes definitions are auto-generated. Do not remove or manually edit.
+  workerProcess:
+    - type: action
+      impl: app-management/app-config
+    - type: action
+      impl: app-management/association
+
+runtimeManifest:
+  packages:
+    # This package definition is auto-generated. Do not remove or manually edit.
+    app-management:
+      license: Apache-2.0
+      actions:
+        app-config:
+          function: .generated/actions/app-management/app-config.js
+          web: yes
+          runtime: nodejs:24
+          inputs:
+            LOG_LEVEL: $LOG_LEVEL
+          annotations:
+            require-adobe-auth: true
+            final: true
+        association:
+          function: .generated/actions/app-management/association.js
+          web: yes
+          runtime: nodejs:24
+          inputs:
+            LOG_LEVEL: $LOG_LEVEL
+          annotations:
+            require-adobe-auth: true
+            final: true
