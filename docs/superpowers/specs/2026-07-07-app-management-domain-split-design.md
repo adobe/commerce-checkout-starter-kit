@@ -219,6 +219,25 @@ Mechanically, this means wiring `AIO_COMMERCE_AUTH_IMS_CLIENT_ID` /
 Note: `totals-collector/` never calls Commerce at all (pure webhook payload transforms), so this
 auth swap is not applicable there regardless of how the spike goes.
 
+## File layout: avoid a reflexive shared `lib/`
+
+Don't default to a shared `lib/` folder just because the old monolith had one. Two rules:
+
+- **Single-consumer helpers colocate with their one caller**, not in `lib/`. If only one action in
+  a domain needs a helper (e.g. `webhookVerify` in `shipping-method/`, where `shipping-methods` is
+  the domain's only webhook action), put it next to that action. Domains where 2+ actions share a
+  helper (payment's `validate-payment`+`filter-payment`, tax's `collect-taxes`+
+  `collect-adjustment-taxes`, fees's 9 discount actions) still warrant a shared file — the
+  single-consumer rule doesn't apply there.
+- **Never hand-roll a Commerce HTTP client or auth flow** — not even for a "just a dev script"
+  helper like `shipping-method/scripts/get-shipping-carriers.js`. Use
+  `@adobe/aio-commerce-lib-api`'s `AdobeCommerceHttpClient` + `resolveCommerceHttpClientParams`
+  (from `@adobe/aio-commerce-lib-api/commerce`), which wraps `@adobe/aio-commerce-lib-auth`
+  internally and replaces a hand-rolled got+oauth-1.0a+IMS client in a handful of lines. This
+  applies to any script or action that needs to call Commerce directly and isn't inside a
+  `defineCustomInstallationStep` (which already uses `getCommerceClient` from
+  `@adobe/aio-commerce-lib-app` for the association-based case).
+
 ## Webhook subscriptions (declarative `webhooks` config)
 
 `@adobe/aio-commerce-lib-app`'s `defineConfig` has a top-level `webhooks` array (see the SDK's
