@@ -14,19 +14,29 @@ produces `src/commerce-extensibility-1/` — an extension point containing an au
 `app.commerce.config.ts` during App Management install/association) plus a `shipping-method` and a
 `commerce-checkout-starter-kit` user package we hand-maintain for our own runtime actions. The
 `shipping-methods` webhook action's business logic (payload parsing, operations list, telemetry) is
-carried over byte-for-byte; only its module boundaries change. The experimental piece — swapping
-this webhook action's own outbound Commerce auth from OAuth1 to the SDK's
-`getCommerceClient`/`getCommerceInstance` — is validated with a throwaway spike (Task 8) *before* any
-production code depends on the outcome, per the design spec.
+carried over byte-for-byte; only its module boundaries change — webhook signature verification stays
+hand-rolled, but the response/operation objects it builds now come from
+`@adobe/aio-commerce-sdk/webhooks/responses`' typed builders instead of ad-hoc object literals. The
+experimental piece — swapping this webhook action's own outbound Commerce auth from OAuth1 to the
+SDK's `getCommerceClient`/`getCommerceInstance` — is validated with a throwaway spike (Task 8)
+*before* any production code depends on the outcome, per the design spec.
 
 **Tech Stack:** Adobe App Builder (`aio` CLI, Adobe I/O Runtime), `@adobe/aio-commerce-lib-app`
-(config + custom installation steps + association-based Commerce client),
-`@adobe/aio-commerce-lib-auth` (`resolveImsAuthParams`), `@adobe/aio-lib-telemetry`, Vitest, Biome
-(`ultracite` preset), `nock` for HTTP mocking, `js-yaml`, `got` + `oauth-1.0a` (legacy Commerce
-client, dev-script only).
+(config + custom installation steps + association-based Commerce client), `@adobe/aio-commerce-sdk`
+(meta-package re-exporting `@adobe/aio-commerce-lib-webhooks` via `webhooks/*` and
+`@adobe/aio-commerce-lib-core` via `core/*`), `@adobe/aio-commerce-lib-auth`
+(`resolveImsAuthParams`), `@adobe/aio-lib-telemetry`, Vitest, Biome (`ultracite` preset), `nock` for
+HTTP mocking, `js-yaml`, `got` + `oauth-1.0a` (legacy Commerce client, dev-script only).
 
 ## Global Constraints
 
+- **Beta SDK package pins** (design spec, "SDK packages (beta)" — released versions don't yet cover
+  everything this migration needs):
+  - `@adobe/aio-commerce-lib-app@1.8.0-beta-20260702145741`
+  - `@adobe/aio-commerce-sdk@1.4.0-beta-20260702145741`
+  Neither `@adobe/aio-commerce-lib-webhooks` nor `@adobe/aio-commerce-lib-core` are installed
+  directly — always import their functionality through `@adobe/aio-commerce-sdk`'s `webhooks/*` and
+  `core/*` subpath exports.
 - Domain folder is a **top-level directory**, `shipping-method/`, directly under the repo root — NOT
   nested under a shared `apps/` parent. (Design spec, "Target repo layout".)
 - `shipping-method/` is fully self-contained: its own `package.json`, `app.config.yaml`,
@@ -43,9 +53,16 @@ client, dev-script only).
 - The `commerce-checkout-starter-kit/info` action must not change — only relocate/duplicate it
   byte-for-byte, including its package name (`commerce-checkout-starter-kit`), since that name is
   part of the tracked action identity. (Original task instructions; design spec "Extras".)
-- `webhookVerify`, `webhookSuccessResponse`, `webhookErrorResponse` get their own copy in
-  `shipping-method/`, split out of the Commerce-HTTP-client parts of `lib/adobe-commerce.js`. (Design
-  spec, "Extras".)
+- `webhookVerify` (signature check) gets its own copy in `shipping-method/`, hand-rolled — no SDK
+  package implements webhook signature verification. `webhookSuccessResponse`/`webhookErrorResponse`
+  are **not** carried forward; the response/operation objects `shipping-methods` builds now come from
+  `@adobe/aio-commerce-sdk/webhooks/responses`' typed builders (`successOperation`,
+  `exceptionOperation`, `addOperation`, `replaceOperation`, `removeOperation`). (Design spec, "SDK
+  packages (beta)" and "Extras".)
+- Generic action utilities (`HTTP_*` status constants, `allNonEmpty`) are sourced from
+  `@adobe/aio-commerce-sdk/core/responses` and `@adobe/aio-commerce-sdk/core/params` wherever they're
+  a clean drop-in, rather than maintained as local `lib/http.js`/`lib/params.js` copies. (Design
+  spec, "SDK packages (beta)".)
 - `scripts/create-shipping-carriers.js` becomes a `defineCustomInstallationStep` wired into
   `app.commerce.config.ts`'s `installation.customInstallationSteps`.
   `scripts/get-shipping-carriers.js` stays a plain helper script, not an installation step. (Design
@@ -67,8 +84,8 @@ client, dev-script only).
 ## Key finding (read before starting Task 8)
 
 `actions/shipping-methods/index.js` **does not call the Commerce REST API today**. It only calls
-`webhookVerify`/`webhookErrorResponse` (signature verification against `COMMERCE_WEBHOOKS_PUBLIC_KEY`
-— no OAuth/IMS credentials involved) and then returns a computed JSON‑Patch-style operations list. Its
+`webhookVerify` (signature verification against `COMMERCE_WEBHOOKS_PUBLIC_KEY` — no OAuth/IMS
+credentials involved) and then returns a computed JSON‑Patch-style operations list. Its
 `app.config.yaml` entry has no `OAUTH_*` inputs. There is therefore no existing outbound Commerce call
 inside this action to literally "swap" from OAuth1 to `getCommerceClient`. Task 8's spike validates
 the underlying **mechanism** (can `getCommerceClient`/`getCommerceInstance` — which read association
@@ -79,6 +96,26 @@ inside a `raw-http: true` / `require-adobe-auth: false` action) using a throwawa
 without adding a permanent, needless Commerce call to the shipped action. The GO/NO-GO result is
 recorded for reuse by the payment/tax domain plans, where the analogous webhook actions may have a
 real call to swap (out of scope here to verify).
+
+## Decision: manual "Create Webhooks" step, not a `customInstallationStep`
+
+The design spec's optional enhancement — using `@adobe/aio-commerce-lib-webhooks/api`'s
+`subscribeWebhook` to turn the manual webhook-registration README step into a
+`customInstallationStep` — is **skipped for this app**. Reasons:
+- `subscribeWebhook` is designed for webhooks declared in `app.commerce.config.ts`'s native
+  `webhooks` array (`runtimeAction: "<package>/<action>"`), which the `commerce-app-webhooks` skill
+  shows generating actions annotated only `require-adobe-auth: true` — not the
+  `raw-http: true` / `require-adobe-auth: false` + hand-rolled-signature pattern this plan keeps for
+  `shipping-methods` per the design spec's "Auth strategy" section. Adopting it would mean adopting a
+  second, different webhook-registration mechanism alongside the existing one, not a clean drop-in.
+  Exact scope was not investigated further, so keeping the manual step avoids
+  guessing at Commerce webhook-subscription fields (`webhook_method`, `batch_name`, etc.) that this
+  plan cannot currently verify.
+- The root README's own "Create Webhooks" section is itself incomplete for shipping today (it only
+  documents `collect-taxes` as a worked example), so there is no existing manual step this would
+  even be replacing for the shipping domain specifically.
+
+Task 10's README documents the webhook registration step manually, as originally planned.
 
 ---
 
@@ -95,10 +132,12 @@ real call to swap (out of scope here to verify).
   `shipping-method/src/commerce-extensibility-1/`, `shipping-method/src/commerce-configuration-1/`
 
 **Interfaces:**
-- Produces: a buildable App Builder project at `shipping-method/` that later tasks add actions,
-  scripts, and config to.
+- Produces: a buildable App Builder project at `shipping-method/`, with
+  `@adobe/aio-commerce-lib-app@1.8.0-beta-20260702145741` and
+  `@adobe/aio-commerce-sdk@1.4.0-beta-20260702145741` pinned in `package.json`, that later tasks add
+  actions, scripts, and config to.
 
-- [ ] **Step 1: Create the directory and a minimal `package.json`**
+- [ ] **Step 1: Create the directory and a minimal `package.json`, with the beta SDK packages pinned**
 
 ```bash
 mkdir -p shipping-method
@@ -126,7 +165,10 @@ mkdir -p shipping-method
     "code:fix": "npx biome check --write .",
     "get-shipping-carriers": "node scripts/get-shipping-carriers.js"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@adobe/aio-commerce-lib-app": "1.8.0-beta-20260702145741",
+    "@adobe/aio-commerce-sdk": "1.4.0-beta-20260702145741"
+  },
   "devDependencies": {
     "@biomejs/biome": "^2.4.0",
     "@vitest/coverage-v8": "^4.0.7",
@@ -154,16 +196,19 @@ export default defineConfig({
 });
 ```
 
-- [ ] **Step 3: Run the App Management init generator**
+- [ ] **Step 3: Run the App Management init generator, pinned to the exact beta version**
 
 ```bash
 cd shipping-method
-npx @adobe/aio-commerce-lib-app init
+npx @adobe/aio-commerce-lib-app@1.8.0-beta-20260702145741 init
 ```
 
-Expected: installs `@adobe/aio-commerce-sdk` and `@adobe/aio-commerce-lib-app` into
-`package.json`, finds the existing `app.commerce.config.ts` (skips interactive prompts since it's
-already present), and generates:
+Using the versioned `npx` invocation (rather than the unversioned form) ensures the generator
+self-installs the same `@adobe/aio-commerce-lib-app` beta pin already declared in `package.json`,
+instead of resolving to whatever is latest/stable on the registry.
+
+Expected: finds the existing `app.commerce.config.ts` (skips interactive prompts since it's already
+present) and generates:
 - `src/commerce-extensibility-1/` — contains the auto-generated `app-management` package (do not
   hand-edit that package's block; the build hook regenerates it every time)
 - `src/commerce-configuration-1/` — business-config extension point (unused by shipping, left empty)
@@ -171,10 +216,25 @@ already present), and generates:
 - a `postinstall` hook in `package.json` (re-runs generation after future `npm install`)
 
 If the command prompts interactively for `appName`/`domains` despite the existing config, re-run
-with `npx @adobe/aio-commerce-lib-app init --appName checkout-shipping-method` and pick no
-additional domains (shipping has no eventing/business-config/admin-ui needs).
+with `npx @adobe/aio-commerce-lib-app@1.8.0-beta-20260702145741 init --appName checkout-shipping-method`
+and pick no additional domains (shipping has no eventing/business-config/admin-ui needs).
 
-- [ ] **Step 4: Add `biome.jsonc` (trimmed — no admin UI, no backend-ui overrides)**
+- [ ] **Step 4: Verify the pinned versions survived generation**
+
+```bash
+cd shipping-method
+node -p "require('./package.json').dependencies['@adobe/aio-commerce-lib-app']"
+node -p "require('./package.json').dependencies['@adobe/aio-commerce-sdk']"
+```
+
+Expected: both print `1.8.0-beta-20260702145741` / `1.4.0-beta-20260702145741` respectively. If
+`init` overwrote either with a different resolved version, re-pin manually:
+
+```bash
+npm pkg set dependencies["@adobe/aio-commerce-lib-app"]="1.8.0-beta-20260702145741" dependencies["@adobe/aio-commerce-sdk"]="1.4.0-beta-20260702145741"
+```
+
+- [ ] **Step 5: Add `biome.jsonc` (trimmed — no admin UI, no backend-ui overrides)**
 
 ```jsonc
 // shipping-method/biome.jsonc
@@ -228,7 +288,7 @@ additional domains (shipping has no eventing/business-config/admin-ui needs).
 }
 ```
 
-- [ ] **Step 5: Add `vitest.config.js` and `vitest.setup.js` scoped to this app's own tree**
+- [ ] **Step 6: Add `vitest.config.js` and `vitest.setup.js` scoped to this app's own tree**
 
 ```js
 // shipping-method/vitest.config.js
@@ -265,7 +325,7 @@ beforeEach(() => {
 });
 ```
 
-- [ ] **Step 6: Add `env.dist` documenting required environment variables (filled in across later tasks)**
+- [ ] **Step 7: Add `env.dist` documenting required environment variables (filled in across later tasks)**
 
 ```bash
 # shipping-method/env.dist
@@ -293,7 +353,7 @@ OAUTH_IMS_ORG_ID=
 COMMERCE_BASE_URL=
 ```
 
-- [ ] **Step 7: Verify the scaffold builds**
+- [ ] **Step 8: Verify the scaffold builds**
 
 ```bash
 cd shipping-method
@@ -303,7 +363,7 @@ aio app build
 Expected: build completes without a config-validation error. (Requires `aio login` and a selected
 Developer Console workspace — see README Task 10 for the full first-time setup a developer runs.)
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
 git add shipping-method/
@@ -312,30 +372,22 @@ git commit -m "shipping-method: scaffold self-contained App Management project"
 
 ---
 
-### Task 2: Duplicate the webhook helpers (`webhookVerify`, `webhookSuccessResponse`, `webhookErrorResponse`)
+### Task 2: Duplicate the webhook signature verification helper (`webhookVerify`)
+
+`webhookSuccessResponse`/`webhookErrorResponse` are **not** carried forward — per the design spec's
+"SDK packages (beta)" section, the response/operation objects `shipping-methods` builds now come from
+`@adobe/aio-commerce-sdk/webhooks/responses`' typed builders (wired up in Task 6).
+`webhookVerify` has no SDK equivalent and stays hand-rolled.
 
 **Files:**
-- Create: `shipping-method/lib/http.js`
 - Create: `shipping-method/lib/webhook.js`
 - Test: `shipping-method/test/lib/webhook.test.js`
 
 **Interfaces:**
-- Produces: `webhookVerify(params)`, `webhookSuccessResponse()`, `webhookErrorResponse(message)` from
-  `shipping-method/lib/webhook.js`; `HTTP_OK` from `shipping-method/lib/http.js`. Consumed by Task 6
+- Produces: `webhookVerify(params)` from `shipping-method/lib/webhook.js`. Consumed by Task 6
   (`shipping-methods` action).
 
-- [ ] **Step 1: Create `lib/http.js` (copied verbatim — shipping only needs `HTTP_OK`, keep the others for parity with other domains' copies)**
-
-```js
-// shipping-method/lib/http.js
-export const HTTP_BAD_REQUEST = 400;
-export const HTTP_INTERNAL_ERROR = 500;
-export const HTTP_NOT_FOUND = 404;
-export const HTTP_OK = 200;
-export const HTTP_UNAUTHORIZED = 401;
-```
-
-- [ ] **Step 2: Write the failing test for `lib/webhook.js`**
+- [ ] **Step 1: Write the failing test**
 
 ```js
 // shipping-method/test/lib/webhook.test.js
@@ -343,11 +395,7 @@ import crypto from "node:crypto";
 
 import { describe, expect, test } from "vitest";
 
-import {
-  webhookErrorResponse,
-  webhookSuccessResponse,
-  webhookVerify,
-} from "../../lib/webhook.js";
+import { webhookVerify } from "../../lib/webhook.js";
 
 describe("webhookVerify", () => {
   const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {
@@ -419,27 +467,9 @@ describe("webhookVerify", () => {
     });
   });
 });
-
-describe("webhookSuccessResponse", () => {
-  test("returns HTTP 200 with a success op", () => {
-    expect(webhookSuccessResponse()).toEqual({
-      statusCode: 200,
-      body: { op: "success" },
-    });
-  });
-});
-
-describe("webhookErrorResponse", () => {
-  test("returns HTTP 200 with an exception op and the given message", () => {
-    expect(webhookErrorResponse("boom")).toEqual({
-      statusCode: 200,
-      body: { op: "exception", message: "boom" },
-    });
-  });
-});
 ```
 
-- [ ] **Step 3: Run the test to verify it fails**
+- [ ] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd shipping-method && npx vitest run test/lib/webhook.test.js
@@ -447,45 +477,11 @@ cd shipping-method && npx vitest run test/lib/webhook.test.js
 
 Expected: FAIL — `Cannot find module '../../lib/webhook.js'`.
 
-- [ ] **Step 4: Implement `lib/webhook.js` (extracted from the monolith's `lib/adobe-commerce.js`, Commerce-HTTP-client parts stripped out)**
+- [ ] **Step 3: Implement `lib/webhook.js` (extracted from the monolith's `lib/adobe-commerce.js`; only `webhookVerify` is carried over)**
 
 ```js
 // shipping-method/lib/webhook.js
 import crypto from "node:crypto";
-
-import { HTTP_OK } from "./http.js";
-
-/**
- * Returns webhook response error according to Adobe Commerce Webhooks spec.
- *
- * @param {string} message the error message.
- * @returns {object} the response object
- * @see https://developer.adobe.com/commerce/extensibility/webhooks/responses/#responses
- */
-export function webhookErrorResponse(message) {
-  return {
-    statusCode: HTTP_OK,
-    body: {
-      op: "exception",
-      message,
-    },
-  };
-}
-
-/**
- * Returns webhook response success according to Adobe Commerce Webhooks spec.
- *
- * @returns {object} the response object
- * @see https://developer.adobe.com/commerce/extensibility/webhooks/responses/#responses
- */
-export function webhookSuccessResponse() {
-  return {
-    statusCode: HTTP_OK,
-    body: {
-      op: "success",
-    },
-  };
-}
 
 /**
  * Verifies the signature of the webhook request.
@@ -534,19 +530,19 @@ export function webhookVerify({
 }
 ```
 
-- [ ] **Step 5: Run the test to verify it passes**
+- [ ] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd shipping-method && npx vitest run test/lib/webhook.test.js
 ```
 
-Expected: PASS (9 tests).
+Expected: PASS (5 tests).
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add shipping-method/lib/http.js shipping-method/lib/webhook.js shipping-method/test/lib/webhook.test.js
-git commit -m "shipping-method: add standalone webhook verification helpers"
+git add shipping-method/lib/webhook.js shipping-method/test/lib/webhook.test.js
+git commit -m "shipping-method: add standalone webhook signature verification"
 ```
 
 ---
@@ -560,8 +556,11 @@ scripts/x.js` invocation outside a deployed action does not automatically have. 
 install-time step (Task 9) and the runtime webhook action spike (Task 8) are unaffected by this
 task — they use the new SDK client per the design spec.
 
+`lib/params.js` from the original plan draft is dropped: `@adobe/aio-commerce-sdk/core/params`'s
+`allNonEmpty(params, required)` has the identical signature and semantics (including the `aio app
+dev` `$VAR`-placeholder handling), so it's a clean drop-in.
+
 **Files:**
-- Create: `shipping-method/lib/params.js`
 - Create: `shipping-method/lib/adobe-auth.js`
 - Create: `shipping-method/lib/commerce-client.js`
 - Test: `shipping-method/test/lib/commerce-client.test.js`
@@ -571,40 +570,12 @@ task — they use the new SDK client per the design spec.
   `{ createOopeShippingCarrier, getOopeShippingCarrier, getOopeShippingCarriers }`. Consumed by Task 7
   (`get-shipping-carriers.js`).
 
-- [ ] **Step 1: Create `lib/params.js` (copied verbatim from the monolith's `lib/params.js`)**
-
-```js
-// shipping-method/lib/params.js
-/**
- * Checks if the given value is non-empty.
- *
- * @param {string} name of the parameter. Required because of `aio app dev` compatibility: inputs mapped to undefined env vars come as $<input_name> in dev mode, but as '' in prod mode.
- * @param {string} value of the parameter.
- * @returns {boolean} returns true if the value is non-empty, false otherwise.
- */
-export function nonEmpty(name, value) {
-  const v = value?.trim();
-  return v && v !== `$${name}`;
-}
-
-/**
- * Checks if all required parameters are non-empty.
- * @param {object} params action input parameters.
- * @param {string[]} required list of required parameter names.
- * @returns {boolean} returns true if all required parameters are non-empty, false otherwise.
- */
-export function allNonEmpty(params, required) {
-  return required.every((name) => nonEmpty(name, params[name]));
-}
-```
-
-- [ ] **Step 2: Create `lib/adobe-auth.js` (copied verbatim from the monolith's `lib/adobe-auth.js`)**
+- [ ] **Step 1: Create `lib/adobe-auth.js` (copied from the monolith's `lib/adobe-auth.js`, `allNonEmpty` now sourced from the SDK)**
 
 ```js
 // shipping-method/lib/adobe-auth.js
+import { allNonEmpty } from "@adobe/aio-commerce-sdk/core/params";
 import aioIms from "@adobe/aio-lib-ims";
-
-import { allNonEmpty } from "./params.js";
 
 const { context, getToken } = aioIms;
 
@@ -690,7 +661,7 @@ export async function resolveAuthOptions(params) {
 }
 ```
 
-- [ ] **Step 3: Write the failing test for `lib/commerce-client.js`**
+- [ ] **Step 2: Write the failing test for `lib/commerce-client.js`**
 
 ```js
 // shipping-method/test/lib/commerce-client.test.js
@@ -774,7 +745,7 @@ describe("getAdobeCommerceClient", () => {
 });
 ```
 
-- [ ] **Step 4: Run the test to verify it fails**
+- [ ] **Step 3: Run the test to verify it fails**
 
 ```bash
 cd shipping-method && npx vitest run test/lib/commerce-client.test.js
@@ -782,18 +753,18 @@ cd shipping-method && npx vitest run test/lib/commerce-client.test.js
 
 Expected: FAIL — `Cannot find module '../../lib/commerce-client.js'`.
 
-- [ ] **Step 5: Implement `lib/commerce-client.js` (trimmed to the shipping-carrier endpoints only)**
+- [ ] **Step 4: Implement `lib/commerce-client.js` (trimmed to the shipping-carrier endpoints only; `HTTP_INTERNAL_SERVER_ERROR` sourced from the SDK)**
 
 ```js
 // shipping-method/lib/commerce-client.js
 import crypto from "node:crypto";
 
 import { Core } from "@adobe/aio-sdk";
+import { HTTP_INTERNAL_SERVER_ERROR } from "@adobe/aio-commerce-sdk/core/responses";
 import got from "got";
 import Oauth1a from "oauth-1.0a";
 
 import { resolveAuthOptions } from "./adobe-auth.js";
-import { HTTP_INTERNAL_ERROR } from "./http.js";
 
 /**
  * Provides an instance of the Commerce HTTP client
@@ -920,13 +891,13 @@ export async function getAdobeCommerceClient(params) {
         logger.error("Error while calling Commerce API", e);
         return {
           success: false,
-          statusCode: HTTP_INTERNAL_ERROR,
+          statusCode: HTTP_INTERNAL_SERVER_ERROR,
           message: `Unexpected error, check logs. Original error "${e.message}"`,
         };
       }
       return {
         success: false,
-        statusCode: e.response?.statusCode || HTTP_INTERNAL_ERROR,
+        statusCode: e.response?.statusCode || HTTP_INTERNAL_SERVER_ERROR,
         message: e.message,
         body: e.responseBody,
       };
@@ -958,14 +929,14 @@ export async function getAdobeCommerceClient(params) {
 }
 ```
 
-- [ ] **Step 6: Add `got` and `oauth-1.0a` dependencies**
+- [ ] **Step 5: Add `got` and `oauth-1.0a` dependencies**
 
 ```bash
 cd shipping-method
 npm pkg set dependencies.got="^15.0.0" dependencies.oauth-1.0a="^2.2.6" dependencies["@adobe/aio-lib-ims"]="^8.0.0" dependencies["@adobe/aio-sdk"]="^6"
 ```
 
-- [ ] **Step 7: Run the test to verify it passes**
+- [ ] **Step 6: Run the test to verify it passes**
 
 ```bash
 cd shipping-method && npx vitest run test/lib/commerce-client.test.js
@@ -973,10 +944,10 @@ cd shipping-method && npx vitest run test/lib/commerce-client.test.js
 
 Expected: PASS (3 tests).
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add shipping-method/lib/params.js shipping-method/lib/adobe-auth.js shipping-method/lib/commerce-client.js shipping-method/test/lib/commerce-client.test.js shipping-method/package.json
+git add shipping-method/lib/adobe-auth.js shipping-method/lib/commerce-client.js shipping-method/test/lib/commerce-client.test.js shipping-method/package.json
 git commit -m "shipping-method: add legacy Commerce client for dev-only scripts"
 ```
 
@@ -1052,7 +1023,7 @@ export const checkoutMetrics = defineMetrics((meter) => {
 });
 ```
 
-- [ ] **Step 3: Create `telemetry.js` (import path adjusted for the new location)**
+- [ ] **Step 3: Create `telemetry.js` (`HTTP_OK` sourced from the SDK)**
 
 ```js
 // shipping-method/src/commerce-extensibility-1/actions/telemetry.js
@@ -1063,13 +1034,12 @@ export const checkoutMetrics = defineMetrics((meter) => {
  * @see https://github.com/adobe/aio-lib-telemetry
  */
 
+import { HTTP_OK } from "@adobe/aio-commerce-sdk/core/responses";
 import {
   defineTelemetryConfig,
   getAioRuntimeResource,
   getPresetInstrumentations,
 } from "@adobe/aio-lib-telemetry";
-
-import { HTTP_OK } from "../../../lib/http.js";
 
 /** The telemetry configuration to be used across all shipping-method actions */
 export const telemetryConfig = defineTelemetryConfig((_params, _isDev) => {
@@ -1152,11 +1122,11 @@ cd shipping-method && npx vitest run test/actions/info.test.js
 
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Implement the action (byte-for-byte copy of the monolith's, only the relative import path changes)**
+- [ ] **Step 3: Implement the action (behavior unchanged from the monolith's; `HTTP_OK` now sourced from the SDK)**
 
 ```js
 // shipping-method/src/commerce-extensibility-1/actions/info/index.js
-import { HTTP_OK } from "../../../../lib/http.js";
+import { HTTP_OK } from "@adobe/aio-commerce-sdk/core/responses";
 
 /**
  * Please DO NOT DELETE this action; future functionalities planned for upcoming starter kit releases may stop working.
@@ -1219,7 +1189,24 @@ git commit -m "shipping-method: relocate commerce-checkout-starter-kit/info trac
 
 ---
 
-### Task 6: Move the `shipping-methods` webhook action (business logic unchanged)
+### Task 6: Move the `shipping-methods` webhook action (business logic unchanged; responses rebuilt on the SDK's webhook operation builders)
+
+Signature verification stays hand-rolled (`webhookVerify`, Task 2). What changes is how the
+action's own response/operation objects are constructed: the old `createShippingOperation()` helper
+and the inline `{op:"add", path:"result", value:{...}}` object literals are replaced by
+`addOperation("result", value)`, and `webhookErrorResponse(message)` is replaced by
+`exceptionOperation(message)` — both from `@adobe/aio-commerce-sdk/webhooks/responses`, and both
+produce byte-identical objects to what they replace
+(`addOperation("result", value)` → `{op: "add", path: "result", value}`;
+`exceptionOperation(message)` → `{op: "exception", message}`), so the action's observable webhook
+response is unchanged.
+
+This action does **not** use the SDK's `ok()` wrapper: `ok()` returns an un-stringified `body`, but
+this is a `raw-http: true` action — Adobe I/O Runtime does not auto-serialize the response body for
+raw-http actions (symmetric with the request side, where the body arrives as base64 in `__ow_body`
+instead of parsed JSON). The existing code's `body: JSON.stringify(operations)` for the success path
+reflects that constraint and is preserved; only the array elements inside it are now built with
+`addOperation`.
 
 **Files:**
 - Create: `shipping-method/src/commerce-extensibility-1/actions/shipping-methods/index.js`
@@ -1228,12 +1215,13 @@ git commit -m "shipping-method: relocate commerce-checkout-starter-kit/info trac
 - Test: `shipping-method/test/actions/shipping-methods.test.js`
 
 **Interfaces:**
-- Consumes: `webhookVerify`, `webhookErrorResponse` (Task 2), `HTTP_OK` (Task 2),
-  `checkoutMetrics`, `isWebhookSuccessful`, `telemetryConfig` (Task 4).
+- Consumes: `webhookVerify` (Task 2); `checkoutMetrics`, `isWebhookSuccessful`, `telemetryConfig`
+  (Task 4); `addOperation`, `exceptionOperation` from `@adobe/aio-commerce-sdk/webhooks/responses`;
+  `HTTP_OK` from `@adobe/aio-commerce-sdk/core/responses`.
 - Produces: `main(params)` registered as `shipping-method/shipping-methods`, annotated
   `require-adobe-auth: false`, `raw-http: true` — unchanged from the monolith.
 
-- [ ] **Step 1: Write the failing test (ported from the payload-shape assertions implied by the current action; no equivalent test exists in the monolith today, so this is new coverage)**
+- [ ] **Step 1: Write the failing test**
 
 ```js
 // shipping-method/test/actions/shipping-methods.test.js
@@ -1241,10 +1229,6 @@ import { describe, expect, test, vi } from "vitest";
 
 vi.mock("../../lib/webhook.js", () => ({
   webhookVerify: vi.fn(),
-  webhookErrorResponse: vi.fn((message) => ({
-    statusCode: 200,
-    body: { op: "exception", message },
-  })),
 }));
 
 const { webhookVerify } = await import("../../lib/webhook.js");
@@ -1259,13 +1243,16 @@ function buildParams(rateRequest) {
 }
 
 describe("shipping-methods", () => {
-  test("returns a verification error when the signature is invalid", async () => {
+  test("returns an exception operation when the signature is invalid", async () => {
     webhookVerify.mockReturnValue({ success: false, error: "bad signature" });
 
     const result = await main(buildParams({}));
 
     expect(result.statusCode).toBe(200);
-    expect(result.body.op).toBe("exception");
+    expect(result.body).toEqual({
+      op: "exception",
+      message: expect.stringContaining("bad signature"),
+    });
   });
 
   test("always returns the DPS base rate", async () => {
@@ -1278,6 +1265,8 @@ describe("shipping-methods", () => {
     const operations = JSON.parse(result.body);
     expect(operations).toContainEqual(
       expect.objectContaining({
+        op: "add",
+        path: "result",
         value: expect.objectContaining({ method: "dps_shipping_one" }),
       }),
     );
@@ -1323,17 +1312,21 @@ cd shipping-method && npx vitest run test/actions/shipping-methods.test.js
 
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Implement the action (byte-for-byte business logic from the monolith; only imports change)**
+- [ ] **Step 3: Implement the action**
 
 ```js
 // shipping-method/src/commerce-extensibility-1/actions/shipping-methods/index.js
+import { HTTP_OK } from "@adobe/aio-commerce-sdk/core/responses";
+import {
+  addOperation,
+  exceptionOperation,
+} from "@adobe/aio-commerce-sdk/webhooks/responses";
 import {
   getInstrumentationHelpers,
   instrumentEntrypoint,
 } from "@adobe/aio-lib-telemetry";
 
-import { webhookErrorResponse, webhookVerify } from "../../../../lib/webhook.js";
-import { HTTP_OK } from "../../../../lib/http.js";
+import { webhookVerify } from "../../../../lib/webhook.js";
 import { checkoutMetrics } from "../checkout-metrics.js";
 import { isWebhookSuccessful, telemetryConfig } from "../telemetry.js";
 
@@ -1358,11 +1351,15 @@ function shippingMethods(params) {
         status: "error",
         error_code: "verification_failed",
       });
-      return webhookErrorResponse(
-        `Failed to verify the webhook signature: ${error}`,
-      );
+      return {
+        statusCode: HTTP_OK,
+        body: exceptionOperation(
+          `Failed to verify the webhook signature: ${error}`,
+        ),
+      };
     }
 
+    // in the case when "raw-http: true" the body needs to be decoded and converted to JSON
     const payload = JSON.parse(atob(params.__ow_body));
     const { rateRequest: request } = payload;
 
@@ -1376,7 +1373,7 @@ function shippingMethods(params) {
     const operations = [];
 
     operations.push(
-      createShippingOperation({
+      addOperation("result", {
         carrier_code: "DPS",
         method: "dps_shipping_one",
         method_title: "Demo Custom Shipping One",
@@ -1392,7 +1389,7 @@ function shippingMethods(params) {
 
     if (destPostcode > 30_000) {
       operations.push(
-        createShippingOperation({
+        addOperation("result", {
           carrier_code: "DPS",
           method: "dps_shipping_two",
           method_title: "Demo Custom Shipping Two",
@@ -1408,7 +1405,7 @@ function shippingMethods(params) {
 
     if (destCountryId === "CA") {
       operations.push(
-        createShippingOperation({
+        addOperation("result", {
           carrier_code: "DPS",
           method: "dps_shipping_ca_one",
           method_title: "Demo Custom Shipping for Canada only",
@@ -1429,10 +1426,8 @@ function shippingMethods(params) {
         cartItem?.product?.attributes ?? {};
 
       if (country.toLowerCase() === "china") {
-        operations.push({
-          op: "add",
-          path: "result",
-          value: {
+        operations.push(
+          addOperation("result", {
             carrier_code: "DPS",
             method: "dps_shipping_from_china",
             method_title: "Demo Custom Shipping country origin China",
@@ -1442,8 +1437,8 @@ function shippingMethods(params) {
               { key: "shipped_from", value: "China" },
               { key: "delivery_time", value: "15 days" },
             ],
-          },
-        });
+          }),
+        );
       }
     }
 
@@ -1455,18 +1450,16 @@ function shippingMethods(params) {
       Object.hasOwn(Customer, "group_id") &&
       Customer.group_id === "1"
     ) {
-      operations.push({
-        op: "add",
-        path: "result",
-        value: {
+      operations.push(
+        addOperation("result", {
           carrier_code: "DPS",
           method: "dps_shipping_customer_group_one",
           method_title: "Demo Custom Shipping based on customer group",
           price: 7,
           cost: 7,
           additional_data: [{ key: "group_special", value: "-20%" }],
-        },
-      });
+        }),
+      );
     }
 
     logger.info(`Generated ${operations.length} shipping method operations`);
@@ -1483,22 +1476,11 @@ function shippingMethods(params) {
       status: "error",
       error_code: "exception",
     });
-    return webhookErrorResponse(`Server error: ${error.message}`);
+    return {
+      statusCode: HTTP_OK,
+      body: exceptionOperation(`Server error: ${error.message}`),
+    };
   }
-}
-
-/**
- * Creates a shipping operation
- *
- * @param {object} carrierData - The carrier data for the shipping operation
- * @returns {object} The shipping operation object
- */
-function createShippingOperation(carrierData) {
-  return {
-    op: "add",
-    path: "result",
-    value: carrierData,
-  };
 }
 
 export const main = instrumentEntrypoint(shippingMethods, {
@@ -1683,6 +1665,10 @@ output is a recorded finding (used by Task 10's README and reusable by the payme
 cd shipping-method
 npm pkg set dependencies["@adobe/aio-commerce-lib-auth"]="latest"
 ```
+
+`@adobe/aio-commerce-lib-auth` is not in the design spec's beta-pin table (it's already released),
+so it's pinned to `latest` rather than a beta version like `@adobe/aio-commerce-lib-app`/
+`@adobe/aio-commerce-sdk`.
 
 - [ ] **Step 2: Write the unit-test layer — real `resolveImsAuthParams`/`getCommerceClient` code paths, with the network and the association-storage lookup faked**
 
@@ -1958,8 +1944,8 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { getCommerceClient } from "@adobe/aio-commerce-lib-app";
-import { resolveImsAuthParams } from "@adobe/aio-commerce-lib-auth";
 import { defineCustomInstallationStep } from "@adobe/aio-commerce-lib-app/management";
+import { resolveImsAuthParams } from "@adobe/aio-commerce-lib-auth";
 import { load } from "js-yaml";
 
 const SHIPPING_CARRIERS_YAML = resolve(
@@ -2105,12 +2091,23 @@ npm run get-shipping-carriers
    ```
 
 1. After deploying, [create the webhook](https://developer.adobe.com/commerce/extensibility/webhooks/create-webhooks/)
-   pointing at `shipping-method/shipping-methods`:
+   pointing at `shipping-method/shipping-methods` (registered manually — see "Why not an automated
+   installation step" below):
    - For SaaS: register under **System > Webhooks > Webhooks Subscriptions**.
    - For PaaS: use `webhooks.xml`, replacing the URL with your deployed action's URL.
 
 See the [shipping use-cases documentation](https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/shipping-use-cases/)
 for how to customize the rates returned by `shipping-methods`.
+
+### Why not an automated installation step
+
+`@adobe/aio-commerce-lib-webhooks/api`'s `subscribeWebhook` could in principle turn this into a
+`customInstallationStep`, but it targets webhooks declared via `app.commerce.config.ts`'s native
+`webhooks` array — a different, IMS-authenticated action-registration path than the
+`raw-http: true` / `require-adobe-auth: false` + hand-rolled-signature pattern this action uses (see
+the design spec's "Auth strategy for runtime (webhook) actions"). Adopting it here would mean
+maintaining two different webhook mechanisms side by side, so the manual registration step above is
+kept instead.
 
 ## Validation
 
