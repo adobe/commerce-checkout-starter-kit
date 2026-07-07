@@ -15,7 +15,7 @@
 - Pin **beta** SDK versions exactly, per the spec's "SDK packages (beta)" table: `@adobe/aio-commerce-lib-app@1.8.0-beta-20260702145741` and `@adobe/aio-commerce-sdk@1.4.0-beta-20260702145741`. Do **not** add `@adobe/aio-commerce-lib-admin-ui` — that package is `tax-integration/`-only (Admin UI wire-contract builders), irrelevant here.
 - No Commerce REST API client, no OAuth/IMS credentials, no `installation.customInstallationSteps`, and no association-based `getCommerceClient` auth anywhere in this app — these actions never call Commerce. `@adobe/aio-commerce-sdk`'s `webhooks/*` and `core/*` subpaths do **not** pull in a Commerce HTTP client or OAuth — they are pure JSON-shape builders — so adding that dependency does not violate this constraint.
 - Do not modify the business logic inside any of the 9 discount actions (structural/config migration only). Response-envelope construction (how the JSON-patch operations are wrapped and returned) is explicitly in scope for this migration per the spec; the discount *calculation* logic (percentages, thresholds, eligibility rules) is not.
-- The `commerce-checkout-starter-kit/info` action content must not change — only its package address changes as an inherent consequence of the split.
+- The `commerce-checkout-starter-kit/info` action's tracking *behavior* must not change — its package address changes as an inherent consequence of the split, and (per Task 5) its `HTTP_OK` import is repointed from the deleted local `lib/http.js` to `@adobe/aio-commerce-sdk/core/responses` (same constant, same value); no other line changes.
 - Do not touch `shipping-method/`, `payment-method/`, `tax-integration/`, or any root-level file outside what this plan creates (those domains are planned separately, in sibling worktrees).
 - Do not remove the root-level monolith (`actions/`, `lib/`, etc.) — that happens in a separate, later "remove the monolith" PR after all four domains are merged.
 
@@ -59,8 +59,8 @@ These facts were confirmed by reading the current repo, the design spec's "SDK p
   ```
   `categoryFromSku` in that same file is **not exported** (module-private, only `itemCategoryFromSku` calls it) — a plan bug from an earlier draft of this document listed it as an expected export; Task 3 below corrects that.
 - `webhookVerify`, `webhookErrorResponse`, `webhookSuccessResponse` (`lib/adobe-commerce.js:307-390`) depend only on `node:crypto` and the `HTTP_OK` constant from `lib/http.js` — zero dependency on `got`, `Oauth1a`, `@adobe/aio-sdk`, or `resolveAuthOptions`. Only `webhookVerify` is carried into `totals-collector/`; the two response helpers are replaced by the SDK (see below).
-- `lib/http.js` is a tiny, self-contained file of HTTP status constants. After this migration, **only** `actions/commerce-checkout-starter-kit-info/index.js` (frozen, "do not change") still uses it — none of the 9 discount actions reference `HTTP_OK` once their response construction moves to `ok(...)`.
-- `actions/commerce-checkout-starter-kit-info/index.js` (the `info` action) imports only `{ HTTP_OK }` from `../../lib/http.js`, returns `{ statusCode: HTTP_OK }`, and must not change at all.
+- `lib/http.js` is a tiny, self-contained file of HTTP status constants. It is **not** carried into `totals-collector/` at all: none of the 9 discount actions reference `HTTP_OK` once their response construction moves to `ok(...)` (Task 4), and the frozen `info` action's `HTTP_OK` need is sourced directly from `@adobe/aio-commerce-sdk/core/responses` instead (Task 5) — same constant name, same value (`200`), confirmed against `@adobe/aio-commerce-lib-core/source/responses/presets.ts`. "Do not change" governs the `info` action's tracking *behavior*, not literally freezing its import statement while the whole file is being relocated into a brand-new app anyway.
+- `actions/commerce-checkout-starter-kit-info/index.js` (the `info` action) imports only `{ HTTP_OK }` from `../../lib/http.js` in the monolith, returns `{ statusCode: HTTP_OK }`, and its *behavior* must not change at all — see Task 5 for the one deliberate import-source substitution (`../../lib/http.js` → `@adobe/aio-commerce-sdk/core/responses`).
 - `hooks/pre-app-build.js` runs `scripts/sync-oauth-credentials.js`, which exists solely to sync Commerce OAuth/IMS credentials — irrelevant to this domain. `totals-collector/app.config.yaml` must not declare a `pre-app-build` hook.
 - No existing test file references `total-collector-discounts` or `lib/total-collector-discounts.js` (confirmed via a scoped search of `test/` and `e2e/`).
 - `test/lib/adobe-commerce.test.js:110-176` contains a `describe("webhookVerify", ...)` block with 5 tests exercising exactly the function carried into `lib/webhooks.js`. These are ported as-is.
@@ -74,7 +74,7 @@ These facts were confirmed by reading the current repo, the design spec's "SDK p
 - `successOperation()` → `{ op: "success" }`. `addOperation`/`removeOperation` exist but are not needed by this domain (no action currently builds an `add`/`remove` op).
 - None of these builders touch HTTP transport, Commerce auth, or environment variables — confirmed by reading their source, which has zero imports beyond internal type definitions.
 - Because OpenWhisk/App Builder web actions already auto-JSON-serialize a non-string `body` and set `Content-Type: application/json` (this is the existing, already-shipped behavior other actions like `collect-taxes` rely on via `webhookSuccessResponse`/`webhookErrorResponse`, which likewise return an unstringified object body with no explicit headers), returning `ok(...)`'s `{type, statusCode, body}` object directly as an action's `main()` return value is behaviorally equivalent to the current hand-rolled `{statusCode, headers, body: JSON.stringify(...)}` pattern. The extra `type` field is not one of the fields OpenWhisk's web-action layer inspects (`statusCode`/`headers`/`body`/`error`) and is expected to be ignored. This equivalence is documented here as a traceable assumption (not independently verified against a live Commerce instance in this plan) — Task 9's README explicitly calls out re-verifying it during manual validation.
-- `@adobe/aio-commerce-sdk/core/*` (generic action `responses`/`params`/`headers` helpers, re-exporting `@adobe/aio-commerce-lib-core`) is **not** adopted anywhere in this plan: the only file in this domain that used `lib/http.js` for a *generic* HTTP status constant is the frozen `info` action (must not change), and none of the 9 discount actions perform bearer-token parsing or required-parameter checking that `core/params`/`core/headers` would replace. There is nothing left in this domain for `core/*` to cleanly replace once `lib/http.js`'s only other consumer (the discount actions' manual response objects) is migrated to `webhooks/responses`.
+- `@adobe/aio-commerce-sdk/core/*` (generic action `responses`/`params`/`headers` helpers, re-exporting `@adobe/aio-commerce-lib-core`) is adopted in exactly one place: `HTTP_OK` for the frozen `info` action (Task 5), replacing the local `lib/http.js` copy that an earlier draft of this plan carried forward for no reason (it was the only consumer, and only ever used `HTTP_OK` — the other 4 constants in that file were dead weight). `core/params`/`core/headers` are still not adopted: none of the 9 discount actions perform bearer-token parsing or required-parameter checking those would replace.
 
 **Webhook subscriptions — declarative `webhooks` config (confirmed against `@adobe/aio-commerce-lib-app`'s schema and the design spec's "Webhook subscriptions" section, sourced from `AdobeDocs/commerce-extensibility`):**
 
@@ -366,39 +366,15 @@ git commit -m "totals-collector: scaffold independent app skeleton"
 ### Task 2: Extract the webhook signature helper into `totals-collector/lib/`
 
 **Files:**
-- Create: `totals-collector/lib/http.js`
 - Create: `totals-collector/lib/webhooks.js`
 - Test: `totals-collector/test/lib/webhooks.test.js`
 
 **Interfaces:**
-- Produces: `HTTP_OK` (and `HTTP_BAD_REQUEST`, `HTTP_INTERNAL_ERROR`, `HTTP_NOT_FOUND`, `HTTP_UNAUTHORIZED`) from `totals-collector/lib/http.js` — consumed only by the frozen `info` action in Task 5. `webhookVerify(params)` from `totals-collector/lib/webhooks.js` — consumed by all 9 discount actions in Task 4.
+- Produces: `webhookVerify(params)` from `totals-collector/lib/webhooks.js` — consumed by all 9 discount actions in Task 4.
 - **Not produced** (unlike an earlier draft of this plan): `webhookErrorResponse`/`webhookSuccessResponse`. Per the design spec's "SDK packages (beta)" section, these are replaced by `@adobe/aio-commerce-sdk/webhooks/responses`'s `ok`/`exceptionOperation`, used directly in Task 4 — they are not carried into this app at all.
+- **Not produced either**: a local `totals-collector/lib/http.js`. The frozen `info` action's `HTTP_OK` need is sourced directly from `@adobe/aio-commerce-sdk/core/responses` in Task 5 instead — "do not change" governs the `info` action's tracking *behavior*, not literally freezing an import statement while the whole file is being relocated into a brand-new app anyway. There is otherwise no consumer of a generic HTTP-status-constants module left in this domain once Task 4 migrates the 9 discount actions to `ok(...)`.
 
-- [ ] **Step 1: Create `totals-collector/lib/http.js` (verbatim copy)**
-
-```js
-/*
-Copyright 2024 Adobe. All rights reserved.
-This file is licensed to you under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License. You may obtain a copy
-of the License at http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software distributed under
-the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
-OF ANY KIND, either express or implied. See the License for the specific language
-governing permissions and limitations under the License.
-*/
-
-export const HTTP_BAD_REQUEST = 400;
-export const HTTP_INTERNAL_ERROR = 500;
-export const HTTP_NOT_FOUND = 404;
-export const HTTP_OK = 200;
-export const HTTP_UNAUTHORIZED = 401;
-```
-
-This file is only needed by the frozen `info` action (Task 5) — none of the 9 discount actions reference it once Task 4 migrates their responses to `ok(...)`.
-
-- [ ] **Step 2: Write the failing test — port the existing `webhookVerify` suite**
+- [ ] **Step 1: Write the failing test — port the existing `webhookVerify` suite**
 
 Create `totals-collector/test/lib/webhooks.test.js`:
 
@@ -497,7 +473,7 @@ describe("webhookVerify", () => {
 });
 ```
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [ ] **Step 2: Run the tests to verify they fail**
 
 ```bash
 cd totals-collector && npx vitest run test/lib/webhooks.test.js
@@ -505,7 +481,7 @@ cd totals-collector && npx vitest run test/lib/webhooks.test.js
 
 Expected: FAIL — `Cannot find module '../../lib/webhooks.js'` (file doesn't exist yet).
 
-- [ ] **Step 4: Create `totals-collector/lib/webhooks.js`**
+- [ ] **Step 3: Create `totals-collector/lib/webhooks.js`**
 
 ```js
 /*
@@ -571,7 +547,7 @@ export function webhookVerify({
 
 Note: this file has no `webhookErrorResponse`/`webhookSuccessResponse` — those are replaced by `@adobe/aio-commerce-sdk/webhooks/responses`'s `ok`/`exceptionOperation`, imported directly where needed (Task 4). No import of `got`, `Oauth1a`, `@adobe/aio-sdk`, or `resolveAuthOptions` — only `node:crypto`.
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [ ] **Step 4: Run the tests to verify they pass**
 
 ```bash
 cd totals-collector && npx vitest run test/lib/webhooks.test.js
@@ -579,10 +555,10 @@ cd totals-collector && npx vitest run test/lib/webhooks.test.js
 
 Expected: PASS — 6 tests (1 module-surface check, 5 `webhookVerify`).
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add totals-collector/lib/http.js totals-collector/lib/webhooks.js totals-collector/test/lib/webhooks.test.js
+git add totals-collector/lib/webhooks.js totals-collector/test/lib/webhooks.test.js
 git commit -m "totals-collector: extract webhookVerify, drop Commerce HTTP client"
 ```
 
@@ -1937,17 +1913,17 @@ git commit -m "totals-collector: relocate discount actions, migrate responses to
 
 ---
 
-### Task 5: Relocate the Adobe tracking `info` action (do not change its content)
+### Task 5: Relocate the Adobe tracking `info` action (tracking behavior frozen; `HTTP_OK` import repointed to the SDK)
 
 **Files:**
 - Create: `totals-collector/actions/commerce-checkout-starter-kit-info/index.js`
 - Test: `totals-collector/test/actions/commerce-checkout-starter-kit-info.test.js`
 
 **Interfaces:**
-- Consumes: `HTTP_OK` from `../../lib/http.js` (Task 2). This is the **only** remaining consumer of `totals-collector/lib/http.js` — it is deliberately left untouched by the SDK migration in Task 4 because this action's content must not change at all.
+- Consumes: `HTTP_OK` from `@adobe/aio-commerce-sdk/core/responses` (Task 1's `package.json` dependency) instead of a local `lib/http.js` copy. Same constant name, same value (`200`) — confirmed against `@adobe/aio-commerce-lib-core/source/responses/presets.ts`. This is the only line in this file that changes; the action's tracking *behavior* (`{ statusCode: 200 }`) is identical to the monolith's copy. There is no `totals-collector/lib/http.js` in this app at all — see Task 2's note.
 - Produces: `export function main(_params)` — consumed by `totals-collector/app.config.yaml` in Task 6 as the `info` action.
 
-- [ ] **Step 1: Copy the file verbatim — no changes at all**
+- [ ] **Step 1: Copy the file, then repoint its one import at the SDK**
 
 ```bash
 cd /Users/obarcelonapa/dev/github/adobe/commerce-checkout-starter-kit-worktrees/fees
@@ -1956,14 +1932,28 @@ cp actions/commerce-checkout-starter-kit-info/index.js \
    totals-collector/actions/commerce-checkout-starter-kit-info/index.js
 ```
 
-- [ ] **Step 2: Verify it's byte-identical (its relative import depth to `lib/` is unchanged: 2 levels up in both the old and new locations)**
+Then replace the one import line in `totals-collector/actions/commerce-checkout-starter-kit-info/index.js`:
+
+Old:
+```js
+import { HTTP_OK } from "../../lib/http.js";
+```
+
+New:
+```js
+import { HTTP_OK } from "@adobe/aio-commerce-sdk/core/responses";
+```
+
+Nothing else in the file changes — same doc comment ("Please DO NOT DELETE this action..."), same `export function main(_params) { return { statusCode: HTTP_OK }; }` body.
+
+- [ ] **Step 2: Verify the only diff is the import source**
 
 ```bash
 diff actions/commerce-checkout-starter-kit-info/index.js \
      totals-collector/actions/commerce-checkout-starter-kit-info/index.js
 ```
 
-Expected: no output.
+Expected: exactly one changed line — the `import` statement's module specifier (`../../lib/http.js` → `@adobe/aio-commerce-sdk/core/responses`). No other diff.
 
 - [ ] **Step 3: Write a smoke test matching the original action's own doc comment ("do not delete")**
 
@@ -2005,7 +1995,7 @@ Expected: PASS — 1 test.
 
 ```bash
 git add totals-collector/actions/commerce-checkout-starter-kit-info totals-collector/test/actions/commerce-checkout-starter-kit-info.test.js
-git commit -m "totals-collector: relocate the commerce-checkout-starter-kit-info tracking action (unchanged)"
+git commit -m "totals-collector: relocate the commerce-checkout-starter-kit-info tracking action (behavior unchanged, HTTP_OK now sourced from the SDK)"
 ```
 
 ---
@@ -2622,19 +2612,25 @@ grep -rn "got\|oauth-1.0a\|@adobe/aio-sdk\|getAdobeCommerceClient\|getCommerceCl
 
 Expected: no output. This confirms the app never references the Commerce HTTP client, OAuth/IMS credentials, or the association-based `getCommerceClient` auth pattern flagged as out of scope for this domain. Note: `@adobe/aio-commerce-sdk` and `@adobe/aio-commerce-lib-app` are expected and intentional (they are pure config/JSON-shape/webhook builders, not a Commerce HTTP client — see the Source-of-truth section above) and are not matched by this grep.
 
-- [ ] **Step 4: Confirm exactly which `@adobe/aio-commerce-sdk` subpaths are imported, and that no action still constructs a hand-rolled webhook response object**
+- [ ] **Step 4: Confirm exactly which `@adobe/aio-commerce-sdk` subpaths are imported, and that no discount action still constructs a hand-rolled webhook response object**
 
 ```bash
 grep -rn "@adobe/aio-commerce-sdk" totals-collector --include="*.js" --include="*.ts" | grep -v node_modules
 ```
 
-Expected: every match is `@adobe/aio-commerce-sdk/webhooks/responses`, importing only `ok`, `exceptionOperation`, and/or `replaceOperation`.
+Expected: exactly two distinct subpaths — `@adobe/aio-commerce-sdk/webhooks/responses` (importing only `ok`, `exceptionOperation`, and/or `replaceOperation`, in the 9 discount actions and `lib/total-collector-discounts.js`) and exactly one `@adobe/aio-commerce-sdk/core/responses` import (importing only `HTTP_OK`, in `actions/commerce-checkout-starter-kit-info/index.js`). There is no local `totals-collector/lib/http.js` anywhere in the tree — confirm with:
 
 ```bash
-grep -rn 'statusCode: HTTP_OK\|JSON.stringify(\[' totals-collector/actions totals-collector/lib | grep -v node_modules
+find totals-collector -name http.js -not -path '*/node_modules/*'
 ```
 
-Expected: no output — confirms no discount action or lib file still hand-builds a webhook response object or manually stringifies an operations array.
+Expected: no output.
+
+```bash
+grep -rln 'statusCode: HTTP_OK\|JSON.stringify(\[' totals-collector/actions totals-collector/lib | grep -v node_modules
+```
+
+Expected: the **only** match is `totals-collector/actions/commerce-checkout-starter-kit-info/index.js` (its frozen `return { statusCode: HTTP_OK };`) — any other match means a discount action or lib file still hand-builds a webhook response object or manually stringifies an operations array.
 
 - [ ] **Step 5: Confirm the webhook subscription declares exactly one active action, consistently, across both env variants**
 
