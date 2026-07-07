@@ -6,17 +6,19 @@
 
 **Architecture:** `tax-integration/` is a brand-new sibling directory at the repo root (not nested under any shared `apps/` parent, per the corrected design spec) with its own `package.json`, `app.config.yaml`, `app.commerce.config.ts`, `biome.jsonc`, and `vitest.config.js`. It duplicates (does not import) the handful of root-level files it needs: the two tax webhook actions, the webhook-signature helpers (not the legacy Commerce HTTP client), the Adobe tracking "info" action, and the tax-integrations onboarding data. The `create-tax-integrations.js` onboarding script is rewritten as a `defineCustomInstallationStep`. The Admin UI extension (`commerce-backend-ui-1/`) is migrated to the `commerce/backend-ui/2` extension point and rebuilt against `@adobe/aio-commerce-lib-admin-ui`'s scaffold, replacing the old `@adobe/uix-guest` + custom-proxy-action architecture with the SDK's `adminUi.menu` config block and `useIms()`/`useCommerce()` hooks. This work is purely additive — no root-level file (`actions/`, `lib/`, `scripts/`, `app.config.yaml`, `commerce-backend-ui-1/`, etc.) is modified or deleted in this plan; the monolith removal is a separate, later PR (PR 5 in the design spec) that runs only after all four domain apps have merged.
 
-**Tech Stack:** Node.js `^24.0.0`, `@adobe/aio-commerce-lib-app` `^1.7.0` (`defineConfig`, `defineCustomInstallationStep`, `getCommerceClient`/`getCommerceInstance`), `@adobe/aio-commerce-lib-auth` `^1.1.1` (`resolveImsAuthParams`), `@adobe/aio-commerce-sdk` `^1.3.0` (`admin-ui/menu` constants), `@adobe/aio-commerce-lib-admin-ui` `^0.1.0` + `@react-spectrum/s2` (installed by the SDK's own scaffold generator, not hand-pinned), `@adobe/aio-lib-telemetry`, `js-yaml`, Vitest, Biome/Ultracite.
+**Tech Stack:** Node.js `^24.0.0`. Per the design spec's "SDK packages (beta)" section, all four domain apps pin **beta** versions of the Commerce SDK packages until the real releases ship: `@adobe/aio-commerce-lib-app@1.8.0-beta-20260702145741` (`defineConfig`, `defineCustomInstallationStep`, association-based `getCommerceClient`/`getCommerceInstance`) and `@adobe/aio-commerce-sdk@1.4.0-beta-20260702145741` (meta-package re-exporting `@adobe/aio-commerce-lib-webhooks` via `@adobe/aio-commerce-sdk/webhooks/*` and `@adobe/aio-commerce-lib-core` via `@adobe/aio-commerce-sdk/core/*` — used for webhook response builders and, where a clean fit, generic action response/header helpers). `tax-integration/` additionally pins `@adobe/aio-commerce-lib-admin-ui@0.2.0-beta-20260702145741` directly (imported via its own `@adobe/aio-commerce-lib-admin-ui/*` subpaths per its usage docs — **not** re-exported through `@adobe/aio-commerce-sdk`) — it is the only one of the four domain apps that needs it, and it is marked **Experimental — not yet production-ready** upstream. Also: `@adobe/aio-commerce-lib-auth@^1.1.1` (real release; `resolveImsAuthParams`), `@react-spectrum/s2` + `react`/`react-dom` (installed by the admin-ui scaffold generator, not hand-pinned), `@adobe/aio-lib-telemetry`, `js-yaml`, Vitest, Biome/Ultracite.
 
 ## Global Constraints
 
 - `tax-integration/` is a fully self-contained App Builder app: its own `package.json`, `app.config.yaml`, `app.commerce.config.ts`, `biome.jsonc`, `vitest.config.js`. No shared root-level tooling — do not add npm workspaces, do not import anything from the repo root at runtime.
 - Do not modify or delete any existing root-level file (`actions/`, `lib/`, `scripts/`, `app.config.yaml`, `commerce-backend-ui-1/`, `package.json`, `README.md`, `test/`, etc.) — this plan is purely additive. Monolith removal is a separate future PR.
 - The `commerce-checkout-starter-kit/info` action's behavior must not change — duplicate it byte-for-byte.
-- The tax calculation business logic in `collect-taxes` / `collect-adjustment-taxes` (tax rate tables, rounding, response operation shapes) must not change.
+- The tax calculation business logic in `collect-taxes` / `collect-adjustment-taxes` (tax rate tables, rounding, response operation shapes/paths/values) must not change — only how the response envelope is *constructed* changes (typed SDK builders instead of hand-rolled object literals).
 - The Admin UI extension must move from `commerce/backend-ui/1` to `commerce/backend-ui/2`. `TaxClassDialog.js` / `TaxClassesPage.js` are tax-domain functionality and belong in `tax-integration/`, not a shared/generic location.
 - `getCommerceClient`/`getCommerceInstance` association-based auth for the **runtime webhook actions** (`collect-taxes`, `collect-adjustment-taxes`) is gated on `shipping-method/`'s validation spike succeeding — do not assume it works; this plan contains an explicit conditional decision task, not a blind swap.
 - `create-tax-integrations.js` becomes a `defineCustomInstallationStep` per `@adobe/aio-commerce-lib-app/management` — this pattern is documented-safe (not experimental) per `InstallationContext.params`'s typed IMS credential contract.
+- `webhookSuccessResponse`/`webhookErrorResponse` are **not** carried forward — webhook response construction goes through `@adobe/aio-commerce-sdk/webhooks/responses`'s typed operation builders (`successOperation`, `exceptionOperation`, `addOperation`, `replaceOperation`, `removeOperation`, wrapped in `ok()`) instead. `webhookVerify` (the signature check) has no SDK equivalent anywhere in the three new packages and stays hand-rolled.
+- `@adobe/aio-commerce-lib-admin-ui` is explicitly experimental upstream ("not yet production-ready") — call this out plainly wherever the plan relies on it, with the same up-front risk disclosure the spec gives the runtime-webhook auth swap, not as a settled dependency.
 - Follow the repo's existing Biome/Ultracite lint conventions and Apache-2.0 copyright header style (see any existing file under `actions/` for the exact header block) on every new source file.
 
 ---
@@ -35,14 +37,14 @@ tax-integration/
   tax-integrations.yaml                          # tax integration definitions (copied)
   README.md                                      # App Management install flow + tax-specific guidance
   actions/
-    telemetry.js                                 # copied, service name scoped to this app
+    telemetry.js                                 # copied, service name scoped to this app, HTTP_OK from the SDK
     checkout-metrics.js                          # copied, tax-only counters
-    collect-taxes/index.js                       # moved verbatim (logic unchanged)
-    collect-adjustment-taxes/index.js             # moved verbatim (logic unchanged)
-    commerce-checkout-starter-kit-info/index.js   # duplicated verbatim, "do not change"
+    collect-taxes/index.js                       # moved, response envelope rebuilt on SDK webhook-response builders
+    collect-adjustment-taxes/index.js             # moved, response envelope rebuilt on SDK webhook-response builders
+    commerce-checkout-starter-kit-info/index.js   # duplicated verbatim, "do not change" — still imports lib/http.js
   lib/
-    webhook.js                                   # webhookVerify/webhookSuccessResponse/webhookErrorResponse only
-    http.js                                       # HTTP status constants (copied)
+    webhook.js                                   # webhookVerify only (signature check; no SDK equivalent)
+    http.js                                       # HTTP_OK only, kept solely for the untouched info action's import
   scripts/
     create-tax-integrations.js                   # rewritten as defineCustomInstallationStep
   src/
@@ -97,9 +99,10 @@ Files read for reference during this plan (all at repo root, none of them modifi
   "type": "module",
   "private": true,
   "dependencies": {
-    "@adobe/aio-commerce-lib-app": "^1.7.0",
+    "@adobe/aio-commerce-lib-admin-ui": "0.2.0-beta-20260702145741",
+    "@adobe/aio-commerce-lib-app": "1.8.0-beta-20260702145741",
     "@adobe/aio-commerce-lib-auth": "^1.1.1",
-    "@adobe/aio-commerce-sdk": "^1.3.0",
+    "@adobe/aio-commerce-sdk": "1.4.0-beta-20260702145741",
     "@adobe/aio-lib-telemetry": "^1.1.0",
     "js-yaml": "^5.0.0"
   },
@@ -134,7 +137,10 @@ Files read for reference during this plan (all at repo root, none of them modifi
 }
 ```
 
-Note: `react`, `react-dom`, `@react-spectrum/s2`, and `@adobe/aio-commerce-lib-admin-ui` are deliberately **not** listed yet — Task 15 installs and pins them by running the SDK's own scaffold generator, per its explicit instruction not to hand-pick versions. The `create-tax-integrations` / `create-payment-methods`-style manual npm script from the root `package.json` is also intentionally dropped: the rewritten install step (Phase 4) runs through the App Management install workflow, not `node scripts/....js` directly.
+Notes:
+- `@adobe/aio-commerce-lib-app`, `@adobe/aio-commerce-sdk`, and `@adobe/aio-commerce-lib-admin-ui` are pinned to **exact** beta version strings (no `^`/`~`) per the design spec's "SDK packages (beta)" section — these are timestamped pre-release builds, not semver ranges, and `tax-integration/` is the only one of the four domain apps that needs `@adobe/aio-commerce-lib-admin-ui` at all.
+- `react`, `react-dom`, and `@react-spectrum/s2` are deliberately **not** listed yet — Task 13's scaffold generator installs and pins them, per its explicit instruction not to hand-pick versions.
+- The `create-tax-integrations` / `create-payment-methods`-style manual npm script from the root `package.json` is intentionally dropped: the rewritten install step (Phase 4) runs through the App Management install workflow, not `node scripts/....js` directly.
 
 - [ ] **Step 2: Create `tax-integration/biome.jsonc`**
 
@@ -319,9 +325,11 @@ git commit -m "tax-integration: add vitest config and setup"
 
 ## Phase 2 — Webhook helpers and HTTP constants
 
-### Task 3: Extract `webhookVerify` / `webhookSuccessResponse` / `webhookErrorResponse` into `tax-integration/lib/webhook.js`
+### Task 3: Extract `webhookVerify` into `tax-integration/lib/webhook.js`; keep a minimal `lib/http.js` for the untouched info action
 
-The root `lib/adobe-commerce.js` mixes webhook-signature helpers with the legacy hand-rolled OAuth1/IMS Commerce HTTP client (`getAdobeCommerceClient`). Per the design spec, `tax-integration/` gets **only** the webhook helpers, split out from the Commerce-HTTP-client code — the two tax webhook actions never call the legacy client, and the rewritten install step (Phase 4) uses the SDK's own client instead.
+The root `lib/adobe-commerce.js` mixes webhook-signature helpers with the legacy hand-rolled OAuth1/IMS Commerce HTTP client (`getAdobeCommerceClient`). Per the design spec's "SDK packages (beta)" section, `webhookSuccessResponse`/`webhookErrorResponse` are **not** carried forward at all — none of the three new beta SDK packages implement webhook signature verification, but `@adobe/aio-commerce-sdk/webhooks/responses` **does** provide typed response-envelope builders, which Tasks 5 and 6 use directly inside the two webhook actions instead of a shared `webhookSuccessResponse`/`webhookErrorResponse` pair. Only `webhookVerify` (the signature check, which has no SDK equivalent) is extracted here.
+
+`lib/http.js` is still created, but scoped down to just `HTTP_OK` — it exists solely because Task 7's `commerce-checkout-starter-kit-info` action is explicitly "do not change" and its unchanged source still does `import { HTTP_OK } from "../../lib/http.js";`. Every other consumer (`telemetry.js`, both webhook actions) switches to `HTTP_OK` from `@adobe/aio-commerce-sdk/core/responses` in later tasks — a clean drop-in, since it's the exact same value (`200`) under the same name.
 
 **Files:**
 - Create: `tax-integration/lib/http.js`
@@ -329,9 +337,9 @@ The root `lib/adobe-commerce.js` mixes webhook-signature helpers with the legacy
 - Test: `tax-integration/test/lib/webhook.test.js`
 
 **Interfaces:**
-- Produces: `webhookVerify(params): {success: boolean, error?: string}`, `webhookSuccessResponse(): {statusCode: number, body: {op: "success"}}`, `webhookErrorResponse(message: string): {statusCode: number, body: {op: "exception", message: string}}`, `HTTP_OK = 200` — consumed by Task 5 and Task 6 (the two webhook actions).
+- Produces: `webhookVerify(params): {success: boolean, error?: string}` — consumed by Task 5 and Task 6. `HTTP_OK = 200` from `lib/http.js` — consumed only by Task 7's untouched info action.
 
-- [ ] **Step 1: Create `tax-integration/lib/http.js`** (copied verbatim from root `lib/http.js`)
+- [ ] **Step 1: Create `tax-integration/lib/http.js`** (trimmed to the one constant the info action needs; not the full copy of root `lib/http.js`, since nothing else in this app uses the other four constants)
 
 ```js
 /*
@@ -346,14 +354,10 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-export const HTTP_BAD_REQUEST = 400;
-export const HTTP_INTERNAL_ERROR = 500;
-export const HTTP_NOT_FOUND = 404;
 export const HTTP_OK = 200;
-export const HTTP_UNAUTHORIZED = 401;
 ```
 
-- [ ] **Step 2: Write the failing test for `webhook.js`** (ported from `test/lib/adobe-commerce.test.js`'s `webhookVerify` describe block — the `getAdobeCommerceClient` tests are intentionally dropped, since that client isn't moving)
+- [ ] **Step 2: Write the failing test for `webhook.js`** (ported from `test/lib/adobe-commerce.test.js`'s `webhookVerify` describe block — the `getAdobeCommerceClient` tests are intentionally dropped, since that client isn't moving; the old `webhookSuccessResponse`/`webhookErrorResponse` describe block is intentionally dropped too, since those functions no longer exist)
 
 ```js
 // tax-integration/test/lib/webhook.test.js
@@ -373,11 +377,7 @@ import crypto from "node:crypto";
 
 import { describe, expect, test } from "vitest";
 
-import {
-  webhookErrorResponse,
-  webhookSuccessResponse,
-  webhookVerify,
-} from "../../lib/webhook.js";
+import { webhookVerify } from "../../lib/webhook.js";
 
 describe("webhookVerify", () => {
   const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {
@@ -446,22 +446,6 @@ describe("webhookVerify", () => {
     expect(result).toEqual({ success: false, error: expect.any(String) });
   });
 });
-
-describe("webhookSuccessResponse / webhookErrorResponse", () => {
-  test("webhookSuccessResponse returns op success", () => {
-    expect(webhookSuccessResponse()).toEqual({
-      statusCode: 200,
-      body: { op: "success" },
-    });
-  });
-
-  test("webhookErrorResponse returns op exception with the message", () => {
-    expect(webhookErrorResponse("boom")).toEqual({
-      statusCode: 200,
-      body: { op: "exception", message: "boom" },
-    });
-  });
-});
 ```
 
 - [ ] **Step 3: Run the test to verify it fails**
@@ -469,7 +453,7 @@ describe("webhookSuccessResponse / webhookErrorResponse", () => {
 Run: `cd tax-integration && npx vitest run test/lib/webhook.test.js`
 Expected: FAIL — `Cannot find module '../../lib/webhook.js'`
 
-- [ ] **Step 4: Create `tax-integration/lib/webhook.js`** (webhook-only slice of root `lib/adobe-commerce.js`, unchanged logic)
+- [ ] **Step 4: Create `tax-integration/lib/webhook.js`** (`webhookVerify` only, unchanged logic, no dependency on `http.js` since it never returns a full response envelope — it just reports `{success, error?}`)
 
 ```js
 /*
@@ -486,42 +470,11 @@ governing permissions and limitations under the License.
 
 import crypto from "node:crypto";
 
-import { HTTP_OK } from "./http.js";
-
 /**
- * Returns webhook response error according to Adobe Commerce Webhooks spec.
+ * Verifies the signature of the webhook request. No SDK equivalent exists in
+ * `@adobe/aio-commerce-lib-app`, `@adobe/aio-commerce-sdk`, or
+ * `@adobe/aio-commerce-lib-admin-ui` — this stays hand-rolled.
  *
- * @param {string} message the error message.
- * @returns {object} the response object
- * @see https://developer.adobe.com/commerce/extensibility/webhooks/responses/#responses
- */
-export function webhookErrorResponse(message) {
-  return {
-    statusCode: HTTP_OK,
-    body: {
-      op: "exception",
-      message,
-    },
-  };
-}
-
-/**
- * Returns webhook response success according to Adobe Commerce Webhooks spec.
- *
- * @returns {object} the response object
- * @see https://developer.adobe.com/commerce/extensibility/webhooks/responses/#responses
- */
-export function webhookSuccessResponse() {
-  return {
-    statusCode: HTTP_OK,
-    body: {
-      op: "success",
-    },
-  };
-}
-
-/**
- * Verifies the signature of the webhook request.
  * @param {object} params input parameters
  * @param {object} params.__ow_headers request headers
  * @param {string} params.__ow_body request body, requires the following annotation in the action `raw-http: true`
@@ -570,13 +523,13 @@ export function webhookVerify({
 - [ ] **Step 5: Run the test to verify it passes**
 
 Run: `cd tax-integration && npx vitest run test/lib/webhook.test.js`
-Expected: PASS (9 tests)
+Expected: PASS (5 tests)
 
 - [ ] **Step 6: Commit**
 
 ```bash
 git add tax-integration/lib/http.js tax-integration/lib/webhook.js tax-integration/test/lib/webhook.test.js
-git commit -m "tax-integration: add webhook helpers split out of lib/adobe-commerce.js"
+git commit -m "tax-integration: extract webhookVerify; drop webhookSuccessResponse/webhookErrorResponse per SDK packages (beta)"
 ```
 
 ---
@@ -592,7 +545,7 @@ git commit -m "tax-integration: add webhook helpers split out of lib/adobe-comme
 **Interfaces:**
 - Produces: `telemetryConfig`, `isSuccessful` name `isWebhookSuccessful`, `localCollectorConfig` — consumed by Task 5 and 6. `checkoutMetrics.collectTaxesCounter`, `checkoutMetrics.collectAdjustmentTaxesCounter` — consumed by Task 5 and 6.
 
-- [ ] **Step 1: Create `tax-integration/actions/telemetry.js`** (copied from root `actions/telemetry.js`; only the import path and `serviceName` change to identify this app distinctly in telemetry, since it is now an independently deployed service)
+- [ ] **Step 1: Create `tax-integration/actions/telemetry.js`** (copied from root `actions/telemetry.js`; the `serviceName` changes to identify this app distinctly in telemetry, since it is now an independently deployed service, and `HTTP_OK` now comes from `@adobe/aio-commerce-sdk/core/responses` instead of the local `lib/http.js` — a clean drop-in, same name and value, per the design spec's optional `core/*` adoption guidance)
 
 ```js
 /*
@@ -633,7 +586,7 @@ import {
   SimpleLogRecordProcessor,
 } from "@adobe/aio-lib-telemetry/otel";
 
-import { HTTP_OK } from "../lib/http.js";
+import { HTTP_OK } from "@adobe/aio-commerce-sdk/core/responses";
 
 /** The telemetry configuration to be used across all tax-integration actions */
 const telemetryConfig = defineTelemetryConfig((_params, _isDev) => {
@@ -749,15 +702,28 @@ git commit -m "tax-integration: add telemetry config and tax-only metrics"
 
 ---
 
-### Task 5: Move `collect-taxes` action
+### Task 5: Move `collect-taxes` action, rebuilt on `@adobe/aio-commerce-sdk/webhooks/responses`
+
+Per the design spec's "SDK packages (beta)" section, the hand-rolled operation object literals (`createTaxBreakdownOperation`, `createTaxSummaryOperation`) and the dropped `webhookErrorResponse` are replaced by `@adobe/aio-commerce-sdk/webhooks/responses`'s typed builders. The mapping is exact — verified field-by-field against both the current action and the builders' source:
+
+| Current code | Replacement |
+|---|---|
+| `createTaxBreakdownOperation(index, tax, taxAmount)` → `{op: "add", path, value, instance}` | `addOperation(path, value, instance)` |
+| `createTaxSummaryOperation(index, ...)` → `{op: "replace", path, value, instance}` | `replaceOperation(path, value, instance)` |
+| `webhookErrorResponse(message)` → `{statusCode: 200, body: {op: "exception", message}}` | `ok(exceptionOperation(message))` |
+| `return { statusCode: HTTP_OK, body: JSON.stringify(operations) }` | `return ok(operations);` |
+
+`ok(operations)` (from `@adobe/aio-commerce-lib-webhooks`, re-exported via `@adobe/aio-commerce-sdk/webhooks/responses`) returns `{ type: "success", statusCode: 200, body: operations }` — the `body` is the raw array/object, not a pre-`JSON.stringify`'d string. This is safe: the *current* `webhookErrorResponse` already returns an un-stringified object body (`{op: "exception", message}`) in production today, proving Adobe I/O Runtime's web-action response handling JSON-serializes a non-string `body` on the way out regardless of the action's `raw-http: true` annotation (that annotation only affects how the *incoming* request body is decoded into `__ow_body`, not how the outgoing response is encoded) — so dropping the manual `JSON.stringify(operations)` for the success path does not change the actual HTTP response bytes Commerce receives. The extra top-level `type: "success"` field `ok()` adds alongside `statusCode`/`body` is inert — Adobe I/O Runtime's web-action wrapper only reads `statusCode`/`headers`/`body` off the returned object.
+
+`isWebhookSuccessful` in `telemetry.js` (Task 4) needs no code change: for the success case `result.body` is now an array, so `result.body.op` is `undefined` (arrays have no `.op`), which is correctly `!== "exception"`; for the exception case `result.body` is still the plain `{op: "exception", ...}` object `exceptionOperation` produces, so `result.body.op === "exception"` still correctly resolves to `false`.
 
 **Files:**
 - Create: `tax-integration/actions/collect-taxes/index.js`
 - Test: `tax-integration/test/actions/collect-taxes.test.js`
 
 **Interfaces:**
-- Consumes: `webhookVerify`, `webhookErrorResponse` from `../../lib/webhook.js` (Task 3); `HTTP_OK` from `../../lib/http.js` (Task 3); `checkoutMetrics` from `../checkout-metrics.js` (Task 4); `isWebhookSuccessful`, `telemetryConfig` from `../telemetry.js` (Task 4).
-- Produces: `export const main` — the runtime action entrypoint, wired into `app.config.yaml` in Task 7.
+- Consumes: `webhookVerify` from `../../lib/webhook.js` (Task 3); `addOperation`, `replaceOperation`, `exceptionOperation`, `ok` from `@adobe/aio-commerce-sdk/webhooks/responses`; `checkoutMetrics` from `../checkout-metrics.js` (Task 4); `isWebhookSuccessful`, `telemetryConfig` from `../telemetry.js` (Task 4).
+- Produces: `export const main` — the runtime action entrypoint, wired into `app.config.yaml` in Task 8.
 
 There is no existing test for this action's logic today (the repo has no `test/actions/` directory) — this task adds the first one, since the design spec asks for tests to move "alongside the code they test" and this is a natural gap to close while relocating.
 
@@ -820,16 +786,16 @@ describe("collect-taxes", () => {
     );
 
     const result = await main(params);
-    const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(200);
     // 2 breakdown operations (state_tax, county_tax) + 1 summary operation
-    expect(body).toHaveLength(3);
-    expect(body[0]).toMatchObject({
+    // `ok()` no longer JSON.stringify's the body — it's the raw operations array
+    expect(result.body).toHaveLength(3);
+    expect(result.body[0]).toMatchObject({
       op: "add",
       path: "oopQuote/items/0/tax_breakdown",
     });
-    expect(body[2]).toMatchObject({
+    expect(result.body[2]).toMatchObject({
       op: "replace",
       path: "oopQuote/items/0/tax",
     });
@@ -853,7 +819,7 @@ describe("collect-taxes", () => {
 Run: `cd tax-integration && npx vitest run test/actions/collect-taxes.test.js`
 Expected: FAIL — `Cannot find module '../../actions/collect-taxes/index.js'`
 
-- [ ] **Step 3: Create `tax-integration/actions/collect-taxes/index.js`** (moved verbatim from root `actions/collect-taxes/index.js`; only the import paths for `webhookErrorResponse`/`webhookVerify` change, from `../../lib/adobe-commerce.js` to `../../lib/webhook.js` — calculation logic is byte-for-byte unchanged)
+- [ ] **Step 3: Create `tax-integration/actions/collect-taxes/index.js`** (moved from root `actions/collect-taxes/index.js`; the calculation logic — rate tables, rounding, paths, values — is byte-for-byte unchanged; only the response-envelope construction changes, from hand-rolled object literals and `lib/adobe-commerce.js`'s `webhookErrorResponse` to the SDK's typed builders per the mapping table above)
 
 ```js
 /*
@@ -872,9 +838,14 @@ import {
   getInstrumentationHelpers,
   instrumentEntrypoint,
 } from "@adobe/aio-lib-telemetry";
+import {
+  addOperation,
+  exceptionOperation,
+  ok,
+  replaceOperation,
+} from "@adobe/aio-commerce-sdk/webhooks/responses";
 
-import { webhookErrorResponse, webhookVerify } from "../../lib/webhook.js";
-import { HTTP_OK } from "../../lib/http.js";
+import { webhookVerify } from "../../lib/webhook.js";
 import { checkoutMetrics } from "../checkout-metrics.js";
 import { isWebhookSuccessful, telemetryConfig } from "../telemetry.js";
 
@@ -907,8 +878,8 @@ function collectTaxes(params) {
         status: "error",
         error_code: "verification_failed",
       });
-      return webhookErrorResponse(
-        `Failed to verify the webhook signature: ${error}`,
+      return ok(
+        exceptionOperation(`Failed to verify the webhook signature: ${error}`),
       );
     }
 
@@ -934,17 +905,14 @@ function collectTaxes(params) {
 
     checkoutMetrics.collectTaxesCounter.add(1, { status: "success" });
 
-    return {
-      statusCode: HTTP_OK,
-      body: JSON.stringify(operations),
-    };
+    return ok(operations);
   } catch (error) {
     logger.error("Error in tax collection:", error);
     checkoutMetrics.collectTaxesCounter.add(1, {
       status: "error",
       error_code: "exception",
     });
-    return webhookErrorResponse(`Server error: ${error.message}`);
+    return ok(exceptionOperation(`Server error: ${error.message}`));
   }
 }
 /**
@@ -1030,10 +998,9 @@ function obtainTaxRates(item) {
  * @see https://developer.adobe.com/commerce/extensibility/webhooks/responses/#add-operation
  */
 function createTaxBreakdownOperation(index, tax, taxAmount) {
-  return {
-    op: "add",
-    path: `oopQuote/items/${index}/tax_breakdown`,
-    value: {
+  return addOperation(
+    `oopQuote/items/${index}/tax_breakdown`,
+    {
       data: {
         code: tax.code,
         rate: tax.rate,
@@ -1042,9 +1009,8 @@ function createTaxBreakdownOperation(index, tax, taxAmount) {
         tax_rate_key: `${tax.code}-${tax.rate}`,
       },
     },
-    instance:
-      "Magento\\OutOfProcessTaxManagement\\Api\\Data\\OopQuoteItemTaxBreakdownInterface",
-  };
+    "Magento\\OutOfProcessTaxManagement\\Api\\Data\\OopQuoteItemTaxBreakdownInterface",
+  );
 }
 
 /**
@@ -1062,19 +1028,17 @@ function createTaxSummaryOperation(
   itemTaxAmount,
   discountCompensationTaxAmount,
 ) {
-  return {
-    op: "replace",
-    path: `oopQuote/items/${index}/tax`,
-    value: {
+  return replaceOperation(
+    `oopQuote/items/${index}/tax`,
+    {
       data: {
         rate: itemTaxRate,
         amount: itemTaxAmount,
         discount_compensation_amount: discountCompensationTaxAmount,
       },
     },
-    instance:
-      "Magento\\OutOfProcessTaxManagement\\Api\\Data\\OopQuoteItemTaxInterface",
-  };
+    "Magento\\OutOfProcessTaxManagement\\Api\\Data\\OopQuoteItemTaxInterface",
+  );
 }
 
 // Export the instrumented function as main
@@ -1093,20 +1057,22 @@ Expected: PASS (2 tests)
 
 ```bash
 git add tax-integration/actions/collect-taxes tax-integration/test/actions/collect-taxes.test.js
-git commit -m "tax-integration: move collect-taxes action"
+git commit -m "tax-integration: move collect-taxes action, rebuilt on SDK webhook-response builders"
 ```
 
 ---
 
-### Task 6: Move `collect-adjustment-taxes` action
+### Task 6: Move `collect-adjustment-taxes` action, rebuilt on `@adobe/aio-commerce-sdk/webhooks/responses`
+
+Same mapping as Task 5: `createAdjustmentRefundTax`/`createAdjustmentFeeTax` (both `{op: "replace", path, value}` object literals with no `instance`) become `replaceOperation(path, value)` calls; `webhookErrorResponse` calls become `ok(exceptionOperation(message))`; the success return becomes `ok(operations)`.
 
 **Files:**
 - Create: `tax-integration/actions/collect-adjustment-taxes/index.js`
 - Test: `tax-integration/test/actions/collect-adjustment-taxes.test.js`
 
 **Interfaces:**
-- Consumes: same as Task 5 (`webhook.js`, `http.js`, `checkout-metrics.js`, `telemetry.js`).
-- Produces: `export const main`, wired into `app.config.yaml` in Task 7.
+- Consumes: `webhookVerify` from `../../lib/webhook.js` (Task 3); `replaceOperation`, `exceptionOperation`, `ok` from `@adobe/aio-commerce-sdk/webhooks/responses`; `checkoutMetrics`, `telemetryConfig`/`isWebhookSuccessful` from Task 4.
+- Produces: `export const main`, wired into `app.config.yaml` in Task 8.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1161,10 +1127,10 @@ describe("collect-adjustment-taxes", () => {
     );
 
     const result = await main(params);
-    const body = JSON.parse(result.body);
 
     expect(result.statusCode).toBe(200);
-    expect(body).toEqual([
+    // `ok()` no longer JSON.stringify's the body — it's the raw operations array
+    expect(result.body).toEqual([
       { op: "replace", path: "oopCreditMemo/adjustment/refund_tax", value: 8.1 },
       { op: "replace", path: "oopCreditMemo/adjustment/fee_tax", value: 0.81 },
     ]);
@@ -1186,7 +1152,7 @@ describe("collect-adjustment-taxes", () => {
 Run: `cd tax-integration && npx vitest run test/actions/collect-adjustment-taxes.test.js`
 Expected: FAIL — `Cannot find module '../../actions/collect-adjustment-taxes/index.js'`
 
-- [ ] **Step 3: Create `tax-integration/actions/collect-adjustment-taxes/index.js`** (moved verbatim from root; only the `webhook.js` import path changes)
+- [ ] **Step 3: Create `tax-integration/actions/collect-adjustment-taxes/index.js`** (moved from root; the tax-rate lookup and rounding logic is byte-for-byte unchanged — only the response-envelope construction changes)
 
 ```js
 /*
@@ -1205,9 +1171,13 @@ import {
   getInstrumentationHelpers,
   instrumentEntrypoint,
 } from "@adobe/aio-lib-telemetry";
+import {
+  exceptionOperation,
+  ok,
+  replaceOperation,
+} from "@adobe/aio-commerce-sdk/webhooks/responses";
 
-import { webhookErrorResponse, webhookVerify } from "../../lib/webhook.js";
-import { HTTP_OK } from "../../lib/http.js";
+import { webhookVerify } from "../../lib/webhook.js";
 import { checkoutMetrics } from "../checkout-metrics.js";
 import { isWebhookSuccessful, telemetryConfig } from "../telemetry.js";
 
@@ -1237,8 +1207,8 @@ function collectAdjustmentTaxes(params) {
         status: "error",
         error_code: "verification_failed",
       });
-      return webhookErrorResponse(
-        `Failed to verify the webhook signature: ${error}`,
+      return ok(
+        exceptionOperation(`Failed to verify the webhook signature: ${error}`),
       );
     }
 
@@ -1249,7 +1219,7 @@ function collectAdjustmentTaxes(params) {
     const { oopCreditMemo } = body;
     if (!oopCreditMemo?.items) {
       logger.error("Invalid or missing oopCreditMemo data");
-      return webhookErrorResponse("Invalid or missing oopCreditMemo data");
+      return ok(exceptionOperation("Invalid or missing oopCreditMemo data"));
     }
 
     // Check if store has tax included setup
@@ -1286,17 +1256,14 @@ function collectAdjustmentTaxes(params) {
 
     checkoutMetrics.collectAdjustmentTaxesCounter.add(1, { status: "success" });
 
-    return {
-      statusCode: HTTP_OK,
-      body: JSON.stringify(operations),
-    };
+    return ok(operations);
   } catch (error) {
     logger.error("Error in adjustment tax collection:", error);
     checkoutMetrics.collectAdjustmentTaxesCounter.add(1, {
       status: "error",
       error_code: "exception",
     });
-    return webhookErrorResponse(`Server error: ${error.message}`);
+    return ok(exceptionOperation(`Server error: ${error.message}`));
   }
 }
 
@@ -1319,11 +1286,7 @@ function calculateTaxAmount(taxableAmount, taxRate) {
  * @returns {{op: string, path: string, value}}
  */
 function createAdjustmentRefundTax(value) {
-  return {
-    op: "replace",
-    path: "oopCreditMemo/adjustment/refund_tax",
-    value,
-  };
+  return replaceOperation("oopCreditMemo/adjustment/refund_tax", value);
 }
 
 /**
@@ -1333,11 +1296,7 @@ function createAdjustmentRefundTax(value) {
  * @returns {{op: string, path: string, value}}
  */
 function createAdjustmentFeeTax(value) {
-  return {
-    op: "replace",
-    path: "oopCreditMemo/adjustment/fee_tax",
-    value,
-  };
+  return replaceOperation("oopCreditMemo/adjustment/fee_tax", value);
 }
 
 // Export the instrumented function as main
@@ -1356,7 +1315,7 @@ Expected: PASS (2 tests)
 
 ```bash
 git add tax-integration/actions/collect-adjustment-taxes tax-integration/test/actions/collect-adjustment-taxes.test.js
-git commit -m "tax-integration: move collect-adjustment-taxes action"
+git commit -m "tax-integration: move collect-adjustment-taxes action, rebuilt on SDK webhook-response builders"
 ```
 
 ---
@@ -1891,6 +1850,13 @@ git commit -m "tax-integration: rewrite create-tax-integrations as a custom inst
 
 The switch from a machine-credential backend proxy to a direct, admin-IMS-token frontend call is the **officially documented** v2 pattern (the SDK's own `commerce-app-admin-ui` skill demonstrates `useIms()` for exactly this purpose) — it is not the same kind of "unproven" risk as the runtime-webhook auth swap in Phase 6. It does, however, introduce one new, concrete risk that Task 19 calls out explicitly: whether Commerce's REST API permits cross-origin `fetch()` calls from the Admin UI extension's iframe origin. The old proxy action sidestepped this because the call was server-to-server.
 
+**Risk disclosure — `@adobe/aio-commerce-lib-admin-ui` is experimental.** The package's own docs (`docs/usage.md` in the `aio-commerce-sdk` monorepo) open with: *"Experimental: This package is not yet production-ready. The API may change in future releases."* Every import from `@adobe/aio-commerce-lib-admin-ui/*` in this phase (`/menu`, `/web`) rests on that same experimental footing — call this out the same way the spec flags the runtime-webhook auth swap as unproven, not as a settled dependency choice. Note the exact import boundary: `@adobe/aio-commerce-lib-admin-ui`'s menu/web/api pieces are imported **directly** from their own `@adobe/aio-commerce-lib-admin-ui/*` subpaths — per the design spec, `@adobe/aio-commerce-sdk` does **not** re-export them (it only re-exports `@adobe/aio-commerce-lib-webhooks` and `@adobe/aio-commerce-lib-core`).
+
+**Scope decisions made for this phase** (both explicitly optional per the design spec):
+
+- **`enableAdminUiSdk()`/`registerExtension()` as a `customInstallationStep`:** `@adobe/aio-commerce-lib-admin-ui/api`'s `createAdminUiApiClient` could turn the Admin UI SDK's Commerce-side enablement into an install step instead of a manual Commerce Admin action. **Decision: skip it in this plan.** This phase already carries three separate open risks (Spectrum S2 component parity, the CORS validation gate, and the admin-ui package's experimental status) — adding a new network-calling install step on top of that compounds scope without a proportionate benefit yet. The root README's existing guidance (`composer require "magento/commerce-backend-sdk": ">=3.0"` plus completing Adobe's Admin UI SDK installation process) remains the documented manual fallback in Task 22's README. Revisit as a follow-up once the primary functional migration and the CORS decision are validated.
+- **Grid columns / order-view buttons / mass actions wire-contract builders (`parseGridRequest`/`okGridResponse`, `parseOrderViewButtonRequest`/`okOrderViewButtonResponse`, `parseMassActionRequest`/`okMassActionResponse`):** **Not applicable here.** The tax Admin UI is, and remains, a single custom menu page (`TaxClassesPage`/`TaxClassDialog`) with no grid columns, order-view buttons, or mass actions declared on `commerce/backend-ui/2` — those three extension types don't exist in this app's `adminUi` config (only `adminUi.menu`, added in Task 14), so their wire-contract builders have no handler to attach to. Do not force them in.
+
 ### Task 13: Scaffold the `commerce/backend-ui/2` extension
 
 **Files:**
@@ -1902,9 +1868,11 @@ The switch from a machine-credential backend proxy to a direct, admin-IMS-token 
 - Create (generated): `tax-integration/src/commerce-backend-ui-2/web-src/src/components/welcome.jsx`
 - Modify (generated): `tax-integration/app.config.yaml` (adds the `extensions: commerce/backend-ui/2` include)
 - Modify (generated): `tax-integration/install.yaml`, `tax-integration/extension-manifest.json`
-- Modify (generated): `tax-integration/package.json` (pins `react`, `react-dom`, `@react-spectrum/s2`, `@adobe/aio-commerce-lib-admin-ui`)
+- Modify (generated): `tax-integration/package.json` (pins `react`, `react-dom`, `@react-spectrum/s2`)
 
 This task runs `@adobe/aio-commerce-lib-app`'s own generator CLI — **not** the Claude Code `commerce-app-migrate`/`commerce-app-management` plugins the design spec's non-goals exclude. The generator is the library's own idempotent scaffolding tool; hand-authoring the files it manages (the `hooks`, `operations`, and `web` sections of `ext.config.yaml`, plus `install.yaml`/`extension-manifest.json`) is explicitly discouraged by the SDK's own `commerce-app-admin-ui` skill documentation, since the build derives them from the `adminUi` config block.
+
+Note: `@adobe/aio-commerce-lib-admin-ui` itself is **already** pinned in `package.json` (Task 1, exact beta `0.2.0-beta-20260702145741`) — that's a deliberate change from the generator's default behavior of choosing its own version, made explicitly by the design spec since the real release doesn't exist yet. If the generator tries to overwrite that pin with a different (older, stable) version when it runs `npm install`, re-pin the exact beta version in `package.json` afterward and re-run `npm install` — treat this as a known rough edge of mixing a hand-pinned beta with the generator's own dependency management, not a sign something is broken.
 
 - [ ] **Step 1: Add the `adminUi` placeholder to `app.commerce.config.ts`** so the generator has something to key off of
 
@@ -1923,7 +1891,7 @@ In `tax-integration/app.commerce.config.ts`, add after the `installation` block 
 - [ ] **Step 2: Run the generator**
 
 Run: `cd tax-integration && npx @adobe/aio-commerce-lib-app init`
-Expected: exits 0; creates `src/commerce-backend-ui-2/` (`ext.config.yaml`, `web-src/index.html`, `web-src/src/app.jsx`, `web-src/src/pages/main-page.jsx`, `web-src/src/components/welcome.jsx`), updates `install.yaml` and `extension-manifest.json`, adds `extensions.commerce/backend-ui/2` to `app.config.yaml`, and adds pinned `react`/`react-dom`/`@react-spectrum/s2`/`@adobe/aio-commerce-lib-admin-ui` to `package.json`. Do not hand-edit the versions it pins.
+Expected: exits 0; creates `src/commerce-backend-ui-2/` (`ext.config.yaml`, `web-src/index.html`, `web-src/src/app.jsx`, `web-src/src/pages/main-page.jsx`, `web-src/src/components/welcome.jsx`), updates `install.yaml` and `extension-manifest.json`, adds `extensions.commerce/backend-ui/2` to `app.config.yaml`, and adds pinned `react`/`react-dom`/`@react-spectrum/s2` to `package.json` (`@adobe/aio-commerce-lib-admin-ui` is already pinned from Task 1 — see the note below if the generator tries to change that pin). Do not hand-edit the versions it pins.
 
 - [ ] **Step 3: Verify `tax-integration/app.config.yaml` now includes the extension**
 
@@ -1987,10 +1955,10 @@ with:
   },
 ```
 
-and add the import at the top of the file:
+and add the import at the top of the file — from `@adobe/aio-commerce-lib-admin-ui/menu` directly, **not** `@adobe/aio-commerce-sdk/admin-ui/menu` (per the design spec, the meta-package doesn't re-export the admin-ui library):
 
 ```ts
-import { MENU_STORES } from "@adobe/aio-commerce-sdk/admin-ui/menu";
+import { MENU_STORES } from "@adobe/aio-commerce-lib-admin-ui/menu";
 ```
 
 - [ ] **Step 2: Re-run the generator to sync the extension config, then rebuild**
@@ -2647,23 +2615,36 @@ Run: `cd tax-integration && npx aio app deploy --force-build --force-deploy`, th
   - **If the requests succeed** (Commerce returns the data with no CORS error in the console): no further action — Tasks 17/18's direct-call implementation stands. Document this outcome in `tax-integration/README.md` (Task 22) so the next contributor doesn't second-guess it.
   - **If the browser blocks the requests with a CORS error**: implement the fallback below.
 
-- [ ] **Step 3 (fallback branch only): add a minimal proxy action that forwards the admin's own IMS token**, *not* machine `OAUTH_*` credentials (unlike the old `commerce/index.js`, which used the app's service-account credentials) — create `tax-integration/src/commerce-backend-ui-2/actions/commerce-tax-classes/index.js`:
+- [ ] **Step 3 (fallback branch only): add a minimal proxy action that forwards the admin's own IMS token**, *not* machine `OAUTH_*` credentials (unlike the old `commerce/index.js`, which used the app's service-account credentials) — create `tax-integration/src/commerce-backend-ui-2/actions/commerce-tax-classes/index.js`. `@adobe/aio-commerce-sdk/core/headers`'s `parseBearerToken` is a clean fit for validating the incoming `Authorization` header (rejecting anything that isn't a well-formed Bearer token before it's forwarded to Commerce) — it's a pure function with no wire-format ambiguity. For the response envelope, use `ok()` from `@adobe/aio-commerce-sdk/core/responses` for the success path only (verified — Tasks 5/6 already confirm `ok()` produces the flat `{statusCode, body}` shape OpenWhisk web actions expect); its `badRequest`/`internalServerError` counterparts return a nested `{type: "error", error: {statusCode, body}}` envelope instead, which OpenWhisk's web-action dispatch does not unwrap on its own — since there's no confirmed wrapper for that shape in this app, the error paths below use plain object literals rather than asserting an unverified integration detail:
 
 ```js
+import { ok } from "@adobe/aio-commerce-sdk/core/responses";
+import { parseBearerToken } from "@adobe/aio-commerce-sdk/core/headers";
+
 export async function main(params) {
   const { operation, method = "GET", payload = null } = params;
-  const authorization = params.__ow_headers?.authorization;
 
-  const response = await fetch(`${params.COMMERCE_BASE_URL}V1/${operation}`, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: authorization,
-    },
-    ...(payload ? { body: JSON.stringify(payload) } : {}),
-  });
+  let bearerToken;
+  try {
+    bearerToken = parseBearerToken(params.__ow_headers?.authorization ?? "");
+  } catch {
+    return { statusCode: 400, body: { message: "Missing or malformed Authorization header" } };
+  }
 
-  return { statusCode: response.status, body: await response.json() };
+  try {
+    const response = await fetch(`${params.COMMERCE_BASE_URL}V1/${operation}`, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${bearerToken.token}`,
+      },
+      ...(payload ? { body: JSON.stringify(payload) } : {}),
+    });
+
+    return ok({ body: await response.json() });
+  } catch (error) {
+    return { statusCode: 500, body: { message: `Commerce request failed: ${error.message}` } };
+  }
 }
 ```
 
@@ -2833,6 +2814,13 @@ deploy, and Commerce-association steps, follow the
 [Adobe App Management documentation](https://developer.adobe.com/commerce/extensibility/app-development/)
 — this README only covers what's specific to the tax domain.
 
+> **Beta dependencies:** this app pins beta builds of `@adobe/aio-commerce-lib-app`,
+> `@adobe/aio-commerce-sdk`, and `@adobe/aio-commerce-lib-admin-ui` (see `package.json`) ahead of
+> their real releases. `@adobe/aio-commerce-lib-admin-ui` is additionally marked
+> **Experimental — not yet production-ready** by its own maintainers; this app is the only one of
+> the four checkout domain apps that depends on it, since it's the only one with an Admin UI
+> extension.
+
 ## Prerequisites
 
 - Adobe Commerce as a Cloud Service (SaaS), or Adobe Commerce `2.4.5`+ (PaaS) with:
@@ -2843,6 +2831,11 @@ deploy, and Commerce-association steps, follow the
   ```
 
 - [Commerce Webhooks](https://developer.adobe.com/commerce/extensibility/webhooks/installation/) installed (PaaS).
+- Complete the [Admin UI SDK installation process](https://developer.adobe.com/commerce/extensibility/admin-ui-sdk/installation/)
+  in Commerce Admin manually before associating this app — this app does not automate Admin UI SDK
+  enablement via a custom installation step (a deliberate scope decision; see the design spec's
+  "SDK packages (beta)" section for the `enableAdminUiSdk`/`registerExtension` API this could use
+  in a future iteration).
 
 ## Install
 
@@ -2925,14 +2918,16 @@ git commit -m "tax-integration: add README with App Management flow and tax-spec
 - `collect-taxes`/`collect-adjustment-taxes` moved — Tasks 5, 6.
 - `create-tax-integrations.js` rewritten as `defineCustomInstallationStep` using `getCommerceClient(resolveImsAuthParams(context.params))` — Task 12.
 - `tax-integrations.yaml` moved — Task 10.
-- Admin UI v1→v2 migration, explicit dedicated phase — Phase 5 (Tasks 13-19).
+- Admin UI v1→v2 migration, explicit dedicated phase — Phase 5 (Tasks 13-19), including the experimental-package risk disclosure and the two explicit scope decisions (skip `enableAdminUiSdk`/`registerExtension`; grid/mass-action/order-view-button builders not applicable).
 - `commerce-checkout-starter-kit/info` duplicated unchanged — Task 7.
-- Webhook helpers split out of `lib/adobe-commerce.js` — Task 3.
+- `webhookVerify` split out of `lib/adobe-commerce.js`; `webhookSuccessResponse`/`webhookErrorResponse` dropped and replaced by `@adobe/aio-commerce-sdk/webhooks/responses`'s typed builders (`addOperation`/`replaceOperation`/`exceptionOperation`/`ok`) inside the two webhook actions themselves — Tasks 3, 5, 6.
+- Beta SDK package versions pinned exactly per the design spec's "SDK packages (beta)" table (`aio-commerce-lib-app@1.8.0-beta-...`, `aio-commerce-sdk@1.4.0-beta-...`, `aio-commerce-lib-admin-ui@0.2.0-beta-...`) — Task 1.
+- `@adobe/aio-commerce-sdk/core/*` adopted where a clean drop-in (`HTTP_OK` in `telemetry.js`, Task 4; `parseBearerToken`/`ok` in Task 19's conditional CORS-fallback proxy action) and explicitly not forced elsewhere (`lib/http.js` stays for the untouched info action; `allNonEmpty` has no natural home in this app's scope) — Tasks 3, 4, 19.
 - Auth-swap gated on `shipping-method/`'s spike, decision point present — Task 20.
-- README following App Management flow, tax-specific guidance only — Task 22.
+- README following App Management flow, tax-specific guidance only, including the beta-dependency and experimental-admin-ui disclosure — Task 22.
 - Tests moved/added alongside code, new tests for the rewritten install step — Tasks 5, 6, 11, 16, 20, throughout.
 - No root-level file touched — enforced as a Global Constraint and never violated by any task's file list.
 
 **Placeholder scan:** no "TBD"/"handle it"/"similar to Task N" — the two HTML-comment placeholders in Task 22's README are intentional and are explicitly filled in by Task 19's outcome in Task 22 Step 2, not left dangling.
 
-**Type/name consistency:** `createTaxIntegrations(client, data)` (Task 11's test, Task 12's implementation) — consistent. `fetchCommerceTaxClasses(commerceHost, imsToken)` / `createOrUpdateCommerceTaxClass(commerceHost, imsToken, taxClass)` (Task 16's test, Task 17's implementation, Task 18's usage) — consistent. `webhookVerify`/`webhookSuccessResponse`/`webhookErrorResponse` (Task 3) and `HTTP_OK` (Task 3) import paths match across Tasks 5, 6, 7.
+**Type/name consistency:** `createTaxIntegrations(client, data)` (Task 11's test, Task 12's implementation) — consistent. `fetchCommerceTaxClasses(commerceHost, imsToken)` / `createOrUpdateCommerceTaxClass(commerceHost, imsToken, taxClass)` (Task 16's test, Task 17's implementation, Task 18's usage) — consistent. `webhookVerify` (Task 3) and `HTTP_OK` (Task 3, info-action-only) import paths match across Tasks 5, 6, 7. `addOperation`/`replaceOperation`/`exceptionOperation`/`ok` from `@adobe/aio-commerce-sdk/webhooks/responses` (Tasks 5, 6) and `MENU_STORES` from `@adobe/aio-commerce-lib-admin-ui/menu` (Task 14, corrected from an earlier draft that wrongly sourced it from `@adobe/aio-commerce-sdk/admin-ui/menu`) use the exact subpaths confirmed against the `aio-commerce-sdk` monorepo source.
