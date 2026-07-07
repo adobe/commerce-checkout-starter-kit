@@ -1058,8 +1058,8 @@ git commit -m "Add payment-method app.config.yaml runtime manifest"
 - Create: `payment-method/tsconfig.json`
 
 **Interfaces:**
-- Consumes: `defineConfig` from `@adobe/aio-commerce-lib-app/config`.
-- Produces: the `installation.customInstallationSteps` entry that Task 8's rewritten install script is wired into.
+- Consumes: `defineConfig`, `validateCommerceAppConfig` from `@adobe/aio-commerce-lib-app/config`.
+- Produces: the `installation.customInstallationSteps` entry that Task 8's rewritten install script is wired into, and the `webhooks` entries that the App Management install workflow subscribes to Commerce automatically — no manual "Create Webhooks" step and no custom installation-step code for this (see Task 10's README rewrite).
 
 - [ ] **Step 1: Create `payment-method/tsconfig.json`**
 
@@ -1115,16 +1115,228 @@ export default defineConfig({
       },
     ],
   },
+  // Declarative webhook subscriptions: the App Management install workflow resolves
+  // each `runtimeAction`'s deployed URL and subscribes it to Commerce automatically —
+  // no manual "Create Webhooks" step, no custom installation-step code for this.
+  // Both actions run with `require-adobe-auth: false` / `raw-http: true` in
+  // app.config.yaml (Commerce calls them directly, verified via COMMERCE_WEBHOOKS_PUBLIC_KEY
+  // signature checking, not IMS auth) — `requireAdobeAuth: false` here must match that, or
+  // the SDK would attach `developer_console_oauth` credentials Commerce doesn't need and
+  // this action doesn't check.
+  //
+  // webhook_method/webhook_type/batch_name/hook_name/timeout/soft_timeout/priority/required/
+  // fallback_error_message values below are sourced directly from AdobeDocs/commerce-extensibility
+  // (the checkout starter kit's payment-use-cases doc), not fabricated. `batch_name`/`hook_name`
+  // are namespaced by the SDK at subscribe time (prefixed with the lowercased, underscore-safe
+  // form of `metadata.id`, e.g. `checkout_payment_method_validate_payment`), so they don't need to
+  // be globally unique here.
+  webhooks: [
+    {
+      label: "Validate Payment (PaaS)",
+      description:
+        "Validates out-of-process payment information before an order is placed (PaaS).",
+      category: "validation",
+      env: ["paas"],
+      runtimeAction: "commerce-checkout-starter-kit/validate-payment",
+      requireAdobeAuth: false,
+      webhook: {
+        webhook_method: "observer.sales_order_place_before",
+        webhook_type: "before",
+        batch_name: "out_of_process_payment_methods",
+        hook_name: "validate_payment",
+        method: "POST",
+        timeout: 20_000,
+        soft_timeout: 0,
+        priority: 100,
+        required: true,
+        fallback_error_message: "Error on validation",
+      },
+    },
+    {
+      label: "Validate Payment (SaaS)",
+      description:
+        "Validates out-of-process payment information before an order is placed (SaaS).",
+      category: "validation",
+      env: ["saas"],
+      runtimeAction: "commerce-checkout-starter-kit/validate-payment",
+      requireAdobeAuth: false,
+      webhook: {
+        webhook_method: "observer.sales_order_place_before",
+        webhook_type: "before",
+        batch_name: "validate_payment",
+        hook_name: "oope_payment_methods_sales_order_place_before",
+        method: "POST",
+        timeout: 20_000,
+        soft_timeout: 0,
+        priority: 100,
+        required: true,
+        fallback_error_message: "Error on validation",
+      },
+    },
+    {
+      label: "Filter Payment Methods (PaaS)",
+      description:
+        "Filters out-of-process payment methods from checkout's available list (PaaS).",
+      category: "append",
+      env: ["paas"],
+      runtimeAction: "commerce-checkout-starter-kit/filter-payment",
+      requireAdobeAuth: false,
+      webhook: {
+        webhook_method:
+          "plugin.magento.out_of_process_payment_methods.api.payment_method_filter.get_list",
+        webhook_type: "after",
+        batch_name: "out_of_process_payment_methods",
+        hook_name: "payment_method_filter",
+        method: "POST",
+        timeout: 20_000,
+        soft_timeout: 0,
+      },
+    },
+    {
+      label: "Filter Payment Methods (SaaS)",
+      description:
+        "Filters out-of-process payment methods from checkout's available list (SaaS).",
+      category: "append",
+      env: ["saas"],
+      runtimeAction: "commerce-checkout-starter-kit/filter-payment",
+      requireAdobeAuth: false,
+      webhook: {
+        webhook_method:
+          "plugin.out_of_process_payment_methods.api.payment_method_filter.get_list",
+        webhook_type: "after",
+        batch_name: "out_of_process_payment_methods",
+        hook_name: "payment_method_filter",
+        method: "POST",
+        timeout: 20_000,
+        soft_timeout: 0,
+      },
+    },
+  ],
 });
 ```
 
 `metadata.id` uses only alphanumerics and hyphens (validation constraint confirmed in `@adobe/aio-commerce-lib-app`'s `commerce-app-init` skill docs: "accepts alphanumeric characters and hyphens only — no dots, underscores, or spaces"). `version` is plain semver, no pre-release identifier, for the same reason.
 
-- [ ] **Step 3: Commit**
+`category: "validation"`/`"append"` are this plan's judgment call, not sourced from AdobeDocs (the coordinator's confirmed values covered `webhook_method`/`webhook_type`/`batch_name`/`hook_name`/`method`/`timeout`/`soft_timeout`/`priority`/`required`/`fallback_error_message` only). `validate-payment` only ever returns `successOperation()`/`exceptionOperation()` (accept-or-reject, no data mutation) → `"validation"`. `filter-payment` only ever returns `addOperation(...)` (adds entries to the result list, never replaces/removes) → `"append"`, per the three-way split in `@adobe/aio-commerce-lib-app`'s schema (`packages/aio-commerce-lib-app/source/config/schema/webhooks.ts`: `"validation" | "append" | "modification"`). `category` only affects the SDK's own conflict-detection warning (`validateWebhookConflicts`, which only inspects `"modification"` entries) — revisit if a future change makes either action call `replaceOperation`/`removeOperation`.
+
+- [ ] **Step 3: Write the config-validation test `payment-method/test/app.commerce.config.test.js`**
+
+There were zero tests for `app.commerce.config.ts` anywhere in this plan before this revision — this is the first one, added specifically to lock in the four `webhooks` entries above (2 per action, env-split) against the SDK's own schema rather than trusting hand-typed object literals:
+
+```js
+/*
+Copyright 2026 Adobe. All rights reserved.
+This file is licensed to you under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License. You may obtain a copy
+of the License at http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed under
+the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
+OF ANY KIND, either express or implied. See the License for the specific language
+governing permissions and limitations under the License.
+*/
+
+import { validateCommerceAppConfig } from "@adobe/aio-commerce-lib-app/config";
+import { describe, expect, test } from "vitest";
+
+import config from "../app.commerce.config.ts";
+
+const VALIDATE_PAYMENT_ACTION = "commerce-checkout-starter-kit/validate-payment";
+const FILTER_PAYMENT_ACTION = "commerce-checkout-starter-kit/filter-payment";
+
+function byEnv(entries, env) {
+  return entries.find((entry) => entry.env?.[0] === env);
+}
+
+describe("app.commerce.config.ts webhooks", () => {
+  test("validates against the SDK's CommerceAppConfigSchema", () => {
+    expect(() => validateCommerceAppConfig(config)).not.toThrow();
+  });
+
+  test("declares exactly 4 webhook entries: 2 for validate-payment, 2 for filter-payment", () => {
+    const validated = validateCommerceAppConfig(config);
+    expect(validated.webhooks).toHaveLength(4);
+
+    const validatePaymentEntries = validated.webhooks.filter(
+      (entry) => entry.runtimeAction === VALIDATE_PAYMENT_ACTION,
+    );
+    const filterPaymentEntries = validated.webhooks.filter(
+      (entry) => entry.runtimeAction === FILTER_PAYMENT_ACTION,
+    );
+    expect(validatePaymentEntries).toHaveLength(2);
+    expect(filterPaymentEntries).toHaveLength(2);
+  });
+
+  test("validate-payment: webhook_method is fixed, but batch_name/hook_name differ by env", () => {
+    const validated = validateCommerceAppConfig(config);
+    const entries = validated.webhooks.filter(
+      (entry) => entry.runtimeAction === VALIDATE_PAYMENT_ACTION,
+    );
+    const paas = byEnv(entries, "paas");
+    const saas = byEnv(entries, "saas");
+
+    expect(paas.webhook.webhook_method).toBe("observer.sales_order_place_before");
+    expect(saas.webhook.webhook_method).toBe("observer.sales_order_place_before");
+
+    expect(paas.webhook.batch_name).toBe("out_of_process_payment_methods");
+    expect(paas.webhook.hook_name).toBe("validate_payment");
+    expect(saas.webhook.batch_name).toBe("validate_payment");
+    expect(saas.webhook.hook_name).toBe("oope_payment_methods_sales_order_place_before");
+
+    for (const entry of [paas, saas]) {
+      expect(entry.webhook.method).toBe("POST");
+      expect(entry.webhook.timeout).toBe(20_000);
+      expect(entry.webhook.soft_timeout).toBe(0);
+      expect(entry.webhook.priority).toBe(100);
+      expect(entry.webhook.required).toBe(true);
+      expect(entry.webhook.fallback_error_message).toBe("Error on validation");
+    }
+  });
+
+  test("filter-payment: webhook_method differs by env (magento. prefix), batch_name/hook_name stay the same", () => {
+    const validated = validateCommerceAppConfig(config);
+    const entries = validated.webhooks.filter(
+      (entry) => entry.runtimeAction === FILTER_PAYMENT_ACTION,
+    );
+    const paas = byEnv(entries, "paas");
+    const saas = byEnv(entries, "saas");
+
+    expect(paas.webhook.webhook_method).toBe(
+      "plugin.magento.out_of_process_payment_methods.api.payment_method_filter.get_list",
+    );
+    expect(saas.webhook.webhook_method).toBe(
+      "plugin.out_of_process_payment_methods.api.payment_method_filter.get_list",
+    );
+    expect(paas.webhook.batch_name).toBe(saas.webhook.batch_name);
+    expect(paas.webhook.hook_name).toBe(saas.webhook.hook_name);
+
+    for (const entry of [paas, saas]) {
+      expect(entry.webhook.webhook_type).toBe("after");
+      expect(entry.webhook.method).toBe("POST");
+      expect(entry.webhook.timeout).toBe(20_000);
+      expect(entry.webhook.soft_timeout).toBe(0);
+    }
+  });
+
+  test("every webhook entry sets requireAdobeAuth: false, matching the raw-http actions in app.config.yaml", () => {
+    const validated = validateCommerceAppConfig(config);
+    for (const entry of validated.webhooks) {
+      expect(entry.requireAdobeAuth).toBe(false);
+    }
+  });
+});
+```
+
+- [ ] **Step 4: Run the test to verify it passes**
+
+Run: `cd payment-method && npx vitest run test/app.commerce.config.test.js`
+Expected: `5 passed`. If Vitest can't resolve the `.ts` import out of the box, add `"@vitejs/plugin-basic-ssl"`-free plain esbuild transform is already Vite's default for `.ts` files with no decorators/enums (which `app.commerce.config.ts` doesn't use) — no extra Vitest config should be needed, but if it fails, add `esbuild: { loader: "ts" }` under `test` in `payment-method/vitest.config.js` rather than converting the config file to `.js`.
+
+- [ ] **Step 5: Commit**
 
 ```bash
-git add payment-method/app.commerce.config.ts payment-method/tsconfig.json
-git commit -m "Add payment-method app.commerce.config.ts"
+git add payment-method/app.commerce.config.ts payment-method/tsconfig.json payment-method/test/app.commerce.config.test.js
+git commit -m "Add payment-method app.commerce.config.ts with declarative webhook subscriptions"
 ```
 
 ---
@@ -1474,10 +1686,12 @@ This README only covers what's specific to the payment domain.
 ## What this app does
 
 - `validate-payment`: validates payment information before an order is
-  placed. Configured as a Commerce webhook.
+  placed. Subscribed as a Commerce webhook automatically at install time
+  (see "Webhook subscriptions" below).
 - `filter-payment`: filters out-of-process payment methods from the
-  checkout's available list based on cart/customer conditions. Configured as
-  a Commerce webhook.
+  checkout's available list based on cart/customer conditions. Subscribed as
+  a Commerce webhook automatically at install time (see "Webhook
+  subscriptions" below).
 - `commerce-checkout-starter-kit/info`: Adobe's usage-tracking action. Do not
   modify.
 - A custom installation step (`scripts/create-payment-methods.js`, wired into
@@ -1518,27 +1732,21 @@ webhook calls against.
    -----END PUBLIC KEY-----
    ```
 
-## Create the webhooks
+## Webhook subscriptions
 
-After deploying, [create the webhooks](https://developer.adobe.com/commerce/extensibility/webhooks/create-webhooks/)
-pointing at your deployed action URLs:
+`validate-payment` and `filter-payment` are subscribed to Commerce
+automatically at install time — there is no manual "Create Webhooks" step.
+`app.commerce.config.ts` declares a `webhooks` array (four entries: one PaaS
+and one SaaS variant per action) using `@adobe/aio-commerce-lib-app`'s
+declarative webhook config. At install, the SDK resolves each action's
+deployed Runtime URL and calls Commerce's webhook subscription API for you,
+filtered to whichever environment (PaaS or SaaS) your associated Commerce
+instance actually is — the other environment's entries are skipped.
 
-- `validate-payment`: register on the payment validation webhook method for
-  your payment method (see the payment use-cases doc above for the exact
-  method name per payment method type).
-- `filter-payment`: register on the payment method list webhook, to filter
-  out-of-process payment methods from checkout.
-
-This step is manual, not a custom installation step. The SDK's
-`@adobe/aio-commerce-lib-webhooks/api` `subscribeWebhook` could in principle
-automate it, but `validate-payment`'s exact `webhook_method` name is
-payment-gateway-specific (it varies per out-of-process payment method type,
-not a single well-known constant), so automating it would mean either
-guessing an unverified Commerce API contract or adding a new configuration
-input just to hold that method name. Given that risk for a documentation-only
-convenience, this app keeps the manual step; revisit if a later domain (e.g.
-`tax-integration/`, which has fixed, well-known webhook method names) proves
-the automated pattern out first.
+If you ever need to inspect or remove a subscription directly (e.g. while
+debugging), the subscribed `batch_name`/`hook_name` values are prefixed with
+this app's ID (`checkout-payment-method` → `checkout_payment_method_`), e.g.
+`checkout_payment_method_validate_payment`.
 
 ## Runtime auth strategy
 
@@ -1550,8 +1758,11 @@ the SDK's association-based Commerce client.
 
 ## Validation
 
-1. Deploy the app and complete the association + webhook setup above.
-2. Place an order and confirm the configured payment method appears on the
+1. Deploy, install, and associate the app with your Commerce instance (see
+   the App Management docs linked above) — this also subscribes the two
+   webhooks per the "Webhook subscriptions" section above.
+2. Complete the webhook signature setup above if you haven't already.
+3. Place an order and confirm the configured payment method appears on the
    Checkout page and that `validate-payment`/`filter-payment` behave as
    expected (check the action logs via `aio app logs`).
 ```
@@ -1576,7 +1787,7 @@ git commit -m "Add payment-method README"
 - [ ] **Step 1: Run the full test suite**
 
 Run: `cd payment-method && npm test`
-Expected: all test files pass (`test/lib/webhook.test.js` — 5 tests, `test/scripts/create-payment-methods.test.js` — 3 tests).
+Expected: all test files pass (`test/lib/webhook.test.js` — 5 tests, `test/scripts/create-payment-methods.test.js` — 3 tests, `test/app.commerce.config.test.js` — 5 tests).
 
 - [ ] **Step 1a: Manually verify the new webhook response shapes**
 
@@ -1645,7 +1856,7 @@ git commit -m "Add payment-method implementation plan; sync updated domain-split
 - `webhookSuccessResponse`/`webhookErrorResponse` dropped, replaced by `@adobe/aio-commerce-sdk/webhooks/responses`' `successOperation`/`exceptionOperation`/`addOperation` wrapped in `ok()`, with both actions' response shapes mapped explicitly → Task 3 (removal), Task 4 (`validate-payment`/`filter-payment` rewrite with shape-mapping notes).
 - `webhookVerify` unaffected, still hand-rolled → Task 3.
 - `@adobe/aio-commerce-sdk/core/*` adopted only where a clean drop-in: `HTTP_OK` from `core/responses` replaces the now-dropped local `lib/http.js` → Task 2, Task 3, Task 4. `actions/utils.js`'s helpers were not touched — neither `validate-payment` nor `filter-payment` ever imported them, so there's nothing to replace there.
-- `subscribeWebhook` optional enhancement considered and explicitly declined (payment-gateway-specific webhook method name for `validate-payment` isn't a safe constant to automate against), decision documented in the README rather than silently skipped → Task 10.
+- Declarative `webhooks` config (`defineConfig`'s top-level `webhooks` array) replaces the earlier "keep Create Webhooks manual" decision this plan made when it had only evaluated the lower-level `subscribeWebhook` API: 4 env-scoped entries (2 per action, PaaS/SaaS) declared in `app.commerce.config.ts`, validated by a new test against the SDK's own `validateCommerceAppConfig` → Task 7. README's "Create the webhooks" manual step is removed; only webhook *signature* setup (`COMMERCE_WEBHOOKS_PUBLIC_KEY`, unrelated to subscription registration) remains manual → Task 10. This also corrects this plan's own earlier claim that `validate-payment`'s webhook method was "payment-gateway-specific" and unsafe to automate — the coordinator's confirmed AdobeDocs values show it's actually a fixed Magento observer event (`observer.sales_order_place_before`), so that earlier reasoning was wrong and is retracted.
 
 **Placeholder scan** — no "TBD"/"handle appropriately" left; every step shows complete file contents or an exact command with expected output.
 
