@@ -6,6 +6,7 @@
  * `x-adobe-commerce-webhook-signature` like `collect-taxes` (requires
  * `COMMERCE_WEBHOOKS_PUBLIC_KEY` on the action).
  */
+
 import {
   webhookErrorResponse,
   webhookVerify,
