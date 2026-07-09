@@ -7,10 +7,10 @@
  * `x-adobe-commerce-webhook-signature` like `collect-taxes` (requires
  * `COMMERCE_WEBHOOKS_PUBLIC_KEY` on the action).
  */
-// import {
-//   webhookErrorResponse,
-//   webhookVerify,
-// } from "../../../lib/adobe-commerce.js";
+import {
+  webhookErrorResponse,
+  webhookVerify,
+} from "../../../lib/adobe-commerce.js";
 import { HTTP_OK } from "../../../lib/http.js";
 import {
   discountResultOperation,
@@ -49,62 +49,62 @@ function tierPercentByTotalQty(totalQty) {
 }
 
 function collectStepPriceDiscount(params) {
-  // try {
-  //   const { success, error } = webhookVerify(params);
-  //   if (!success) {
-  //     return webhookErrorResponse(
-  //       `Failed to verify the webhook signature: ${error}`,
-  //     );
-  //   }
+  try {
+    const { success, error } = webhookVerify(params);
+    if (!success) {
+      return webhookErrorResponse(
+        `Failed to verify the webhook signature: ${error}`,
+      );
+    }
 
-  const data = parseJsonBody(params);
+    const data = parseJsonBody(params);
 
-  if (data === null) {
+    if (data === null) {
+      return {
+        statusCode: HTTP_OK,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify([
+          { op: "exception", message: "Invalid webhook payload" },
+        ]),
+      };
+    }
+
+    const items = getShippingItems(data);
+    const discountItemIds = getShippingAssignmentItemIds(items);
+
+    if (!items.length) {
+      return {
+        statusCode: HTTP_OK,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify([zeroDiscountOperation()]),
+      };
+    }
+
+    const totalQty = totalCartQty(items);
+    const { percent, tierNote } = tierPercentByTotalQty(totalQty);
+
+    if (percent == null || percent <= 0) {
+      return {
+        statusCode: HTTP_OK,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify([zeroDiscountOperation()]),
+      };
+    }
+
     return {
       statusCode: HTTP_OK,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify([
-        { op: "exception", message: "Invalid webhook payload" },
+        discountResultOperation(
+          percent,
+          { 1: `${RULE_LABEL} (${tierNote})` },
+          discountItemIds,
+        ),
       ]),
     };
+  } catch (err) {
+    return webhookErrorResponse(`Server error: ${err.message}`);
   }
-
-  const items = getShippingItems(data);
-  const discountItemIds = getShippingAssignmentItemIds(items);
-
-  if (!items.length) {
-    return {
-      statusCode: HTTP_OK,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify([zeroDiscountOperation()]),
-    };
-  }
-
-  const totalQty = totalCartQty(items);
-  const { percent, tierNote } = tierPercentByTotalQty(totalQty);
-
-  if (percent == null || percent <= 0) {
-    return {
-      statusCode: HTTP_OK,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify([zeroDiscountOperation()]),
-    };
-  }
-
-  return {
-    statusCode: HTTP_OK,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify([
-      discountResultOperation(
-        percent,
-        { 1: `${RULE_LABEL} (${tierNote})` },
-        discountItemIds,
-      ),
-    ]),
-  };
-  // } catch (err) {
-  //   return webhookErrorResponse(`Server error: ${err.message}`);
-  // }
 }
 
 export function main(params) {
