@@ -20,23 +20,23 @@ import {
  * Deletes the App Builder workspace for a closed PR, if it was ever created.
  */
 export async function main() {
-  const { AIO_ORG_ID, AIO_PROJECT_ID, WORKSPACE_NAME } = process.env;
+  const { AIO_ORG_ID, AIO_PROJECT_ID, APP_WORKSPACE_NAME } = process.env;
 
   const accessToken = await getAccessToken();
   const consoleClient = await createConsoleClient(accessToken);
 
-  console.info(`Deleting workspace "${WORKSPACE_NAME}" if it exists...`);
+  console.info(`Deleting workspace "${APP_WORKSPACE_NAME}" if it exists...`);
   const deleted = await deleteWorkspaceByName(
     consoleClient,
     AIO_ORG_ID,
     AIO_PROJECT_ID,
-    WORKSPACE_NAME,
+    APP_WORKSPACE_NAME,
   );
 
   console.info(
     deleted
-      ? `Workspace "${WORKSPACE_NAME}" deleted.`
-      : `Workspace "${WORKSPACE_NAME}" did not exist, nothing to do.`,
+      ? `Workspace "${APP_WORKSPACE_NAME}" deleted.`
+      : `Workspace "${APP_WORKSPACE_NAME}" did not exist, nothing to do.`,
   );
 }
 

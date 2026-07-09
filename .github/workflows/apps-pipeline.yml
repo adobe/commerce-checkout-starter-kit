@@ -40,17 +40,21 @@ jobs:
           os: ubuntu-latest
           version: 11.x.x
 
+      - name: Log credential source
+        run: |
+          echo "Using credentials from https://developer.adobe.com/console/projects/${{ vars.AIO_ORG_ID }}/${{ vars.AIO_PROJECT_ID }}/workspaces/${{ vars.AIO_WORKSPACE_ID }}/details"
+
       - name: Authenticate with OAuth Server-to-Server
         uses: adobe/aio-apps-action@6d7fdea67de9ef5ee3bf4c730aeaa5eaa7e2c533 # 4.1.0
         with:
           os: ubuntu-latest
           command: oauth_sts
-          CLIENTID: ${{ secrets.CLIENTID }}
-          CLIENTSECRET: ${{ secrets.CLIENTSECRET }}
-          TECHNICALACCOUNTID: ${{ secrets.TECHNICALACCID }}
-          TECHNICALACCOUNTEMAIL: ${{ secrets.TECHNICALACCEMAIL }}
-          IMSORGID: ${{ secrets.IMSORGID }}
-          SCOPES: ${{ secrets.SCOPES }}
+          CLIENTID: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_CLIENT_ID }}
+          CLIENTSECRET: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_CLIENT_SECRET }}
+          TECHNICALACCOUNTID: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_TECHNICAL_ACCOUNT_ID }}
+          TECHNICALACCOUNTEMAIL: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_TECHNICAL_ACCOUNT_EMAIL }}
+          IMSORGID: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_ORG_ID }}
+          SCOPES: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_SCOPES }}
 
       - name: Select org & project
         run: |
@@ -79,14 +83,15 @@ jobs:
         working-directory: .
         run: node scripts/ensure-app-builder-workspace.js
         env:
-          CLIENTID: ${{ secrets.CLIENTID }}
-          CLIENTSECRET: ${{ secrets.CLIENTSECRET }}
-          IMSORGID: ${{ secrets.IMSORGID }}
-          SCOPES: ${{ secrets.SCOPES }}
           AIO_ORG_ID: ${{ vars.AIO_ORG_ID }}
           AIO_PROJECT_ID: ${{ vars.AIO_PROJECT_ID }}
-          WORKSPACE_NAME: ${{ steps.workspace.outputs.name }}
-          WORKSPACE_TITLE: ${{ steps.workspace.outputs.title }}
+          AIO_WORKSPACE_ID: ${{ vars.AIO_WORKSPACE_ID }}
+          AIO_WORKSPACE_IMS_OAUTH_S2S_CLIENT_ID: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_CLIENT_ID }}
+          AIO_WORKSPACE_IMS_OAUTH_S2S_CLIENT_SECRET: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_CLIENT_SECRET }}
+          AIO_WORKSPACE_IMS_OAUTH_S2S_ORG_ID: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_ORG_ID }}
+          AIO_WORKSPACE_IMS_OAUTH_S2S_SCOPES: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_SCOPES }}
+          APP_WORKSPACE_NAME: ${{ steps.workspace.outputs.name }}
+          APP_WORKSPACE_TITLE: ${{ steps.workspace.outputs.title }}
           APP_DIR: apps/${{ inputs.app }}
 
       - name: Select workspace

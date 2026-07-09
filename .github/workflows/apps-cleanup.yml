@@ -53,13 +53,18 @@ jobs:
           raw="pr${{ github.event.pull_request.number }}-${{ matrix.app }}"
           echo "name=${raw:0:19}" >> "$GITHUB_OUTPUT"
 
+      - name: Log credential source
+        run: |
+          echo "Using credentials from https://developer.adobe.com/console/projects/${{ vars.AIO_ORG_ID }}/${{ vars.AIO_PROJECT_ID }}/workspaces/${{ vars.AIO_WORKSPACE_ID }}/details"
+
       - name: Delete App Builder workspace
         run: node scripts/delete-app-builder-workspace.js
         env:
-          CLIENTID: ${{ secrets.CLIENTID }}
-          CLIENTSECRET: ${{ secrets.CLIENTSECRET }}
-          IMSORGID: ${{ secrets.IMSORGID }}
-          SCOPES: ${{ secrets.SCOPES }}
           AIO_ORG_ID: ${{ vars.AIO_ORG_ID }}
           AIO_PROJECT_ID: ${{ vars.AIO_PROJECT_ID }}
-          WORKSPACE_NAME: ${{ steps.workspace.outputs.name }}
+          AIO_WORKSPACE_ID: ${{ vars.AIO_WORKSPACE_ID }}
+          AIO_WORKSPACE_IMS_OAUTH_S2S_CLIENT_ID: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_CLIENT_ID }}
+          AIO_WORKSPACE_IMS_OAUTH_S2S_CLIENT_SECRET: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_CLIENT_SECRET }}
+          AIO_WORKSPACE_IMS_OAUTH_S2S_ORG_ID: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_ORG_ID }}
+          AIO_WORKSPACE_IMS_OAUTH_S2S_SCOPES: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_SCOPES }}
+          APP_WORKSPACE_NAME: ${{ steps.workspace.outputs.name }}

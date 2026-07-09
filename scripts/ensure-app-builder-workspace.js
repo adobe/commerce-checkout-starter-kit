@@ -31,26 +31,28 @@ export async function main() {
   const {
     AIO_ORG_ID,
     AIO_PROJECT_ID,
-    WORKSPACE_NAME,
-    WORKSPACE_TITLE,
+    APP_WORKSPACE_NAME,
+    APP_WORKSPACE_TITLE,
     APP_DIR,
   } = process.env;
 
   const accessToken = await getAccessToken();
   const consoleClient = await createConsoleClient(accessToken);
 
-  console.info(`Ensuring workspace "${WORKSPACE_NAME}"...`);
+  console.info(`Ensuring workspace "${APP_WORKSPACE_NAME}"...`);
   const { workspace, created } = await ensureWorkspace(
     consoleClient,
     AIO_ORG_ID,
     AIO_PROJECT_ID,
-    WORKSPACE_NAME,
-    WORKSPACE_TITLE,
+    APP_WORKSPACE_NAME,
+    APP_WORKSPACE_TITLE,
   );
   const workspaceId = workspace.id ?? workspace.workspaceId;
 
   if (created) {
-    console.info(`Workspace "${WORKSPACE_NAME}" created (id: ${workspaceId}).`);
+    console.info(
+      `Workspace "${APP_WORKSPACE_NAME}" created (id: ${workspaceId}).`,
+    );
 
     const installConfigPath = path.join(APP_DIR, "install.yaml");
     const installConfig = load(fs.readFileSync(installConfigPath, "utf8"));
@@ -70,7 +72,7 @@ export async function main() {
     }
   } else {
     console.info(
-      `Workspace "${WORKSPACE_NAME}" already exists (id: ${workspaceId}).`,
+      `Workspace "${APP_WORKSPACE_NAME}" already exists (id: ${workspaceId}).`,
     );
   }
 }
