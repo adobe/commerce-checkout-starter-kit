@@ -58,6 +58,8 @@
 
 **8. Beta packages require Adobe's internal Artifactory pre-release npm feed, not public npm.** `@adobe/aio-commerce-lib-app@1.8.0-beta-...` and `@adobe/aio-commerce-sdk@1.4.0-beta-...` are not on `registry.npmjs.org`. `~/.npmrc` needs `@adobe:registry=https://artifactory-uw2.adobeitc.com/artifactory/api/npm/npm-aio-commerce-sdk-pre-release/` plus an `_authToken` pointing at a valid Artifactory API token env var. If `npm install` 401s, this is almost certainly why — check the registry config before assuming a dependency problem.
 
+**9. Don't write a test for `app.commerce.config.ts` (Task 7 Step 3, and its `test/app.commerce.config.test.js` references elsewhere).** It's a plain declarative data structure, not behavior — asserting its shape back at itself doesn't catch anything a TypeScript/schema check wouldn't already catch, and it was dropped from `totals-collector/` for this reason. Skip creating `payment-method/test/app.commerce.config.test.js` entirely, and drop it from Task 7's commit step and Task 11's "all test files pass" list.
+
 ---
 
 ## Context for the implementer
