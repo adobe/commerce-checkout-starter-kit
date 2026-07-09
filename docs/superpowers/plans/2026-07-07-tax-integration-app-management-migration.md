@@ -61,6 +61,8 @@
 
 **9. Telemetry (Task 4) was already correctly anticipated — no change needed there.** This plan's `telemetry.js`/`checkout-metrics.js` design matches the real `apps/shipping-method` pattern (`@adobe/aio-lib-telemetry`'s `defineTelemetryConfig`/`getPresetInstrumentations`/`getAioRuntimeResource`, `defineMetrics`, wrapping `main` with `instrumentEntrypoint`). Keep Task 4 as written.
 
+**10. Don't write a test for `app.commerce.config.ts` (Task 21's `test/app.commerce.config.test.js`, and its references in Task 9/22/23).** It's a plain declarative data structure, not behavior — asserting its shape back at itself doesn't catch anything a TypeScript/schema check wouldn't already catch, and it was dropped from `totals-collector/` for this reason. Skip creating `tax-integration/test/app.commerce.config.test.js` entirely, and drop it from Task 21's commit step and any "all test files pass" list.
+
 ---
 
 ## File Structure
