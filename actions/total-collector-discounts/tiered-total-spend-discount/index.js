@@ -1,7 +1,7 @@
 /**
  * Tiered total-spend discount:
  * Spend $100+ → 10% off, Spend $200+ → 20% off.
- * Applies promo proportionally to each line and stacks with existing line discounts.
+ * When eligible, returns a single `result` replace with percent and all line ids.
  *
  * With `raw-http: true`, body is base64 in `__ow_body`. Verifies
  * `x-adobe-commerce-webhook-signature` like `collect-taxes` (requires
@@ -13,7 +13,8 @@ import {
 } from "../../../lib/adobe-commerce.js";
 import { HTTP_OK } from "../../../lib/http.js";
 import {
-  getExistingItemBaseDiscount,
+  discountResultOperation,
+  getShippingAssignmentItemIds,
   getShippingItems,
   parseJsonBody,
   round2,
@@ -28,39 +29,25 @@ const TIERS = [
 function lineAmounts(item) {
   const qty = Number(item?.qty ?? 0) || 0;
   const basePrice = Number(item?.base_price ?? 0) || 0;
-  const storePrice = Number(item?.price ?? item?.base_price ?? 0) || 0;
   return {
     lineBase: round2(basePrice * qty),
-    lineStore: round2(storePrice * qty),
   };
 }
 
-function getTierForSubtotal(baseSubtotal) {
-  for (const tier of TIERS) {
-    if (baseSubtotal >= tier.minSubtotal) {
-      return tier;
-    }
-  }
-  return null;
+function cartBaseSubtotal(items) {
+  return round2(
+    items.reduce((sum, item) => sum + lineAmounts(item).lineBase, 0),
+  );
 }
 
-function calculatePromoPerLine(items, percent) {
-  let totalBase = 0;
-  const perLine = [];
-  for (let idx = 0; idx < items.length; idx++) {
-    const { lineBase, lineStore } = lineAmounts(items[idx]);
-    const promoBase = round2(lineBase * (percent / 100));
-    const promoStore = round2(lineStore * (percent / 100));
-    totalBase = round2(totalBase + promoBase);
-    perLine.push({
-      item_index: idx,
-      line_base: lineBase,
-      line_store: lineStore,
-      base_discount: promoBase,
-      store_discount: promoStore,
-    });
+/** @returns {{ percent: number; ruleLabel: string } | { percent: null; ruleLabel: null }} */
+function tierPercentForSubtotal(baseSubtotal) {
+  for (const tier of TIERS) {
+    if (baseSubtotal >= tier.minSubtotal) {
+      return { percent: tier.percent, ruleLabel: tier.label };
+    }
   }
-  return { totalBase, perLine };
+  return { percent: null, ruleLabel: null };
 }
 
 function collectTieredTotalSpendDiscount(params) {
@@ -93,12 +80,10 @@ function collectTieredTotalSpendDiscount(params) {
       };
     }
 
-    const baseSubtotal = round2(
-      items.reduce((sum, item) => sum + lineAmounts(item).lineBase, 0),
-    );
+    const baseSubtotal = cartBaseSubtotal(items);
+    const { percent, ruleLabel } = tierPercentForSubtotal(baseSubtotal);
 
-    const tier = getTierForSubtotal(baseSubtotal);
-    if (!tier) {
+    if (percent == null || percent <= 0 || !ruleLabel) {
       return {
         statusCode: HTTP_OK,
         headers: { "Content-Type": "application/json" },
@@ -106,50 +91,24 @@ function collectTieredTotalSpendDiscount(params) {
       };
     }
 
-    const { totalBase: totalPromoBase, perLine } = calculatePromoPerLine(
-      items,
-      tier.percent,
+    const discountItemIds = getShippingAssignmentItemIds(items).filter(
+      (id) => !Number.isNaN(id),
     );
-    if (totalPromoBase <= 0) {
+
+    if (!discountItemIds.length) {
       return {
         statusCode: HTTP_OK,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify([zeroDiscountOperation()]),
       };
     }
-
-    const operations = [];
-
-    for (const row of perLine) {
-      if (row.base_discount <= 0) {
-        continue;
-      }
-      const idx = row.item_index;
-      const existing = getExistingItemBaseDiscount(items[idx]);
-      const combinedLine = round2(existing + row.base_discount);
-
-      operations.push({
-        op: "replace",
-        path: `shippingAssignment/items/${idx}/base_discount_amount`,
-        value: combinedLine,
-      });
-    }
-
-    operations.push({
-      op: "replace",
-      path: "result",
-      value: {
-        code: "discount",
-        // Cart result sends promo-only discount for this rule execution.
-        base_discount: Number(totalPromoBase),
-        discount_description_array: { 1: tier.label },
-      },
-    });
 
     return {
       statusCode: HTTP_OK,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(operations),
+      body: JSON.stringify([
+        discountResultOperation(percent, { 1: ruleLabel }, discountItemIds),
+      ]),
     };
   } catch (err) {
     return webhookErrorResponse(`Server error: ${err.message}`);
