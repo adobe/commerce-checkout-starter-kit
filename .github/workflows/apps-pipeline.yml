@@ -77,24 +77,41 @@ jobs:
           echo "name=${raw:0:20}" >> "$GITHUB_OUTPUT"
           echo "title=$title" >> "$GITHUB_OUTPUT"
 
-      - name: Install root dependencies
-        working-directory: .
-        run: npm ci
+      - name: Resolve project name
+        id: project
+        run: |
+          name="$(aio console project list --orgId "${{ vars.AIO_ORG_ID }}" --json | jq -r --arg id "${{ vars.AIO_PROJECT_ID }}" '.[] | select(.id == $id) | .name')"
+          if [ -z "$name" ]; then
+            echo "Project ${{ vars.AIO_PROJECT_ID }} not found in org ${{ vars.AIO_ORG_ID }}" >&2
+            exit 1
+          fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
 
       - name: Ensure App Builder workspace
-        working-directory: .
-        run: node scripts/ensure-app-builder-workspace.js
-        env:
-          AIO_ORG_ID: ${{ vars.AIO_ORG_ID }}
-          AIO_PROJECT_ID: ${{ vars.AIO_PROJECT_ID }}
-          AIO_WORKSPACE_ID: ${{ vars.AIO_WORKSPACE_ID }}
-          AIO_WORKSPACE_IMS_OAUTH_S2S_CLIENT_ID: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_CLIENT_ID }}
-          AIO_WORKSPACE_IMS_OAUTH_S2S_CLIENT_SECRET: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_CLIENT_SECRET }}
-          AIO_WORKSPACE_IMS_OAUTH_S2S_ORG_ID: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_ORG_ID }}
-          AIO_WORKSPACE_IMS_OAUTH_S2S_SCOPES: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_SCOPES }}
-          APP_WORKSPACE_NAME: ${{ steps.workspace.outputs.name }}
-          APP_WORKSPACE_TITLE: ${{ steps.workspace.outputs.title }}
-          APP_DIR: apps/${{ inputs.app }}
+        run: |
+          workspace="${{ steps.workspace.outputs.name }}"
+          existing="$(aio console workspace list --orgId "${{ vars.AIO_ORG_ID }}" --projectId "${{ vars.AIO_PROJECT_ID }}" --json)"
+          if jq -e --arg n "$workspace" 'any(.[]; .name == $n)' <<< "$existing" > /dev/null; then
+            echo "Workspace \"$workspace\" already exists."
+            exit 0
+          fi
+
+          echo "Creating workspace \"$workspace\"..."
+          aio console workspace create \
+            --orgId "${{ vars.AIO_ORG_ID }}" \
+            --projectName "${{ steps.project.outputs.name }}" \
+            --name "$workspace" \
+            --title "${{ steps.workspace.outputs.title }}"
+
+          codes="$(yq -r '[(.apis // [])[].code] | join(",")' install.yaml)"
+          if [ -n "$codes" ]; then
+            echo "Attaching services: $codes..."
+            aio console workspace api add \
+              --orgId "${{ vars.AIO_ORG_ID }}" \
+              --projectName "${{ steps.project.outputs.name }}" \
+              --workspaceName "$workspace" \
+              --service-code "$codes"
+          fi
 
       - name: Select workspace
         run: aio console workspace select "${{ steps.workspace.outputs.name }}"
