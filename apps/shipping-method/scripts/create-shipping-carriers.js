@@ -1,6 +1,6 @@
 import { getCommerceClient } from "@adobe/aio-commerce-lib-app";
 import { defineCustomInstallationStep } from "@adobe/aio-commerce-lib-app/management";
-import { resolveImsAuthParams } from "@adobe/aio-commerce-lib-auth";
+import { resolveImsAuthParams } from "@adobe/aio-commerce-sdk/auth";
 
 const SHIPPING_CARRIERS = [
   {

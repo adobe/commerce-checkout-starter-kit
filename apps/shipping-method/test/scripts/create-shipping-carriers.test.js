@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 vi.mock("@adobe/aio-commerce-lib-app", () => ({
   getCommerceClient: vi.fn(),
 }));
-vi.mock("@adobe/aio-commerce-lib-auth", () => ({
+vi.mock("@adobe/aio-commerce-sdk/auth", () => ({
   resolveImsAuthParams: vi.fn((params) => params),
 }));
 
