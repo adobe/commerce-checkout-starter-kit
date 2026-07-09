@@ -65,14 +65,16 @@ jobs:
         id: workspace
         run: |
           app="${{ inputs.app }}"
+          app_id="$(printf '%s' "$app" | tr -cd 'A-Za-z0-9')"
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            raw="pr${{ github.event.pull_request.number }}-${app}"
-            title="PR #${{ github.event.pull_request.number }} - ${app}"
+            number="${{ github.event.pull_request.number }}"
+            raw="PR${number}${app_id}"
+            title="PR${number} ${app}"
           else
-            raw="main-${app}"
-            title="main - ${app}"
+            raw="main${app_id}"
+            title="Main ${app}"
           fi
-          echo "name=${raw:0:19}" >> "$GITHUB_OUTPUT"
+          echo "name=${raw:0:20}" >> "$GITHUB_OUTPUT"
           echo "title=$title" >> "$GITHUB_OUTPUT"
 
       - name: Install root dependencies
