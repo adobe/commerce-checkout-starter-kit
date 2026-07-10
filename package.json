@@ -4,6 +4,8 @@
   "type": "module",
   "private": true,
   "dependencies": {
+    "@adobe/aio-lib-console": "^5.8.0",
+    "@adobe/aio-lib-core-auth": "^1.1.0",
     "@adobe/aio-lib-ims": "^8.0.0",
     "@adobe/aio-lib-telemetry": "^1.1.0",
     "@adobe/aio-sdk": "^6",
