@@ -73,7 +73,6 @@ runtimeManifest:
           runtime: nodejs:24
           inputs:
             LOG_LEVEL: debug
-            COMMERCE_PAYMENT_METHOD_CODES: $COMMERCE_PAYMENT_METHOD_CODES
             ENABLE_TELEMETRY: true
           annotations:
             require-adobe-auth: true

@@ -2,21 +2,7 @@ import { getCommerceClient } from "@adobe/aio-commerce-lib-app";
 import { defineCustomInstallationStep } from "@adobe/aio-commerce-lib-app/management";
 import { resolveImsAuthParams } from "@adobe/aio-commerce-sdk/auth";
 
-const PAYMENT_METHODS = [
-  {
-    payment_method: {
-      active: true,
-      backend_integration_url: "http://oope-payment-method.pay/event",
-      code: "method-1",
-      countries: ["US"],
-      currencies: ["USD"],
-      custom_config: [{ key: "can_refund", value: true }],
-      order_status: "processing",
-      stores: ["default"],
-      title: "Method one",
-    },
-  },
-];
+import { PAYMENT_METHODS } from "../src/commerce-extensibility-1/payment-methods.js";
 
 /**
  * Creates every payment method in PAYMENT_METHODS on the associated Commerce instance. Runs

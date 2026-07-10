@@ -8,8 +8,13 @@ import {
   instrumentEntrypoint,
 } from "@adobe/aio-lib-telemetry";
 
+import { PAYMENT_METHODS } from "../../payment-methods.js";
 import { checkoutMetrics } from "../checkout-metrics.js";
 import { isWebhookSuccessful, telemetryConfig } from "../telemetry.js";
+
+const SUPPORTED_PAYMENT_METHOD_CODES = PAYMENT_METHODS.map(
+  (paymentMethod) => paymentMethod.payment_method.code,
+);
 
 /**
  * This action validates the payment information before the order is placed.
@@ -36,10 +41,7 @@ function validatePayment(params) {
     );
     currentSpan.setAttribute("payment.method", paymentMethod);
 
-    const supportedPaymentMethods = JSON.parse(
-      params.COMMERCE_PAYMENT_METHOD_CODES,
-    );
-    if (!supportedPaymentMethods.includes(paymentMethod)) {
+    if (!SUPPORTED_PAYMENT_METHOD_CODES.includes(paymentMethod)) {
       // The validation of this payment method is not implemented by this action, ideally the webhook subscription
       // has to be constrained to the payment method code implemented by this app so this should never happen.
       logger.debug(`Payment method ${paymentMethod} not handled by this app.`);

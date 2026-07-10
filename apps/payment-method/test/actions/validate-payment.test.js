@@ -6,10 +6,11 @@ import { main } from "../../src/commerce-extensibility-1/actions/validate-paymen
 // passed to the instrumented entrypoint — mirroring the ENABLE_TELEMETRY action input configured
 // in ext.config.yaml, which Adobe I/O Runtime merges into `params` at invocation time. With
 // require-adobe-auth: true, Commerce's webhook fields arrive directly as top-level params, already
-// parsed — no raw-http/signature verification here.
+// parsed — no raw-http/signature verification here. Supported payment method codes come from the
+// shared PAYMENT_METHODS array (../../src/commerce-extensibility-1/payment-methods.js), which only
+// defines "method-1" — that's why "not-configured" below is treated as unsupported.
 function buildParams(overrides = {}) {
   return {
-    COMMERCE_PAYMENT_METHOD_CODES: JSON.stringify(["method-1"]),
     ENABLE_TELEMETRY: true,
     ...overrides,
   };
