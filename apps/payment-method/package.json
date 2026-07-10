@@ -1,0 +1,30 @@
+{
+  "name": "checkout-payment-method",
+  "description": "Out-of-process payment method validation and filtering for the Adobe Commerce checkout starter kit.",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": "^24.0.0"
+  },
+  "scripts": {
+    "test": "vitest run --coverage",
+    "code:check": "npx biome check .",
+    "code:fix": "npx biome check --write .",
+    "postinstall": "npx aio-commerce-lib-app hooks postinstall"
+  },
+  "dependencies": {
+    "@adobe/aio-commerce-lib-app": "1.8.0-beta-20260702145741",
+    "@adobe/aio-commerce-sdk": "1.4.0-beta-20260702145741",
+    "@adobe/aio-lib-telemetry": "^1.2.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.0",
+    "@vitest/coverage-v8": "^4.0.7",
+    "ultracite": "^7.0.0",
+    "vitest": "^4.0.7"
+  },
+  "imports": {
+    "#app.commerce.config": "./src/commerce-extensibility-1/.generated/app.commerce.config.js"
+  }
+}

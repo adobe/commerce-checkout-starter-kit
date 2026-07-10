@@ -1,0 +1,101 @@
+{
+  "installation": {
+    "customInstallationSteps": [
+      {
+        "description": "Creates the out-of-process payment methods defined in scripts/create-payment-methods.js.",
+        "name": "Create Payment Methods",
+        "script": "./scripts/create-payment-methods.js"
+      }
+    ]
+  },
+  "metadata": {
+    "description": "Out-of-process payment method validation and filtering for the Adobe Commerce checkout starter kit.",
+    "displayName": "Checkout Payment Method",
+    "id": "checkout-payment-method",
+    "version": "1.0.0"
+  },
+  "webhooks": [
+    {
+      "category": "validation",
+      "description": "Validates out-of-process payment information before an order is placed (PaaS).",
+      "env": [
+        "paas"
+      ],
+      "label": "Validate Payment (PaaS)",
+      "requireAdobeAuth": true,
+      "runtimeAction": "payment-method/validate-payment",
+      "webhook": {
+        "batch_name": "out_of_process_payment_methods",
+        "fallback_error_message": "Error on validation",
+        "hook_name": "validate_payment",
+        "method": "POST",
+        "priority": 100,
+        "required": true,
+        "soft_timeout": 0,
+        "timeout": 20000,
+        "webhook_method": "observer.sales_order_place_before",
+        "webhook_type": "before"
+      }
+    },
+    {
+      "category": "validation",
+      "description": "Validates out-of-process payment information before an order is placed (SaaS).",
+      "env": [
+        "saas"
+      ],
+      "label": "Validate Payment (SaaS)",
+      "requireAdobeAuth": true,
+      "runtimeAction": "payment-method/validate-payment",
+      "webhook": {
+        "batch_name": "validate_payment",
+        "fallback_error_message": "Error on validation",
+        "hook_name": "oope_payment_methods_sales_order_place_before",
+        "method": "POST",
+        "priority": 100,
+        "required": true,
+        "soft_timeout": 0,
+        "timeout": 20000,
+        "webhook_method": "observer.sales_order_place_before",
+        "webhook_type": "before"
+      }
+    },
+    {
+      "category": "append",
+      "description": "Filters out-of-process payment methods from checkout's available list (PaaS).",
+      "env": [
+        "paas"
+      ],
+      "label": "Filter Payment Methods (PaaS)",
+      "requireAdobeAuth": true,
+      "runtimeAction": "payment-method/filter-payment",
+      "webhook": {
+        "batch_name": "out_of_process_payment_methods",
+        "hook_name": "payment_method_filter",
+        "method": "POST",
+        "soft_timeout": 0,
+        "timeout": 20000,
+        "webhook_method": "plugin.magento.out_of_process_payment_methods.api.payment_method_filter.get_list",
+        "webhook_type": "after"
+      }
+    },
+    {
+      "category": "append",
+      "description": "Filters out-of-process payment methods from checkout's available list (SaaS).",
+      "env": [
+        "saas"
+      ],
+      "label": "Filter Payment Methods (SaaS)",
+      "requireAdobeAuth": true,
+      "runtimeAction": "payment-method/filter-payment",
+      "webhook": {
+        "batch_name": "out_of_process_payment_methods",
+        "hook_name": "payment_method_filter",
+        "method": "POST",
+        "soft_timeout": 0,
+        "timeout": 20000,
+        "webhook_method": "plugin.out_of_process_payment_methods.api.payment_method_filter.get_list",
+        "webhook_type": "after"
+      }
+    }
+  ]
+}
