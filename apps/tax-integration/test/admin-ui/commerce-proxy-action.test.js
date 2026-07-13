@@ -10,7 +10,7 @@ vi.mock("@adobe/aio-commerce-sdk/auth", () => ({
 const { getCommerceClient } = await import("@adobe/aio-commerce-lib-app");
 const { forwardImsAuthProvider } = await import("@adobe/aio-commerce-sdk/auth");
 const { main } = await import(
-  "../../src/commerce-backend-ui-2/actions/commerce-tax-classes/index.js"
+  "../../src/commerce-backend-ui-2/actions/commerce-proxy-action/index.js"
 );
 
 function mockClient({ get, post } = {}) {
@@ -28,7 +28,7 @@ function buildParams(overrides = {}) {
   };
 }
 
-describe("commerce-tax-classes admin-ui action", () => {
+describe("commerce-proxy-action admin-ui action", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

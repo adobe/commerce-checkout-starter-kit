@@ -1,4 +1,3 @@
-import { useIms } from "@adobe/aio-commerce-lib-admin-ui/web";
 import { Button } from "@react-spectrum/s2/Button";
 import { Content } from "@react-spectrum/s2/Content";
 import { Dialog, DialogTrigger } from "@react-spectrum/s2/Dialog";
@@ -14,55 +13,34 @@ import {
   TableView,
 } from "@react-spectrum/s2/TableView";
 import { Text } from "@react-spectrum/s2/Text";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 
 import { useCustomTaxCodes } from "../hooks/use-custom-tax-codes.ts";
-import {
-  createOrUpdateCommerceTaxClass,
-  fetchCommerceTaxClasses,
-} from "../lib/commerce-tax-classes.ts";
+import { useGetCommerceTaxClasses } from "../hooks/use-get-commerce-tax-classes.ts";
+import { useUpsertCommerceTaxClass } from "../hooks/use-upsert-commerce-tax-class.ts";
 import { TaxClassDialog } from "./tax-class-dialog.tsx";
 
-import type { CommerceTaxClassRow } from "../lib/commerce-tax-classes.ts";
 import type { TaxClass } from "./tax-class-dialog.tsx";
 
 export function TaxClassesPage() {
-  const { imsOrgId, imsToken } = useIms();
   const { customTaxCodes, isLoadingCustomTaxCodes } = useCustomTaxCodes();
-
-  const [isLoadingCommerceTaxClasses, setIsLoadingCommerceTaxClasses] =
-    useState(true);
-  const [commerceTaxClasses, setCommerceTaxClasses] = useState<
-    CommerceTaxClassRow[]
-  >([]);
-
-  const refetchCommerceTaxClasses = useCallback(async () => {
-    setIsLoadingCommerceTaxClasses(true);
-    try {
-      const rows = await fetchCommerceTaxClasses(imsToken, imsOrgId);
-      setCommerceTaxClasses(rows);
-    } catch (error) {
-      console.error("Error fetching commerce tax classes:", error);
-      setCommerceTaxClasses([]);
-    } finally {
-      setIsLoadingCommerceTaxClasses(false);
-    }
-  }, [imsOrgId, imsToken]);
-
-  useEffect(() => {
-    refetchCommerceTaxClasses();
-  }, [refetchCommerceTaxClasses]);
+  const {
+    commerceTaxClasses,
+    isLoadingCommerceTaxClasses,
+    refetchCommerceTaxClasses,
+  } = useGetCommerceTaxClasses();
+  const upsertCommerceTaxClass = useUpsertCommerceTaxClass();
 
   const handleSave = useCallback(
     async (newTaxClass: TaxClass) => {
       try {
-        await createOrUpdateCommerceTaxClass(imsToken, imsOrgId, newTaxClass);
+        await upsertCommerceTaxClass(newTaxClass);
         await refetchCommerceTaxClasses();
       } catch (error) {
         console.error("Something went wrong while saving tax class:", error);
       }
     },
-    [imsOrgId, imsToken, refetchCommerceTaxClasses],
+    [upsertCommerceTaxClass, refetchCommerceTaxClasses],
   );
 
   const renderEmptyState = useCallback(

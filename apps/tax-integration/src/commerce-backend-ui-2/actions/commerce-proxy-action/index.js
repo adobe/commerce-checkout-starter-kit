@@ -5,10 +5,11 @@ import { ok } from "@adobe/aio-commerce-sdk/core/responses";
 const SUPPORTED_METHODS = new Set(["GET", "POST"]);
 
 /**
- * Proxies Commerce REST calls for the Tax management Admin UI, forwarding the caller's own IMS
+ * Generic Commerce REST proxy for this extension's Admin UI, forwarding the caller's own IMS
  * bearer token — never this app's own association credentials — to a Commerce client resolved
  * from this app's stored association. No COMMERCE_BASE_URL input is needed: the instance URL
- * comes from the association, not from action config.
+ * comes from the association, not from action config. Callers pass an arbitrary `operation`
+ * (a Commerce REST path fragment), so any resource can be routed through this one action.
  * @param {object} params action input parameters.
  * @returns {Promise<object>} returns a response object
  */

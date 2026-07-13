@@ -14,8 +14,8 @@ runtimeManifest:
     tax-integration-admin-ui:
       license: Apache-2.0
       actions:
-        commerce-tax-classes:
-          function: actions/commerce-tax-classes/index.js
+        commerce-proxy-action:
+          function: actions/commerce-proxy-action/index.js
           web: 'yes'
           runtime: nodejs:24
           inputs:
