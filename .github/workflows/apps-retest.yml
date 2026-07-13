@@ -29,4 +29,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           ref="$(gh pr view "${{ github.event.issue.number }}" --repo "${{ github.repository }}" --json headRefName -q .headRefName)"
-          gh workflow run apps-ci.yml --repo "${{ github.repository }}" --ref "$ref"
+          gh workflow run apps-ci.yml --repo "${{ github.repository }}" --ref "$ref" \
+            -f pr_number="${{ github.event.issue.number }}"

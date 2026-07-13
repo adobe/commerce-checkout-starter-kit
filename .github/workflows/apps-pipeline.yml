@@ -7,6 +7,11 @@ on:
         description: Name of the apps/<app> directory to check, test, and deploy
         required: true
         type: string
+      pr_number:
+        description: PR number this run is for - non-empty means deploy to the pr workspace, empty means main
+        required: false
+        type: string
+        default: ''
 
 jobs:
   check:
@@ -38,7 +43,7 @@ jobs:
     name: deploy
     needs: check
     concurrency:
-      group: deploy-${{ inputs.app }}-${{ github.event_name == 'pull_request' && 'pr' || 'main' }}
+      group: deploy-${{ inputs.app }}-${{ inputs.pr_number != '' && 'pr' || 'main' }}
       queue: max
     runs-on: ubuntu-latest
     defaults:
@@ -67,7 +72,7 @@ jobs:
       # MAINTAINERS.md.
       - name: Load workspace config
         env:
-          PURPOSE: ${{ github.event_name == 'pull_request' && 'PR' || 'MAIN' }}
+          PURPOSE: ${{ inputs.pr_number != '' && 'PR' || 'MAIN' }}
           APP: ${{ inputs.app }}
           SHIPPING_METHOD_MAIN: ${{ secrets.AIO_SHIPPING_METHOD_MAIN_WORKSPACE_CONFIG }}
           SHIPPING_METHOD_PR: ${{ secrets.AIO_SHIPPING_METHOD_PR_WORKSPACE_CONFIG }}
@@ -82,7 +87,7 @@ jobs:
 
       - name: Log deploy target
         run: |
-          echo "Deploying ${{ inputs.app }} (${{ github.event_name == 'pull_request' && format('pr #{0}', github.event.pull_request.number) || 'main' }}) to workspace ${{ env.AIO_PROJECT_WORKSPACE_NAME }}: https://developer.adobe.com/console/projects/${{ env.AIO_PROJECT_ORG_ID }}/${{ env.AIO_PROJECT_ID }}/workspaces/${{ env.AIO_PROJECT_WORKSPACE_ID }}/details"
+          echo "Deploying ${{ inputs.app }} (${{ inputs.pr_number != '' && format('pr #{0}', inputs.pr_number) || 'main' }}) to workspace ${{ env.AIO_PROJECT_WORKSPACE_NAME }}: https://developer.adobe.com/console/projects/${{ env.AIO_PROJECT_ORG_ID }}/${{ env.AIO_PROJECT_ID }}/workspaces/${{ env.AIO_PROJECT_WORKSPACE_ID }}/details"
 
       - name: Setup AIO CLI
         uses: adobe/aio-cli-setup-action@5a7a7313f7024283e7eb384dc79b69b02effb307 # 1.3.0
@@ -118,6 +123,10 @@ jobs:
       # successful deploy here is a smoke test, not a lasting preview: undeploy
       # immediately after to keep the shared workspace clean for the next PR's
       # run. The main workspace is the persistent target, so it's left deployed.
+      # Runs even if Deploy partially failed (always()), so a bad deploy can't
+      # leave the shared workspace dirty for the next PR; continue-on-error
+      # since there may be nothing to undeploy in that case.
       - name: Undeploy
-        if: github.event_name == 'pull_request'
+        if: always() && inputs.pr_number != ''
+        continue-on-error: true
         run: aio app undeploy
