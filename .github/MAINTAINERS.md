@@ -15,19 +15,22 @@ Two workflows, `.github/workflows/apps-ci.yml` and `.github/workflows/apps-pipel
    - `check`: installs the app's dependencies, runs `npm run code:check` and `npm test`. No
      external dependency — this job never talks to Adobe Developer Console or Runtime.
    - `deploy` (`needs: check`): builds and deploys the app to a pre-provisioned Adobe App
-     Builder workspace, using `adobe/aio-apps-action` (`oauth_sts` → `build` → `deploy`).
+     Builder workspace, using `adobe/aio-apps-action` (`oauth_sts` → `build` → `deploy`). On
+     pull requests, it undeploys again immediately after (see below).
 
 ## Workspaces and secrets
 
 Each app has **two** pre-provisioned Adobe Console workspaces:
 
-- **`main`** — deployed to on every push to `main`.
-- **`pr`** — deployed to on every pull request touching that app. This workspace is **shared
-  across all PRs** for that app, not one per PR number: whichever PR's `deploy` job runs last
-  wins. The `deploy` job's `concurrency` group (`deploy-<app>-<purpose>`, with `queue: max`)
-  guarantees these never race — a second run queues behind the first rather than running
-  concurrently or cancelling it, so no two deploys ever touch the same workspace at the same
-  time, and no deploy is silently dropped.
+- **`main`** — deployed to on every push to `main`, and left deployed: this is the persistent
+  target.
+- **`pr`** — deployed to on every pull request touching that app, then immediately undeployed.
+  It's shared across all PRs for that app rather than one per PR number, so a successful
+  deploy here is a smoke test that the app builds and deploys cleanly, not a lasting preview —
+  the workspace is torn back down right after so it stays clean for the next PR's run. The
+  `deploy` job's `concurrency` group (`deploy-<app>-<purpose>`, with `queue: max`) guarantees
+  two PRs' deploy-then-undeploy cycles never overlap on the same workspace — a second run
+  queues behind the first rather than running concurrently or being dropped.
 
 Deliberately, **CI never creates a workspace, attaches an API to one, or calls
 `aio app use`** — every attempt to do that with the CI's own OAuth Server-to-Server credential

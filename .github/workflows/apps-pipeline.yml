@@ -113,3 +113,11 @@ jobs:
         with:
           os: ubuntu-latest
           command: deploy
+
+      # The pr workspace is shared across every PR touching this app, so a
+      # successful deploy here is a smoke test, not a lasting preview: undeploy
+      # immediately after to keep the shared workspace clean for the next PR's
+      # run. The main workspace is the persistent target, so it's left deployed.
+      - name: Undeploy
+        if: github.event_name == 'pull_request'
+        run: aio app undeploy
