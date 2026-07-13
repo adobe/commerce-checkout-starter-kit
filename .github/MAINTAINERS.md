@@ -4,19 +4,15 @@ This document explains how the `apps/*` CI/CD pipeline works and how to onboard 
 
 ## How the pipeline works
 
-Two workflows, `.github/workflows/apps-ci.yml` and `.github/workflows/apps-pipeline.yml`:
+Whenever a pull request or a push to `main` changes anything under an app's directory
+(`apps/<name>/`), that app is automatically checked and deployed. Apps that weren't touched are
+left alone entirely.
 
-1. **`apps-ci.yml`** triggers on pull requests targeting `main` and on pushes to `main`, but
-   only when a path under `apps/**` changed. Its `detect` job diffs the changed paths and
-   extracts the set of `apps/<name>` directories touched, then a matrix job calls
-   `apps-pipeline.yml` once per changed app.
-2. **`apps-pipeline.yml`** is a reusable workflow (`on: workflow_call`, taking `app` as input)
-   with two jobs:
-   - `check`: installs the app's dependencies, runs `npm run code:check` and `npm test`. No
-     external dependency — this job never talks to Adobe Developer Console or Runtime.
-   - `deploy` (`needs: check`): builds and deploys the app to a pre-provisioned Adobe App
-     Builder workspace, using `adobe/aio-apps-action` (`oauth_sts` → `build` → `deploy`). On
-     pull requests, it undeploys again immediately after (see below).
+1. The app's code is linted and its test suite runs.
+2. If that passes, the app is built and deployed to its workspace for this run — the `main`
+   workspace for a push to `main`, or the `pr` workspace for a pull request.
+3. For pull requests, the app is undeployed again immediately after a successful deploy (see
+   below for why).
 
 ## Workspaces and secrets
 
