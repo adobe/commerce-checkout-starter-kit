@@ -1,0 +1,145 @@
+name: App pipeline
+
+on:
+  workflow_call:
+    inputs:
+      app:
+        description: Name of the apps/<app> directory to check, test, and deploy
+        required: true
+        type: string
+
+jobs:
+  check:
+    name: check & test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/${{ inputs.app }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Use Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: apps/${{ inputs.app }}/package-lock.json
+
+      - name: Install app dependencies
+        run: npm ci
+
+      - name: Check
+        run: npm run code:check
+
+      - name: Test
+        run: npm test
+
+  deploy:
+    name: deploy
+    needs: check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/${{ inputs.app }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Use Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: apps/${{ inputs.app }}/package-lock.json
+
+      - name: Install app dependencies
+        run: npm ci
+
+      - name: Setup AIO CLI
+        uses: adobe/aio-cli-setup-action@5a7a7313f7024283e7eb384dc79b69b02effb307 # 1.3.0
+        with:
+          os: ubuntu-latest
+          version: 11.x.x
+
+      - name: Log credential source
+        run: |
+          echo "Using credentials from https://developer.adobe.com/console/projects/${{ vars.AIO_ORG_ID }}/${{ vars.AIO_PROJECT_ID }}/workspaces/${{ vars.AIO_WORKSPACE_ID }}/details"
+
+      - name: Authenticate with OAuth Server-to-Server
+        uses: adobe/aio-apps-action@6d7fdea67de9ef5ee3bf4c730aeaa5eaa7e2c533 # 4.1.0
+        with:
+          os: ubuntu-latest
+          command: oauth_sts
+          CLIENTID: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_CLIENT_ID }}
+          CLIENTSECRET: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_CLIENT_SECRET }}
+          TECHNICALACCOUNTID: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_TECHNICAL_ACCOUNT_ID }}
+          TECHNICALACCOUNTEMAIL: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_TECHNICAL_ACCOUNT_EMAIL }}
+          IMSORGID: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_ORG_ID }}
+          SCOPES: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_SCOPES }}
+
+      - name: Select org & project
+        run: |
+          aio console org select "${{ vars.AIO_ORG_ID }}"
+          aio console project select "${{ vars.AIO_PROJECT_ID }}"
+
+      - name: Compute workspace name
+        id: workspace
+        env:
+          APP: ${{ inputs.app }}
+        run: |
+          app="$APP"
+          app_id="$(printf '%s' "$app" | tr -cd 'A-Za-z0-9')"
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            number="${{ github.event.pull_request.number }}"
+            raw="PR${number}${app_id}"
+            title="PR${number} ${app}"
+          else
+            raw="main${app_id}"
+            title="Main ${app}"
+          fi
+          echo "name=${raw:0:20}" >> "$GITHUB_OUTPUT"
+          echo "title=$title" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve project name
+        id: project
+        run: |
+          name="$(aio console project list --orgId "${{ vars.AIO_ORG_ID }}" --json | jq -r --arg id "${{ vars.AIO_PROJECT_ID }}" '.[] | select(.id == $id) | .name')"
+          if [ -z "$name" ]; then
+            echo "Project ${{ vars.AIO_PROJECT_ID }} not found in org ${{ vars.AIO_ORG_ID }}" >&2
+            exit 1
+          fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Ensure App Builder workspace
+        run: |
+          workspace="${{ steps.workspace.outputs.name }}"
+          existing="$(aio console workspace list --orgId "${{ vars.AIO_ORG_ID }}" --projectId "${{ vars.AIO_PROJECT_ID }}" --json)"
+          if jq -e --arg n "$workspace" 'any(.[]; .name == $n)' <<< "$existing" > /dev/null; then
+            echo "Workspace \"$workspace\" already exists."
+            exit 0
+          fi
+
+          echo "Creating workspace \"$workspace\"..."
+          aio console workspace create \
+            --orgId "${{ vars.AIO_ORG_ID }}" \
+            --projectName "${{ steps.project.outputs.name }}" \
+            --name "$workspace" \
+            --title "${{ steps.workspace.outputs.title }}"
+
+          codes="$(yq -r '[(.apis // [])[].code] | join(",")' install.yaml)"
+          if [ -n "$codes" ]; then
+            echo "Attaching services: $codes..."
+            aio console workspace api add \
+              --orgId "${{ vars.AIO_ORG_ID }}" \
+              --projectName "${{ steps.project.outputs.name }}" \
+              --workspaceName "$workspace" \
+              --service-code "$codes"
+          fi
+
+      - name: Select workspace
+        run: aio console workspace select "${{ steps.workspace.outputs.name }}"
+
+      - name: Import Console config
+        run: aio app use --global --no-input
+
+      - name: Deploy
+        run: aio app deploy
