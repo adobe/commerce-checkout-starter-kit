@@ -8,8 +8,6 @@ operations:
     - type: action
       impl: app-management/app-config
     - type: action
-      impl: app-management/association
-    - type: action
       impl: app-management/installation
 
 runtimeManifest:
@@ -20,15 +18,6 @@ runtimeManifest:
       actions:
         app-config:
           function: .generated/actions/app-management/app-config.js
-          web: yes
-          runtime: nodejs:24
-          inputs:
-            LOG_LEVEL: $LOG_LEVEL
-          annotations:
-            require-adobe-auth: true
-            final: true
-        association:
-          function: .generated/actions/app-management/association.js
           web: yes
           runtime: nodejs:24
           inputs:
