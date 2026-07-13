@@ -91,10 +91,10 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             number="${{ github.event.pull_request.number }}"
             raw="PR${number}${app_id}"
-            title="PR${number} ${app}"
+            title="PR${number} ${app_id}"
           else
             raw="main${app_id}"
-            title="Main ${app}"
+            title="Main ${app_id}"
           fi
           echo "name=${raw:0:20}" >> "$GITHUB_OUTPUT"
           echo "title=$title" >> "$GITHUB_OUTPUT"
