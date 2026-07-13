@@ -15,12 +15,12 @@ import {
 import { Text } from "@react-spectrum/s2/Text";
 import { useCallback } from "react";
 
+import { TaxClassDialog } from "../components/tax-class-dialog.tsx";
 import { useCustomTaxCodes } from "../hooks/use-custom-tax-codes.ts";
 import { useGetCommerceTaxClasses } from "../hooks/use-get-commerce-tax-classes.ts";
 import { useUpsertCommerceTaxClass } from "../hooks/use-upsert-commerce-tax-class.ts";
-import { TaxClassDialog } from "./tax-class-dialog.tsx";
 
-import type { TaxClass } from "./tax-class-dialog.tsx";
+import type { TaxClass } from "../components/tax-class-dialog.tsx";
 
 export function TaxClassesPage() {
   const { customTaxCodes, isLoadingCustomTaxCodes } = useCustomTaxCodes();
@@ -52,10 +52,9 @@ export function TaxClassesPage() {
     [],
   );
 
-  // `@react-spectrum/s2` has no `Flex` layout primitive (Spectrum 1's `<Flex>` was dropped in
-  // favor of the build-time `style()` macro); plain flexbox divs stand in for layout here.
   return (
-    <div style={{ display: "flex", flexDirection: "column", marginInline: 20 }}>
+    <main
+      style={{ display: "flex", flexDirection: "column", marginInline: 20 }}>
       <div
         style={{
           alignItems: "center",
@@ -152,6 +151,6 @@ export function TaxClassesPage() {
           </TableView>
         </div>
       )}
-    </div>
+    </main>
   );
 }

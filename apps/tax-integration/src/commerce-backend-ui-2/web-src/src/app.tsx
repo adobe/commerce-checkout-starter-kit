@@ -2,12 +2,12 @@ import { createExtensionApp } from "@adobe/aio-commerce-lib-admin-ui/web";
 import "@react-spectrum/s2/page.css";
 
 import config from "#app.commerce.config";
-import { MainPage } from "#web/pages/main-page.tsx";
+import { TaxClassesPage } from "#web/pages/tax-classes-page.tsx";
 
 createExtensionApp({
   metadata: {
     extensionId: config.metadata.id,
   },
 
-  routes: [{ element: <MainPage />, index: true }],
+  routes: [{ element: <TaxClassesPage />, index: true }],
 });
