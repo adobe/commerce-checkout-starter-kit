@@ -1,3 +1,4 @@
+import { MENU_STORES } from "@adobe/aio-commerce-lib-admin-ui/menu";
 import { defineConfig } from "@adobe/aio-commerce-lib-app/config";
 
 // biome-ignore assist/source/useSortedKeys: keep metadata at top level
@@ -11,9 +12,12 @@ export default defineConfig({
   },
   adminUi: {
     menu: {
-      description: "Manage out-of-process Commerce tax classes.",
+      description:
+        "Manage out-of-process Commerce tax classes for the checkout starter kit.",
       id: "oope_tax_management",
       label: "Tax management",
+      pageTitle: "Tax management",
+      parentMenu: MENU_STORES,
     },
   },
   installation: {

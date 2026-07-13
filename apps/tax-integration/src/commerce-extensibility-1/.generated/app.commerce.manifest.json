@@ -1,9 +1,11 @@
 {
   "adminUi": {
     "menu": {
-      "description": "Manage out-of-process Commerce tax classes.",
+      "description": "Manage out-of-process Commerce tax classes for the checkout starter kit.",
       "id": "oope_tax_management",
-      "label": "Tax management"
+      "label": "Tax management",
+      "pageTitle": "Tax management",
+      "parentMenu": "stores"
     }
   },
   "installation": {
