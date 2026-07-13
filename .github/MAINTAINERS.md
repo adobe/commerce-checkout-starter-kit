@@ -40,25 +40,29 @@ avoids all of this by never touching Console Management APIs from CI: a human pr
 workspace and extracts its config *once*, and CI just injects the pre-extracted values as
 plain environment variables into `aio app deploy`. This pipeline follows that model.
 
-### The `WORKSPACE_CONFIG` secret
+### The workspace config secrets
 
 Each workspace's full config lives in **exactly one** GitHub Actions repo secret, named
 `AIO_<APP>_MAIN_WORKSPACE_CONFIG` or `AIO_<APP>_PR_WORKSPACE_CONFIG` (app name upper-cased,
 `-` replaced with `_`). For example, shipping-method's two secrets are
 `AIO_SHIPPING_METHOD_MAIN_WORKSPACE_CONFIG` and `AIO_SHIPPING_METHOD_PR_WORKSPACE_CONFIG`.
 
-The secret value is a single JSON object with these 14 fields:
+**The secret value is the raw `workspace.json` file, exactly as downloaded** from the
+"Download" button on that workspace's page in https://developer.adobe.com/console/ — copy its
+contents straight into the secret. No `aio` CLI command needs to be run to produce it; the
+`deploy` job does the flattening itself with `jq`. The fields it pulls out (see the "Load
+workspace config" step in `apps-pipeline.yml`), and where each one lives in that raw file:
 
-| Field | Source (from `aio config ls --json`, after `aio app use`) |
+| Field | Path in the downloaded `workspace.json` |
 |---|---|
-| `CLIENTID` | `.ims.contexts.<ctx>.client_id` |
-| `CLIENTSECRET` | `.ims.contexts.<ctx>.client_secrets[0]` |
-| `TECHNICALACCOUNTID` | `.ims.contexts.<ctx>.technical_account_id` |
-| `TECHNICALACCOUNTEMAIL` | `.ims.contexts.<ctx>.technical_account_email` |
-| `IMSORGID` | `.ims.contexts.<ctx>.ims_org_id` |
-| `SCOPES` | `.ims.contexts.<ctx>.scopes` (JSON array) |
-| `AIO_RUNTIME_NAMESPACE` | `.runtime.namespace` |
-| `AIO_RUNTIME_AUTH` | `.runtime.auth` |
+| `CLIENTID` | `.project.workspace.details.credentials[] .oauth_server_to_server.client_id` (the credential with `integration_type == "oauth_server_to_server"`) |
+| `CLIENTSECRET` | same credential's `.oauth_server_to_server.client_secrets[0]` |
+| `TECHNICALACCOUNTID` | same credential's `.oauth_server_to_server.technical_account_id` |
+| `TECHNICALACCOUNTEMAIL` | same credential's `.oauth_server_to_server.technical_account_email` |
+| `IMSORGID` | `.project.org.ims_org_id` |
+| `SCOPES` | same credential's `.oauth_server_to_server.scopes` (JSON array) |
+| `AIO_RUNTIME_NAMESPACE` | `.project.workspace.details.runtime.namespaces[0].name` |
+| `AIO_RUNTIME_AUTH` | `.project.workspace.details.runtime.namespaces[0].auth` |
 | `AIO_PROJECT_ID` | `.project.id` |
 | `AIO_PROJECT_NAME` | `.project.name` |
 | `AIO_PROJECT_ORG_ID` | `.project.org.id` |
@@ -66,15 +70,18 @@ The secret value is a single JSON object with these 14 fields:
 | `AIO_PROJECT_WORKSPACE_NAME` | `.project.workspace.name` |
 | `AIO_PROJECT_WORKSPACE_DETAILS_SERVICES` | `.project.workspace.details.services` (JSON array) |
 
-`@adobe/aio-lib-core-config` treats any `AIO_<KEY>` environment variable as config
-(`AIO_PROJECT_ORG_ID` → `project.org.id`, and so on) at higher priority than any `.aio`/`.env`
-file — this is what lets the `deploy` job work from plain env vars with no local config file
-at all. The six non-`AIO_`-prefixed fields (`CLIENTID`, `CLIENTSECRET`, etc.) are fed directly
-to `adobe/aio-apps-action`'s `oauth_sts` command inputs instead.
+This mirrors exactly what `aio app use <workspace>.json` does locally (see
+`@adobe/aio-cli-plugin-app`'s `src/lib/import-helper.js`, `importConfigJson`/`transformRuntime`/
+`getServiceCredential`) — we just replicate that transform in the workflow instead of requiring
+a human to run it. `@adobe/aio-lib-core-config` treats any `AIO_<KEY>` environment variable as
+config (`AIO_PROJECT_ORG_ID` → `project.org.id`, and so on) at higher priority than any
+`.aio`/`.env` file — this is what lets the `deploy` job work from plain env vars with no local
+config file at all. The six non-`AIO_`-prefixed fields (`CLIENTID`, `CLIENTSECRET`, etc.) are
+fed directly to `adobe/aio-apps-action`'s `oauth_sts` command inputs instead.
 
 The `deploy` job's "Load workspace config" step in `apps-pipeline.yml` picks the right secret
-based on `github.event_name`, parses it with `jq`, and writes each field to `$GITHUB_ENV`
-(masking every value first, since none of this should ever appear in a log).
+based on `inputs.app` and `github.event_name`, extracts each field with `jq`, and writes it to
+`$GITHUB_ENV` (masking every value first, since none of this should ever appear in a log).
 
 ## Adding a new app
 
@@ -87,11 +94,11 @@ based on `github.event_name`, parses it with `jq`, and writes each field to `$GI
 3. For each of the two workspaces, run `aio app add service` (interactively, as a human with
    Console access) to attach whatever APIs `install.yaml`'s `apis:` list declares.
    `install.yaml` documents the requirement; CI does not read or enforce it.
-4. For each workspace: run `aio app use <workspace>.json --global` locally, then
-   `aio config ls --json` and extract the 14 fields above into one JSON object (see the table
-   for the exact `jq` paths).
+4. For each workspace, click **Download** on that workspace's page in
+   https://developer.adobe.com/console/ to get its `workspace.json`.
 5. Add two repo secrets: `AIO_<NAME>_MAIN_WORKSPACE_CONFIG` and
-   `AIO_<NAME>_PR_WORKSPACE_CONFIG`, each set to one workspace's JSON blob.
+   `AIO_<NAME>_PR_WORKSPACE_CONFIG`, each set to the raw contents of one workspace's downloaded
+   `workspace.json` — no transformation needed, paste the file as-is.
 6. **Extend the `deploy` job's "Load workspace config" step** in `apps-pipeline.yml` — its
    secret-selection expression is written per-app (GitHub Actions can't build a secret name
    from `inputs.app`), so add this app alongside shipping-method's. If the list of apps grows

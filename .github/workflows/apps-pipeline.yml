@@ -78,32 +78,73 @@ jobs:
           TOTALS_COLLECTOR_PR: ${{ secrets.AIO_TOTALS_COLLECTOR_PR_WORKSPACE_CONFIG }}
         run: |
           var_name="$(echo "$APP" | tr '[:lower:]-' '[:upper:]_')_${PURPOSE}"
-          WORKSPACE_CONFIG="${!var_name}"
+          RAW_WORKSPACE_JSON="${!var_name}"
 
-          if [ -z "$WORKSPACE_CONFIG" ]; then
+          if [ -z "$RAW_WORKSPACE_JSON" ]; then
             echo "No workspace config secret set for $APP ($PURPOSE). Expected env var $var_name to be non-empty." >&2
             exit 1
           fi
 
-          for key in CLIENTID CLIENTSECRET TECHNICALACCOUNTID TECHNICALACCOUNTEMAIL IMSORGID \
-                     AIO_RUNTIME_NAMESPACE AIO_RUNTIME_AUTH AIO_PROJECT_ID AIO_PROJECT_NAME \
-                     AIO_PROJECT_ORG_ID AIO_PROJECT_WORKSPACE_ID AIO_PROJECT_WORKSPACE_NAME; do
-            value="$(jq -r --arg k "$key" '.[$k] // empty' <<< "$WORKSPACE_CONFIG")"
-            if [ -z "$value" ]; then
-              echo "Workspace config is missing required field: $key" >&2
-              exit 1
-            fi
-            echo "::add-mask::$value"
-            echo "$key=$value" >> "$GITHUB_ENV"
-          done
+          # The secret holds the *raw* console workspace.json exactly as downloaded
+          # from the "Download" button on the workspace's page in
+          # https://developer.adobe.com/console/ — no `aio` CLI step required to
+          # produce it. Pull each field out directly (see MAINTAINERS.md for the
+          # schema and where each value lives in that file).
+          CRED="$(jq '(.project.workspace.details.credentials // []) | map(select(.integration_type == "oauth_server_to_server")) | (.[0].oauth_server_to_server // {})' <<< "$RAW_WORKSPACE_JSON")"
+          RUNTIME="$(jq '(.project.workspace.details.runtime.namespaces // [])[0] // {}' <<< "$RAW_WORKSPACE_JSON")"
 
-          # Array-typed fields: re-serialize as compact JSON text rather than a
-          # plain string.
-          for key in SCOPES AIO_PROJECT_WORKSPACE_DETAILS_SERVICES; do
-            value="$(jq -c --arg k "$key" '.[$k] // empty' <<< "$WORKSPACE_CONFIG")"
-            echo "::add-mask::$value"
-            echo "$key=$value" >> "$GITHUB_ENV"
-          done
+          CLIENTID="$(jq -r '.client_id // empty' <<< "$CRED")"
+          CLIENTSECRET="$(jq -r '.client_secrets[0] // empty' <<< "$CRED")"
+          TECHNICALACCOUNTID="$(jq -r '.technical_account_id // empty' <<< "$CRED")"
+          TECHNICALACCOUNTEMAIL="$(jq -r '.technical_account_email // empty' <<< "$CRED")"
+          IMSORGID="$(jq -r '.project.org.ims_org_id // empty' <<< "$RAW_WORKSPACE_JSON")"
+          SCOPES="$(jq -c '.scopes // []' <<< "$CRED")"
+          AIO_RUNTIME_NAMESPACE="$(jq -r '.name // empty' <<< "$RUNTIME")"
+          AIO_RUNTIME_AUTH="$(jq -r '.auth // empty' <<< "$RUNTIME")"
+          AIO_PROJECT_ID="$(jq -r '.project.id // empty' <<< "$RAW_WORKSPACE_JSON")"
+          AIO_PROJECT_NAME="$(jq -r '.project.name // empty' <<< "$RAW_WORKSPACE_JSON")"
+          AIO_PROJECT_ORG_ID="$(jq -r '.project.org.id // empty' <<< "$RAW_WORKSPACE_JSON")"
+          AIO_PROJECT_WORKSPACE_ID="$(jq -r '.project.workspace.id // empty' <<< "$RAW_WORKSPACE_JSON")"
+          AIO_PROJECT_WORKSPACE_NAME="$(jq -r '.project.workspace.name // empty' <<< "$RAW_WORKSPACE_JSON")"
+          AIO_PROJECT_WORKSPACE_DETAILS_SERVICES="$(jq -c '.project.workspace.details.services // []' <<< "$RAW_WORKSPACE_JSON")"
+
+          if [ -z "$CLIENTID" ] || [ -z "$CLIENTSECRET" ] || [ -z "$TECHNICALACCOUNTID" ] || \
+             [ -z "$TECHNICALACCOUNTEMAIL" ] || [ -z "$IMSORGID" ] || \
+             [ -z "$AIO_RUNTIME_NAMESPACE" ] || [ -z "$AIO_RUNTIME_AUTH" ] || \
+             [ -z "$AIO_PROJECT_ID" ] || [ -z "$AIO_PROJECT_NAME" ] || [ -z "$AIO_PROJECT_ORG_ID" ] || \
+             [ -z "$AIO_PROJECT_WORKSPACE_ID" ] || [ -z "$AIO_PROJECT_WORKSPACE_NAME" ]; then
+            echo "Workspace config for $APP ($PURPOSE) is missing one or more required fields." >&2
+            exit 1
+          fi
+
+          echo "::add-mask::$CLIENTID"
+          echo "CLIENTID=$CLIENTID" >> "$GITHUB_ENV"
+          echo "::add-mask::$CLIENTSECRET"
+          echo "CLIENTSECRET=$CLIENTSECRET" >> "$GITHUB_ENV"
+          echo "::add-mask::$TECHNICALACCOUNTID"
+          echo "TECHNICALACCOUNTID=$TECHNICALACCOUNTID" >> "$GITHUB_ENV"
+          echo "::add-mask::$TECHNICALACCOUNTEMAIL"
+          echo "TECHNICALACCOUNTEMAIL=$TECHNICALACCOUNTEMAIL" >> "$GITHUB_ENV"
+          echo "::add-mask::$IMSORGID"
+          echo "IMSORGID=$IMSORGID" >> "$GITHUB_ENV"
+          echo "::add-mask::$SCOPES"
+          echo "SCOPES=$SCOPES" >> "$GITHUB_ENV"
+          echo "::add-mask::$AIO_RUNTIME_NAMESPACE"
+          echo "AIO_RUNTIME_NAMESPACE=$AIO_RUNTIME_NAMESPACE" >> "$GITHUB_ENV"
+          echo "::add-mask::$AIO_RUNTIME_AUTH"
+          echo "AIO_RUNTIME_AUTH=$AIO_RUNTIME_AUTH" >> "$GITHUB_ENV"
+          echo "::add-mask::$AIO_PROJECT_ID"
+          echo "AIO_PROJECT_ID=$AIO_PROJECT_ID" >> "$GITHUB_ENV"
+          echo "::add-mask::$AIO_PROJECT_NAME"
+          echo "AIO_PROJECT_NAME=$AIO_PROJECT_NAME" >> "$GITHUB_ENV"
+          echo "::add-mask::$AIO_PROJECT_ORG_ID"
+          echo "AIO_PROJECT_ORG_ID=$AIO_PROJECT_ORG_ID" >> "$GITHUB_ENV"
+          echo "::add-mask::$AIO_PROJECT_WORKSPACE_ID"
+          echo "AIO_PROJECT_WORKSPACE_ID=$AIO_PROJECT_WORKSPACE_ID" >> "$GITHUB_ENV"
+          echo "::add-mask::$AIO_PROJECT_WORKSPACE_NAME"
+          echo "AIO_PROJECT_WORKSPACE_NAME=$AIO_PROJECT_WORKSPACE_NAME" >> "$GITHUB_ENV"
+          echo "::add-mask::$AIO_PROJECT_WORKSPACE_DETAILS_SERVICES"
+          echo "AIO_PROJECT_WORKSPACE_DETAILS_SERVICES=$AIO_PROJECT_WORKSPACE_DETAILS_SERVICES" >> "$GITHUB_ENV"
 
       - name: Log deploy target
         run: |
