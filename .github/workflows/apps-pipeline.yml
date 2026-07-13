@@ -125,15 +125,22 @@ jobs:
             --name "$workspace" \
             --title "${{ steps.workspace.outputs.title }}"
 
-          codes="$(yq -r '[(.apis // [])[].code] | join(",")' install.yaml)"
-          if [ -n "$codes" ]; then
-            echo "Attaching services: $codes..."
-            aio console workspace api add \
-              --orgId "${{ vars.AIO_ORG_ID }}" \
-              --projectName "${{ steps.project.outputs.name }}" \
-              --workspaceName "$workspace" \
-              --service-code "$codes"
-          fi
+          # Disabled: the CI OAuth Server-to-Server technical account doesn't have
+          # the Console role needed to attach APIs to a workspace. Listing the org's
+          # private-API catalog 400s with "Missing scope for private API access",
+          # and creating a new OAuth S2S credential on a fresh workspace (required
+          # before any API can be attached) 401s with "does not have the correct
+          # role in this organization". Re-enable once the technical account has
+          # been granted the required role.
+          # codes="$(yq -r '[(.apis // [])[].code] | join(",")' install.yaml)"
+          # if [ -n "$codes" ]; then
+          #   echo "Attaching services: $codes..."
+          #   aio console workspace api add \
+          #     --orgId "${{ vars.AIO_ORG_ID }}" \
+          #     --projectName "${{ steps.project.outputs.name }}" \
+          #     --workspaceName "$workspace" \
+          #     --service-code "$codes"
+          # fi
 
       - name: Select workspace
         run: aio console workspace select "${{ steps.workspace.outputs.name }}"
