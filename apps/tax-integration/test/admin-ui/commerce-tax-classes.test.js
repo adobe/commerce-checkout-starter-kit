@@ -29,10 +29,7 @@ describe("fetchCommerceTaxClasses", () => {
       ok: true,
     });
 
-    const rows = await fetchCommerceTaxClasses(
-      "https://commerce.example.com/rest/all/",
-      "test-ims-token",
-    );
+    const rows = await fetchCommerceTaxClasses("test-ims-token", "test-org-id");
 
     expect(rows).toEqual([
       {
@@ -45,9 +42,14 @@ describe("fetchCommerceTaxClasses", () => {
       },
     ]);
 
-    const [url, options] = global.fetch.mock.calls[0];
-    expect(url).toContain("taxClasses/search");
-    expect(options.headers.Authorization).toBe("Bearer test-ims-token");
+    const [, options] = global.fetch.mock.calls[0];
+    expect(options.method).toBe("POST");
+    expect(options.headers.authorization).toBe("Bearer test-ims-token");
+    expect(options.headers["x-gw-ims-org-id"]).toBe("test-org-id");
+
+    const body = JSON.parse(options.body);
+    expect(body.method).toBe("GET");
+    expect(body.operation).toContain("taxClasses/search");
   });
 
   test("defaults missing custom_attributes to empty strings", async () => {
@@ -61,10 +63,7 @@ describe("fetchCommerceTaxClasses", () => {
       ok: true,
     });
 
-    const rows = await fetchCommerceTaxClasses(
-      "https://commerce.example.com/rest/all/",
-      "tok",
-    );
+    const rows = await fetchCommerceTaxClasses("tok", "org-id");
 
     expect(rows).toEqual([
       {
@@ -78,39 +77,55 @@ describe("fetchCommerceTaxClasses", () => {
     ]);
   });
 
-  test("throws when Commerce responds with a non-ok status", async () => {
-    global.fetch.mockResolvedValue({ ok: false, status: 500 });
+  test("throws with the action's error message when the request fails", async () => {
+    global.fetch.mockResolvedValue({
+      json: () => Promise.resolve({ message: "Commerce request failed: boom" }),
+      ok: false,
+      status: 500,
+    });
 
-    await expect(
-      fetchCommerceTaxClasses("https://commerce.example.com/rest/all/", "tok"),
-    ).rejects.toThrow("Commerce request failed with status 500");
+    await expect(fetchCommerceTaxClasses("tok", "org-id")).rejects.toThrow(
+      "Commerce request failed: boom",
+    );
+  });
+
+  test("falls back to a generic message when the error response has no body", async () => {
+    global.fetch.mockResolvedValue({
+      json: () => Promise.reject(new Error("no body")),
+      ok: false,
+      status: 500,
+    });
+
+    await expect(fetchCommerceTaxClasses("tok", "org-id")).rejects.toThrow(
+      "Commerce request failed with status 500",
+    );
   });
 });
 
 describe("createOrUpdateCommerceTaxClass", () => {
-  test("POSTs the mapped payload to V1/taxClasses with the admin's IMS token", async () => {
+  test("POSTs the mapped payload to the commerce-tax-classes action with the admin's IMS token and org ID", async () => {
     global.fetch.mockResolvedValue({
       json: () => Promise.resolve({}),
       ok: true,
     });
 
-    await createOrUpdateCommerceTaxClass(
-      "https://commerce.example.com/rest/all/",
-      "test-ims-token",
-      {
-        className: "Taxable Goods",
-        classType: "PRODUCT",
-        customTaxCode: "001",
-        customTaxLabel: "Books",
-        id: 2,
-      },
-    );
+    await createOrUpdateCommerceTaxClass("test-ims-token", "test-org-id", {
+      className: "Taxable Goods",
+      classType: "PRODUCT",
+      customTaxCode: "001",
+      customTaxLabel: "Books",
+      id: 2,
+    });
 
-    const [url, options] = global.fetch.mock.calls[0];
-    expect(url).toBe("https://commerce.example.com/rest/all/V1/taxClasses");
+    const [, options] = global.fetch.mock.calls[0];
     expect(options.method).toBe("POST");
-    expect(options.headers.Authorization).toBe("Bearer test-ims-token");
-    expect(JSON.parse(options.body)).toEqual({
+    expect(options.headers.authorization).toBe("Bearer test-ims-token");
+    expect(options.headers["x-gw-ims-org-id"]).toBe("test-org-id");
+
+    const body = JSON.parse(options.body);
+    expect(body.operation).toBe("taxClasses");
+    expect(body.method).toBe("POST");
+    expect(body.payload).toEqual({
       taxClass: {
         class_id: 2,
         class_name: "Taxable Goods",
@@ -123,20 +138,23 @@ describe("createOrUpdateCommerceTaxClass", () => {
     });
   });
 
-  test("throws when Commerce responds with a non-ok status", async () => {
-    global.fetch.mockResolvedValue({ ok: false, status: 400 });
+  test("throws with the action's error message when the request fails", async () => {
+    global.fetch.mockResolvedValue({
+      json: () =>
+        Promise.resolve({
+          message: "Missing or malformed Authorization header",
+        }),
+      ok: false,
+      status: 400,
+    });
 
     await expect(
-      createOrUpdateCommerceTaxClass(
-        "https://commerce.example.com/rest/all/",
-        "tok",
-        {
-          className: "Taxable Goods",
-          classType: "PRODUCT",
-          customTaxCode: "001",
-          customTaxLabel: "Books",
-        },
-      ),
-    ).rejects.toThrow("Commerce request failed with status 400");
+      createOrUpdateCommerceTaxClass("tok", "org-id", {
+        className: "Taxable Goods",
+        classType: "PRODUCT",
+        customTaxCode: "001",
+        customTaxLabel: "Books",
+      }),
+    ).rejects.toThrow("Missing or malformed Authorization header");
   });
 });

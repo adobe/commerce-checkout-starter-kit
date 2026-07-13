@@ -39,3 +39,4 @@ coverage
 
 # App builder config
 commerce-backend-ui-1/web-src/src/config.json
+apps/tax-integration/src/commerce-backend-ui-2/web-src/src/config.json

@@ -10,4 +10,16 @@ operations:
       impl: index.html
 
 runtimeManifest:
-  packages: {}
+  packages:
+    tax-integration-admin-ui:
+      license: Apache-2.0
+      actions:
+        commerce-tax-classes:
+          function: actions/commerce-tax-classes/index.js
+          web: 'yes'
+          runtime: nodejs:24
+          inputs:
+            LOG_LEVEL: debug
+          annotations:
+            require-adobe-auth: true
+            final: true

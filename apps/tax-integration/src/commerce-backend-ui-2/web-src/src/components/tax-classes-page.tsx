@@ -1,4 +1,4 @@
-import { useCommerce, useIms } from "@adobe/aio-commerce-lib-admin-ui/web";
+import { useIms } from "@adobe/aio-commerce-lib-admin-ui/web";
 import { Button } from "@react-spectrum/s2/Button";
 import { Content } from "@react-spectrum/s2/Content";
 import { Dialog, DialogTrigger } from "@react-spectrum/s2/Dialog";
@@ -27,8 +27,7 @@ import type { CommerceTaxClassRow } from "../lib/commerce-tax-classes.ts";
 import type { TaxClass } from "./tax-class-dialog.tsx";
 
 export function TaxClassesPage() {
-  const { imsToken } = useIms();
-  const { commerceHost } = useCommerce();
+  const { imsOrgId, imsToken } = useIms();
   const { customTaxCodes, isLoadingCustomTaxCodes } = useCustomTaxCodes();
 
   const [isLoadingCommerceTaxClasses, setIsLoadingCommerceTaxClasses] =
@@ -40,7 +39,7 @@ export function TaxClassesPage() {
   const refetchCommerceTaxClasses = useCallback(async () => {
     setIsLoadingCommerceTaxClasses(true);
     try {
-      const rows = await fetchCommerceTaxClasses(commerceHost, imsToken);
+      const rows = await fetchCommerceTaxClasses(imsToken, imsOrgId);
       setCommerceTaxClasses(rows);
     } catch (error) {
       console.error("Error fetching commerce tax classes:", error);
@@ -48,7 +47,7 @@ export function TaxClassesPage() {
     } finally {
       setIsLoadingCommerceTaxClasses(false);
     }
-  }, [commerceHost, imsToken]);
+  }, [imsOrgId, imsToken]);
 
   useEffect(() => {
     refetchCommerceTaxClasses();
@@ -57,17 +56,13 @@ export function TaxClassesPage() {
   const handleSave = useCallback(
     async (newTaxClass: TaxClass) => {
       try {
-        await createOrUpdateCommerceTaxClass(
-          commerceHost,
-          imsToken,
-          newTaxClass,
-        );
+        await createOrUpdateCommerceTaxClass(imsToken, imsOrgId, newTaxClass);
         await refetchCommerceTaxClasses();
       } catch (error) {
         console.error("Something went wrong while saving tax class:", error);
       }
     },
-    [commerceHost, imsToken, refetchCommerceTaxClasses],
+    [imsOrgId, imsToken, refetchCommerceTaxClasses],
   );
 
   const renderEmptyState = useCallback(

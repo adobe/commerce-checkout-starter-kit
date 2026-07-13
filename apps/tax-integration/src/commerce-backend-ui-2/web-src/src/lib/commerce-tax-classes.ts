@@ -1,4 +1,9 @@
+import actionUrls from "../config.json";
+
 import type { TaxClass } from "../components/tax-class-dialog.tsx";
+
+const COMMERCE_TAX_CLASSES_ACTION =
+  "tax-integration-admin-ui/commerce-tax-classes";
 
 export type CommerceTaxClassRow = {
   rowNumber: number;
@@ -9,52 +14,109 @@ export type CommerceTaxClassRow = {
   customTaxLabel: string;
 };
 
-export async function fetchCommerceTaxClasses(
-  commerceHost: string,
+type CommerceTaxClassApiItem = {
+  class_id: number;
+  class_type: string;
+  class_name: string;
+  custom_attributes?: { attribute_code: string; value: string }[];
+};
+
+/**
+ * Calls a backend Adobe I/O Runtime action declared in `config.json` (rewritten by the app
+ * builder CLI at build/dev time with each action's live URL), mirroring
+ * `commerce-backend-ui-1`'s `callAction` utility.
+ *
+ * @param action the `<package>/<action>` key to look up in `config.json`
+ * @param operation the specific operation name for the backend to execute
+ * @param imsToken the logged-in admin's IMS bearer token (from `useIms()`)
+ * @param imsOrgId the logged-in admin's IMS org ID (from `useIms()`)
+ * @param method the HTTP method to be passed to the backend
+ * @param payload the optional request payload
+ */
+async function callAction(
+  action: string,
+  operation: string,
   imsToken: string,
+  imsOrgId: string,
+  method: "GET" | "POST" = "GET",
+  payload: Record<string, unknown> | null = null,
+): Promise<unknown> {
+  const actionUrl = (actionUrls as Record<string, string>)[action];
+
+  const response = await fetch(actionUrl, {
+    body: JSON.stringify({
+      method,
+      operation,
+      ...(payload ? { payload } : {}),
+    }),
+    headers: {
+      authorization: `Bearer ${imsToken}`,
+      "Content-Type": "application/json",
+      "x-gw-ims-org-id": imsOrgId,
+    },
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    const { message } = await response.json().catch(() => ({}));
+    throw new Error(
+      message || `Commerce request failed with status ${response.status}`,
+    );
+  }
+
+  return response.json();
+}
+
+/**
+ * Fetches the first page of Commerce tax classes and maps them into the
+ * row shape the tax-classes table renders.
+ *
+ * @param imsToken the logged-in admin's IMS bearer token (from `useIms()`)
+ * @param imsOrgId the logged-in admin's IMS org ID (from `useIms()`)
+ */
+export async function fetchCommerceTaxClasses(
+  imsToken: string,
+  imsOrgId: string,
 ): Promise<CommerceTaxClassRow[]> {
   const queryParams = new URLSearchParams({
     "searchCriteria[currentPage]": "1",
     "searchCriteria[pageSize]": "100",
   }).toString();
 
-  const response = await fetch(
-    `${commerceHost}V1/taxClasses/search?${queryParams}`,
-    {
-      headers: { Authorization: `Bearer ${imsToken}` },
-    },
-  );
+  const { items } = (await callAction(
+    COMMERCE_TAX_CLASSES_ACTION,
+    `taxClasses/search?${queryParams}`,
+    imsToken,
+    imsOrgId,
+  )) as { items: CommerceTaxClassApiItem[] };
 
-  if (!response.ok) {
-    throw new Error(`Commerce request failed with status ${response.status}`);
-  }
-
-  const { items } = await response.json();
-  // biome-ignore lint/suspicious/noExplicitAny: Commerce REST response shape, not worth typing fully for a single mapping
-  return items.map((item: any, index: number) => ({
+  return items.map((item, index) => ({
     className: item.class_name,
     classType: item.class_type,
     customTaxCode:
-      item.custom_attributes?.find(
-        // biome-ignore lint/suspicious/noExplicitAny: see above
-        (attr: any) => attr.attribute_code === "tax_code",
-      )?.value || "",
+      item.custom_attributes?.find((attr) => attr.attribute_code === "tax_code")
+        ?.value || "",
     customTaxLabel:
       item.custom_attributes?.find(
-        // biome-ignore lint/suspicious/noExplicitAny: see above
-        (attr: any) => attr.attribute_code === "tax_label",
+        (attr) => attr.attribute_code === "tax_label",
       )?.value || "",
     id: item.class_id,
     rowNumber: index + 1,
   }));
 }
 
-export async function createOrUpdateCommerceTaxClass(
-  commerceHost: string,
+/**
+ * Creates or updates a Commerce tax class.
+ *
+ * @param imsToken the logged-in admin's IMS bearer token (from `useIms()`)
+ * @param imsOrgId the logged-in admin's IMS org ID (from `useIms()`)
+ * @param taxClass the tax class to create or update
+ */
+export function createOrUpdateCommerceTaxClass(
   imsToken: string,
+  imsOrgId: string,
   taxClass: TaxClass,
-  // biome-ignore lint/suspicious/noExplicitAny: passes through Commerce's raw response body
-): Promise<any> {
+) {
   const payload = {
     taxClass: {
       class_id: taxClass.id,
@@ -67,18 +129,12 @@ export async function createOrUpdateCommerceTaxClass(
     },
   };
 
-  const response = await fetch(`${commerceHost}V1/taxClasses`, {
-    body: JSON.stringify(payload),
-    headers: {
-      Authorization: `Bearer ${imsToken}`,
-      "Content-Type": "application/json",
-    },
-    method: "POST",
-  });
-
-  if (!response.ok) {
-    throw new Error(`Commerce request failed with status ${response.status}`);
-  }
-
-  return response.json();
+  return callAction(
+    COMMERCE_TAX_CLASSES_ACTION,
+    "taxClasses",
+    imsToken,
+    imsOrgId,
+    "POST",
+    payload,
+  );
 }
