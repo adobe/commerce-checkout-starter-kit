@@ -14,6 +14,11 @@ left alone entirely.
 3. For pull requests, the app is undeployed again immediately after a successful deploy (see
    below for why).
 
+Commenting `/retest` on a pull request re-runs this whole check-and-deploy cycle against the
+PR's current code, without needing a new commit — useful after a flaky failure, or after fixing
+something outside the PR itself (like provisioning a workspace secret). Only repo collaborators
+can trigger it.
+
 ## Workspaces and secrets
 
 Each app has **two** pre-provisioned Adobe Console workspaces:
