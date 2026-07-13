@@ -49,39 +49,9 @@ Each workspace's full config lives in **exactly one** GitHub Actions repo secret
 
 **The secret value is the raw `workspace.json` file, exactly as downloaded** from the
 "Download" button on that workspace's page in https://developer.adobe.com/console/ — copy its
-contents straight into the secret. No `aio` CLI command needs to be run to produce it; the
-`deploy` job does the flattening itself with `jq`. The fields it pulls out (see the "Load
-workspace config" step in `apps-pipeline.yml`), and where each one lives in that raw file:
-
-| Field | Path in the downloaded `workspace.json` |
-|---|---|
-| `CLIENTID` | `.project.workspace.details.credentials[] .oauth_server_to_server.client_id` (the credential with `integration_type == "oauth_server_to_server"`) |
-| `CLIENTSECRET` | same credential's `.oauth_server_to_server.client_secrets[0]` |
-| `TECHNICALACCOUNTID` | same credential's `.oauth_server_to_server.technical_account_id` |
-| `TECHNICALACCOUNTEMAIL` | same credential's `.oauth_server_to_server.technical_account_email` |
-| `IMSORGID` | `.project.org.ims_org_id` |
-| `SCOPES` | same credential's `.oauth_server_to_server.scopes` (JSON array) |
-| `AIO_RUNTIME_NAMESPACE` | `.project.workspace.details.runtime.namespaces[0].name` |
-| `AIO_RUNTIME_AUTH` | `.project.workspace.details.runtime.namespaces[0].auth` |
-| `AIO_PROJECT_ID` | `.project.id` |
-| `AIO_PROJECT_NAME` | `.project.name` |
-| `AIO_PROJECT_ORG_ID` | `.project.org.id` |
-| `AIO_PROJECT_WORKSPACE_ID` | `.project.workspace.id` |
-| `AIO_PROJECT_WORKSPACE_NAME` | `.project.workspace.name` |
-| `AIO_PROJECT_WORKSPACE_DETAILS_SERVICES` | `.project.workspace.details.services` (JSON array) |
-
-This mirrors exactly what `aio app use <workspace>.json` does locally (see
-`@adobe/aio-cli-plugin-app`'s `src/lib/import-helper.js`, `importConfigJson`/`transformRuntime`/
-`getServiceCredential`) — we just replicate that transform in the workflow instead of requiring
-a human to run it. `@adobe/aio-lib-core-config` treats any `AIO_<KEY>` environment variable as
-config (`AIO_PROJECT_ORG_ID` → `project.org.id`, and so on) at higher priority than any
-`.aio`/`.env` file — this is what lets the `deploy` job work from plain env vars with no local
-config file at all. The six non-`AIO_`-prefixed fields (`CLIENTID`, `CLIENTSECRET`, etc.) are
-fed directly to `adobe/aio-apps-action`'s `oauth_sts` command inputs instead.
-
-The `deploy` job's "Load workspace config" step in `apps-pipeline.yml` picks the right secret
-based on `inputs.app` and `github.event_name`, extracts each field with `jq`, and writes it to
-`$GITHUB_ENV` (masking every value first, since none of this should ever appear in a log).
+contents straight into the secret as-is. No `aio` CLI command needs to be run to prepare it;
+the pipeline derives everything it needs (IMS credentials, Runtime namespace/auth, project and
+workspace identifiers) from that file at deploy time.
 
 ## Adding a new app
 
@@ -99,14 +69,9 @@ based on `inputs.app` and `github.event_name`, extracts each field with `jq`, an
 5. Add two repo secrets: `AIO_<NAME>_MAIN_WORKSPACE_CONFIG` and
    `AIO_<NAME>_PR_WORKSPACE_CONFIG`, each set to the raw contents of one workspace's downloaded
    `workspace.json` — no transformation needed, paste the file as-is.
-6. **Extend the `deploy` job's "Load workspace config" step** in `apps-pipeline.yml` — its
-   secret-selection expression is written per-app (GitHub Actions can't build a secret name
-   from `inputs.app`), so add this app alongside shipping-method's. If the list of apps grows
-   enough that this per-app branching becomes unwieldy, migrate to one GitHub Environment per
-   `<app>-<purpose>` instead (an environment's secrets are addressed by a fixed name like
-   `WORKSPACE_CONFIG`, and the job can select the environment dynamically via
-   `environment: <expression>` — unlike `secrets.*`, environment names *can* be built from an
-   expression).
+6. **Register the app in `apps-pipeline.yml`'s `deploy` job** alongside the existing apps, so
+   its two new secrets are picked up — this is a small, mechanical edit today; worth
+   revisiting if the number of apps grows enough to make it unwieldy.
 7. Open a PR touching `apps/<name>/**` — `apps-ci.yml`'s `detect` job picks it up
    automatically, no changes needed there.
 
