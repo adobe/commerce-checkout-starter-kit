@@ -15,8 +15,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 
 import {
-  extractWorkspaceConfig,
-  prepareWorkspaceConfig,
+  parseWorkspaceConfig,
+  resolveWorkspaceConfig,
   resolveWorkspaceEnvVarName,
 } from "../../scripts/prepare-workspace-config.js";
 
@@ -43,9 +43,9 @@ describe("resolveWorkspaceEnvVarName", () => {
   });
 });
 
-describe("extractWorkspaceConfig", () => {
+describe("parseWorkspaceConfig", () => {
   test("flattens a raw workspace.json into the expected fields", () => {
-    expect(extractWorkspaceConfig(rawWorkspaceJson)).toEqual({
+    expect(parseWorkspaceConfig(rawWorkspaceJson)).toEqual({
       CLIENTID: "test-client-id",
       CLIENTSECRET: "test-client-secret",
       TECHNICALACCOUNTID: "test-tech-acct-id@techacct.adobe.com",
@@ -71,7 +71,7 @@ describe("extractWorkspaceConfig", () => {
       undefined;
     withoutScopesOrServices.project.workspace.details.services = undefined;
 
-    const config = extractWorkspaceConfig(withoutScopesOrServices);
+    const config = parseWorkspaceConfig(withoutScopesOrServices);
     expect(config.SCOPES).toEqual([]);
     expect(config.AIO_PROJECT_WORKSPACE_DETAILS_SERVICES).toEqual([]);
   });
@@ -85,7 +85,7 @@ describe("extractWorkspaceConfig", () => {
       oauth2: { client_id: "should-not-be-used" },
     });
 
-    expect(extractWorkspaceConfig(withOtherCredential).CLIENTID).toBe(
+    expect(parseWorkspaceConfig(withOtherCredential).CLIENTID).toBe(
       "test-client-id",
     );
   });
@@ -100,7 +100,7 @@ describe("extractWorkspaceConfig", () => {
       rawField
     ] = undefined;
 
-    expect(() => extractWorkspaceConfig(missingField)).toThrow(
+    expect(() => parseWorkspaceConfig(missingField)).toThrow(
       new RegExp(envKey),
     );
   });
@@ -109,7 +109,7 @@ describe("extractWorkspaceConfig", () => {
     const noCredentials = structuredClone(rawWorkspaceJson);
     noCredentials.project.workspace.details.credentials = [];
 
-    expect(() => extractWorkspaceConfig(noCredentials)).toThrow(
+    expect(() => parseWorkspaceConfig(noCredentials)).toThrow(
       MISSING_CLIENTID_ERROR,
     );
   });
@@ -118,34 +118,26 @@ describe("extractWorkspaceConfig", () => {
     const noRuntime = structuredClone(rawWorkspaceJson);
     noRuntime.project.workspace.details.runtime.namespaces = [];
 
-    expect(() => extractWorkspaceConfig(noRuntime)).toThrow(
+    expect(() => parseWorkspaceConfig(noRuntime)).toThrow(
       MISSING_RUNTIME_NAMESPACE_ERROR,
     );
   });
 });
 
-describe("prepareWorkspaceConfig", () => {
-  test("selects the right env var for the app/purpose and returns every field", () => {
-    const fields = prepareWorkspaceConfig({
+describe("resolveWorkspaceConfig", () => {
+  test("selects the right env var for the app/purpose and returns the parsed JSON", () => {
+    const result = resolveWorkspaceConfig({
       APP: "shipping-method",
       PURPOSE: "MAIN",
       SHIPPING_METHOD_MAIN: JSON.stringify(rawWorkspaceJson),
     });
 
-    expect(fields).toContainEqual({ key: "CLIENTID", value: "test-client-id" });
-    expect(fields).toContainEqual({
-      key: "AIO_RUNTIME_NAMESPACE",
-      value: "12345-shippingmethodmain",
-    });
-    expect(fields).toContainEqual({
-      key: "SCOPES",
-      value: '["AdobeID","openid","adobeio_api"]',
-    });
+    expect(result).toEqual(rawWorkspaceJson);
   });
 
   test("throws a clear error when the expected secret env var is empty", () => {
     expect(() =>
-      prepareWorkspaceConfig({
+      resolveWorkspaceConfig({
         APP: "totals-collector",
         PURPOSE: "PR",
         TOTALS_COLLECTOR_PR: "",
@@ -155,7 +147,7 @@ describe("prepareWorkspaceConfig", () => {
 
   test("throws a clear error when the secret is not valid JSON", () => {
     expect(() =>
-      prepareWorkspaceConfig({
+      resolveWorkspaceConfig({
         APP: "payment-method",
         PURPOSE: "MAIN",
         PAYMENT_METHOD_MAIN: "not json",

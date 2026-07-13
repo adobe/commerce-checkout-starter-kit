@@ -40,6 +40,34 @@ export function resolveWorkspaceEnvVarName(app, purpose) {
 }
 
 /**
+ * Reads the raw workspace.json for the current app/purpose from env.
+ *
+ * @param {object} env process.env, or an equivalent object for testing.
+ * @returns {object} the parsed raw workspace.json.
+ * @throws {Error} if the expected env var is empty or not valid JSON.
+ */
+export function resolveWorkspaceConfig(env) {
+  const { APP, PURPOSE } = env;
+  const varName = resolveWorkspaceEnvVarName(APP, PURPOSE);
+  const rawValue = env[varName];
+
+  if (!rawValue) {
+    throw new Error(
+      `No workspace config secret set for ${APP} (${PURPOSE}). Expected env var ${varName} to be non-empty. ` +
+        'See .github/MAINTAINERS.md ("Adding a new app") to register this app and provision its workspace secrets.',
+    );
+  }
+
+  try {
+    return JSON.parse(rawValue);
+  } catch (error) {
+    throw new Error(
+      `Workspace config for ${APP} (${PURPOSE}) is not valid JSON: ${error.message}`,
+    );
+  }
+}
+
+/**
  * Flattens a raw Adobe Developer Console `workspace.json` (as downloaded from the
  * "Download" button on a workspace's page) into the fields `aio app deploy` reads
  * from AIO_* env vars, replicating what `aio app use <workspace>.json` does locally
@@ -49,7 +77,7 @@ export function resolveWorkspaceEnvVarName(app, purpose) {
  * @returns {object} the flattened workspace config.
  * @throws {Error} if a required field is missing from the raw workspace.json.
  */
-export function extractWorkspaceConfig(rawWorkspaceJson) {
+export function parseWorkspaceConfig(rawWorkspaceJson) {
   const project = rawWorkspaceJson?.project ?? {};
   const workspaceDetails = project?.workspace?.details ?? {};
   const credentials = workspaceDetails.credentials ?? [];
@@ -85,47 +113,17 @@ export function extractWorkspaceConfig(rawWorkspaceJson) {
   return config;
 }
 
-/**
- * Reads the raw workspace.json for the current app/purpose from env and flattens it
- * into the fields the deploy job needs, each already serialized to a string.
- *
- * @param {object} env process.env, or an equivalent object for testing.
- * @returns {Array<{key: string, value: string}>} the fields to export.
- */
-export function prepareWorkspaceConfig(env) {
-  const { APP, PURPOSE } = env;
-  const varName = resolveWorkspaceEnvVarName(APP, PURPOSE);
-  const rawValue = env[varName];
-
-  if (!rawValue) {
-    throw new Error(
-      `No workspace config secret set for ${APP} (${PURPOSE}). Expected env var ${varName} to be non-empty. ` +
-        'See .github/MAINTAINERS.md ("Adding a new app") to register this app and provision its workspace secrets.',
-    );
-  }
-
-  let rawWorkspaceJson;
-  try {
-    rawWorkspaceJson = JSON.parse(rawValue);
-  } catch (error) {
-    throw new Error(
-      `Workspace config for ${APP} (${PURPOSE}) is not valid JSON: ${error.message}`,
-    );
-  }
-
-  const config = extractWorkspaceConfig(rawWorkspaceJson);
-
-  return Object.entries(config).map(([key, value]) => ({
-    key,
-    value: Array.isArray(value) ? JSON.stringify(value) : value,
-  }));
-}
-
 export async function main() {
-  const fields = prepareWorkspaceConfig(process.env);
-  const lines = fields.map(({ key, value }) => {
-    console.log(`::add-mask::${value}`);
-    return `${key}=${value}`;
+  const rawWorkspaceJson = resolveWorkspaceConfig(process.env);
+  const config = parseWorkspaceConfig(rawWorkspaceJson);
+
+  const lines = Object.entries(config).map(([key, value]) => {
+    const serialized = Array.isArray(value) ? JSON.stringify(value) : value;
+    // GitHub only auto-masks the literal secret value (the whole raw
+    // workspace.json blob); these derived fields are new strings it has
+    // never seen, so each one needs its own mask or it can leak into logs.
+    console.log(`::add-mask::${serialized}`);
+    return `${key}=${serialized}`;
   });
   await fs.appendFile(process.env.GITHUB_ENV, `${lines.join("\n")}\n`);
 }
