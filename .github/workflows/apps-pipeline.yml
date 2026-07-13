@@ -82,7 +82,7 @@ jobs:
 
       - name: Log deploy target
         run: |
-          echo "Deploying ${{ inputs.app }} (${{ github.event_name == 'pull_request' && 'pr' || 'main' }}) to workspace ${{ env.AIO_PROJECT_WORKSPACE_NAME }} (org ${{ env.AIO_PROJECT_ORG_ID }}, project ${{ env.AIO_PROJECT_ID }})"
+          echo "Deploying ${{ inputs.app }} (${{ github.event_name == 'pull_request' && format('pr #{0}', github.event.pull_request.number) || 'main' }}) to workspace ${{ env.AIO_PROJECT_WORKSPACE_NAME }}: https://developer.adobe.com/console/projects/${{ env.AIO_PROJECT_ORG_ID }}/${{ env.AIO_PROJECT_ID }}/workspaces/${{ env.AIO_PROJECT_WORKSPACE_ID }}/details"
 
       - name: Setup AIO CLI
         uses: adobe/aio-cli-setup-action@5a7a7313f7024283e7eb384dc79b69b02effb307 # 1.3.0
