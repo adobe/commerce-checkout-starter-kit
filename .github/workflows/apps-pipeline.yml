@@ -57,18 +57,31 @@ jobs:
       - name: Install app dependencies
         run: npm ci
 
-      # This step's secret selection is shipping-method-specific: GitHub Actions
-      # can't build a secret name from `inputs.app`, since `secrets.*` requires a
-      # literal name. Onboarding a new app means adding its own
-      # AIO_<APP>_MAIN/PR_WORKSPACE_CONFIG secrets and extending this ternary (or
-      # migrating to one GitHub Environment per app/purpose if this gets
-      # unwieldy with more apps). See MAINTAINERS.md.
+      # GitHub Actions can't build a secret name from `inputs.app` (`secrets.*`
+      # requires a literal name), so every app's two secrets are listed here
+      # explicitly and selected via indirect variable expansion below.
+      # Onboarding a new app means adding its AIO_<APP>_MAIN/PR_WORKSPACE_CONFIG
+      # secrets and a matching pair of lines here (or migrating to one GitHub
+      # Environment per app/purpose if this list gets unwieldy). See
+      # MAINTAINERS.md.
       - name: Load workspace config
         env:
-          WORKSPACE_CONFIG: ${{ github.event_name == 'pull_request' && secrets.AIO_SHIPPING_METHOD_PR_WORKSPACE_CONFIG || secrets.AIO_SHIPPING_METHOD_MAIN_WORKSPACE_CONFIG }}
+          PURPOSE: ${{ github.event_name == 'pull_request' && 'PR' || 'MAIN' }}
+          APP: ${{ inputs.app }}
+          SHIPPING_METHOD_MAIN: ${{ secrets.AIO_SHIPPING_METHOD_MAIN_WORKSPACE_CONFIG }}
+          SHIPPING_METHOD_PR: ${{ secrets.AIO_SHIPPING_METHOD_PR_WORKSPACE_CONFIG }}
+          PAYMENT_METHOD_MAIN: ${{ secrets.AIO_PAYMENT_METHOD_MAIN_WORKSPACE_CONFIG }}
+          PAYMENT_METHOD_PR: ${{ secrets.AIO_PAYMENT_METHOD_PR_WORKSPACE_CONFIG }}
+          TAX_INTEGRATION_MAIN: ${{ secrets.AIO_TAX_INTEGRATION_MAIN_WORKSPACE_CONFIG }}
+          TAX_INTEGRATION_PR: ${{ secrets.AIO_TAX_INTEGRATION_PR_WORKSPACE_CONFIG }}
+          TOTALS_COLLECTOR_MAIN: ${{ secrets.AIO_TOTALS_COLLECTOR_MAIN_WORKSPACE_CONFIG }}
+          TOTALS_COLLECTOR_PR: ${{ secrets.AIO_TOTALS_COLLECTOR_PR_WORKSPACE_CONFIG }}
         run: |
+          var_name="$(echo "$APP" | tr '[:lower:]-' '[:upper:]_')_${PURPOSE}"
+          WORKSPACE_CONFIG="${!var_name}"
+
           if [ -z "$WORKSPACE_CONFIG" ]; then
-            echo "No workspace config secret set for this app/purpose." >&2
+            echo "No workspace config secret set for $APP ($PURPOSE). Expected env var $var_name to be non-empty." >&2
             exit 1
           fi
 
