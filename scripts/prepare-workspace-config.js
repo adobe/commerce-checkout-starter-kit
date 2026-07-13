@@ -86,14 +86,13 @@ export function extractWorkspaceConfig(rawWorkspaceJson) {
 }
 
 /**
- * Reads the raw workspace.json for the current app/purpose from env, flattens it,
- * and writes each field to $GITHUB_ENV (masking every value first).
+ * Reads the raw workspace.json for the current app/purpose from env and flattens it
+ * into the fields the deploy job needs, each already serialized to a string.
  *
  * @param {object} env process.env, or an equivalent object for testing.
- * @param {(value: string) => void} appendGithubEnv appends a `KEY=value` line to $GITHUB_ENV.
- * @param {(value: string) => void} mask emits a `::add-mask::` workflow command for a value.
+ * @returns {Array<{key: string, value: string}>} the fields to export.
  */
-export function prepareWorkspaceConfig(env, appendGithubEnv, mask) {
+export function prepareWorkspaceConfig(env) {
   const { APP, PURPOSE } = env;
   const varName = resolveWorkspaceEnvVarName(APP, PURPOSE);
   const rawValue = env[varName];
@@ -116,20 +115,18 @@ export function prepareWorkspaceConfig(env, appendGithubEnv, mask) {
 
   const config = extractWorkspaceConfig(rawWorkspaceJson);
 
-  for (const [key, value] of Object.entries(config)) {
-    const serialized = Array.isArray(value) ? JSON.stringify(value) : value;
-    mask(serialized);
-    appendGithubEnv(`${key}=${serialized}`);
-  }
+  return Object.entries(config).map(([key, value]) => ({
+    key,
+    value: Array.isArray(value) ? JSON.stringify(value) : value,
+  }));
 }
 
 export async function main() {
-  const lines = [];
-  prepareWorkspaceConfig(
-    process.env,
-    (line) => lines.push(line),
-    (value) => console.log(`::add-mask::${value}`),
-  );
+  const fields = prepareWorkspaceConfig(process.env);
+  const lines = fields.map(({ key, value }) => {
+    console.log(`::add-mask::${value}`);
+    return `${key}=${value}`;
+  });
   await fs.appendFile(process.env.GITHUB_ENV, `${lines.join("\n")}\n`);
 }
 

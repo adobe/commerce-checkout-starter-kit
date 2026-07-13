@@ -125,35 +125,27 @@ describe("extractWorkspaceConfig", () => {
 });
 
 describe("prepareWorkspaceConfig", () => {
-  function run(env) {
-    const lines = [];
-    const masked = [];
-    prepareWorkspaceConfig(
-      env,
-      (line) => lines.push(line),
-      (value) => masked.push(value),
-    );
-    return { lines, masked };
-  }
-
-  test("selects the right env var for the app/purpose and exports every field", () => {
-    const { lines, masked } = run({
+  test("selects the right env var for the app/purpose and returns every field", () => {
+    const fields = prepareWorkspaceConfig({
       APP: "shipping-method",
       PURPOSE: "MAIN",
       SHIPPING_METHOD_MAIN: JSON.stringify(rawWorkspaceJson),
     });
 
-    expect(lines).toContain("CLIENTID=test-client-id");
-    expect(lines).toContain("AIO_RUNTIME_NAMESPACE=12345-shippingmethodmain");
-    expect(lines).toContain('SCOPES=["AdobeID","openid","adobeio_api"]');
-    // every exported value must have been masked first
-    expect(masked).toContain("test-client-id");
-    expect(masked).toContain("test-client-secret");
+    expect(fields).toContainEqual({ key: "CLIENTID", value: "test-client-id" });
+    expect(fields).toContainEqual({
+      key: "AIO_RUNTIME_NAMESPACE",
+      value: "12345-shippingmethodmain",
+    });
+    expect(fields).toContainEqual({
+      key: "SCOPES",
+      value: '["AdobeID","openid","adobeio_api"]',
+    });
   });
 
   test("throws a clear error when the expected secret env var is empty", () => {
     expect(() =>
-      run({
+      prepareWorkspaceConfig({
         APP: "totals-collector",
         PURPOSE: "PR",
         TOTALS_COLLECTOR_PR: "",
@@ -163,7 +155,7 @@ describe("prepareWorkspaceConfig", () => {
 
   test("throws a clear error when the secret is not valid JSON", () => {
     expect(() =>
-      run({
+      prepareWorkspaceConfig({
         APP: "payment-method",
         PURPOSE: "MAIN",
         PAYMENT_METHOD_MAIN: "not json",
