@@ -100,7 +100,8 @@ export function prepareWorkspaceConfig(env, appendGithubEnv, mask) {
 
   if (!rawValue) {
     throw new Error(
-      `No workspace config secret set for ${APP} (${PURPOSE}). Expected env var ${varName} to be non-empty.`,
+      `No workspace config secret set for ${APP} (${PURPOSE}). Expected env var ${varName} to be non-empty. ` +
+        'See .github/MAINTAINERS.md ("Adding a new app") to register this app and provision its workspace secrets.',
     );
   }
 
