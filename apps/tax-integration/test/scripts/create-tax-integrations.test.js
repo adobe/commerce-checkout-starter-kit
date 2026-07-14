@@ -58,4 +58,40 @@ describe("create-tax-integrations install step", () => {
       "Failed to create tax integration oop-tax-integration: Commerce unavailable",
     );
   });
+
+  test("deactivates every tax integration defined in TAX_INTEGRATIONS", async () => {
+    const post = vi
+      .fn()
+      .mockReturnValueOnce({ json: () => Promise.resolve({}) });
+    getCommerceClient.mockResolvedValue({ post });
+
+    const result = await createTaxIntegrations.uninstall({}, context);
+
+    expect(result).toEqual(["oop-tax-integration"]);
+    expect(post).toHaveBeenCalledWith(
+      "oope_tax_management/tax_integration",
+      expect.objectContaining({
+        json: {
+          tax_integration: expect.objectContaining({
+            active: false,
+            code: "oop-tax-integration",
+          }),
+        },
+      }),
+    );
+  });
+
+  test("throws when tax integration deactivation fails", async () => {
+    const error = new Error("Commerce unavailable");
+    getCommerceClient.mockResolvedValue({
+      post: vi.fn().mockReturnValue({ json: () => Promise.reject(error) }),
+    });
+
+    await expect(createTaxIntegrations.uninstall({}, context)).rejects.toThrow(
+      "Commerce unavailable",
+    );
+    expect(context.logger.error).toHaveBeenCalledWith(
+      "Failed to deactivate tax integration oop-tax-integration: Commerce unavailable",
+    );
+  });
 });
