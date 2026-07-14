@@ -27,6 +27,16 @@ const REQUIRED_FIELDS = [
   "AIO_PROJECT_WORKSPACE_NAME",
 ];
 
+// Fields that need ::add-mask:: — the rest are non-secret identifiers.
+export const SECRET_FIELDS = [
+  "CLIENTID",
+  "CLIENTSECRET",
+  "TECHNICALACCOUNTID",
+  "TECHNICALACCOUNTEMAIL",
+  "IMSORGID",
+  "AIO_RUNTIME_AUTH",
+];
+
 /**
  * Builds the env var name a workspace's raw config is expected under, e.g.
  * `shipping-method` + `PR` -> `SHIPPING_METHOD_PR`.
@@ -49,6 +59,7 @@ export function resolveWorkspaceEnvVarName(app, purpose) {
 export function resolveWorkspaceConfig(env) {
   const { APP, PURPOSE } = env;
   const varName = resolveWorkspaceEnvVarName(APP, PURPOSE);
+  console.log(`Resolving workspace config from ${varName}`);
   const rawValue = env[varName];
 
   if (!rawValue) {
@@ -113,16 +124,35 @@ export function parseWorkspaceConfig(rawWorkspaceJson) {
   return config;
 }
 
+/**
+ * Serializes a single flattened config value into the string written to
+ * GITHUB_ENV.
+ *
+ * @param {string} key the config field name.
+ * @param {*} value the field's value.
+ * @returns {string} the serialized value.
+ */
+export function serialize(key, value) {
+  if (key === "SCOPES") {
+    // adobe/aio-apps-action's oauth_sts command validates SCOPES as a plain
+    // comma-separated string (no brackets/quotes), not JSON.
+    return Array.isArray(value) ? value.join(",") : value;
+  }
+  return Array.isArray(value) ? JSON.stringify(value) : value;
+}
+
 export async function main() {
   const rawWorkspaceJson = resolveWorkspaceConfig(process.env);
   const config = parseWorkspaceConfig(rawWorkspaceJson);
 
   const lines = Object.entries(config).map(([key, value]) => {
-    const serialized = Array.isArray(value) ? JSON.stringify(value) : value;
-    // GitHub only auto-masks the literal secret value (the whole raw
-    // workspace.json blob); these derived fields are new strings it has
-    // never seen, so each one needs its own mask or it can leak into logs.
-    console.log(`::add-mask::${serialized}`);
+    const serialized = serialize(key, value);
+    if (SECRET_FIELDS.includes(key)) {
+      // GitHub only auto-masks the literal secret value (the whole raw
+      // workspace.json blob); these derived fields are new strings it has
+      // never seen, so each one needs its own mask or it can leak into logs.
+      console.log(`::add-mask::${serialized}`);
+    }
     return `${key}=${serialized}`;
   });
   await fs.appendFile(process.env.GITHUB_ENV, `${lines.join("\n")}\n`);

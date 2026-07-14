@@ -12,12 +12,14 @@ governing permissions and limitations under the License.
 
 import { readFileSync } from "node:fs";
 
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 
 import {
   parseWorkspaceConfig,
   resolveWorkspaceConfig,
   resolveWorkspaceEnvVarName,
+  SECRET_FIELDS,
+  serialize,
 } from "../../scripts/prepare-workspace-config.js";
 
 const rawWorkspaceJson = JSON.parse(
@@ -153,5 +155,97 @@ describe("resolveWorkspaceConfig", () => {
         PAYMENT_METHOD_MAIN: "not json",
       }),
     ).toThrow(INVALID_JSON_ERROR);
+  });
+
+  test("logs the resolved env var name for audit purposes", () => {
+    const logSpy = vi.spyOn(console, "log");
+
+    resolveWorkspaceConfig({
+      APP: "shipping-method",
+      PURPOSE: "MAIN",
+      SHIPPING_METHOD_MAIN: JSON.stringify(rawWorkspaceJson),
+    });
+
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("SHIPPING_METHOD_MAIN"),
+    );
+
+    logSpy.mockRestore();
+  });
+
+  test("logs the resolved env var name even when resolution later fails", () => {
+    const logSpy = vi.spyOn(console, "log");
+
+    expect(() =>
+      resolveWorkspaceConfig({
+        APP: "totals-collector",
+        PURPOSE: "PR",
+        TOTALS_COLLECTOR_PR: "",
+      }),
+    ).toThrow(MISSING_SECRET_ERROR);
+
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("TOTALS_COLLECTOR_PR"),
+    );
+
+    logSpy.mockRestore();
+  });
+});
+
+describe("serialize", () => {
+  const config = parseWorkspaceConfig(rawWorkspaceJson);
+
+  test("joins SCOPES into a plain comma-separated string, not JSON", () => {
+    expect(serialize("SCOPES", config.SCOPES)).toBe(
+      "AdobeID,openid,adobeio_api",
+    );
+  });
+
+  test("still JSON-serializes other array fields", () => {
+    expect(
+      serialize(
+        "AIO_PROJECT_WORKSPACE_DETAILS_SERVICES",
+        config.AIO_PROJECT_WORKSPACE_DETAILS_SERVICES,
+      ),
+    ).toBe(JSON.stringify(config.AIO_PROJECT_WORKSPACE_DETAILS_SERVICES));
+  });
+
+  test("passes non-array values through unchanged", () => {
+    expect(serialize("CLIENTID", config.CLIENTID)).toBe(config.CLIENTID);
+  });
+});
+
+describe("SECRET_FIELDS", () => {
+  test("marks only credential/auth fields as needing a mask", () => {
+    expect([...SECRET_FIELDS].sort()).toEqual(
+      [
+        "CLIENTID",
+        "CLIENTSECRET",
+        "TECHNICALACCOUNTID",
+        "TECHNICALACCOUNTEMAIL",
+        "IMSORGID",
+        "AIO_RUNTIME_AUTH",
+      ].sort(),
+    );
+  });
+
+  test("does not include project/workspace identifiers, SCOPES, or services", () => {
+    const config = parseWorkspaceConfig(rawWorkspaceJson);
+    const unmasked = Object.keys(config).filter(
+      (key) => !SECRET_FIELDS.includes(key),
+    );
+
+    expect(unmasked.sort()).toEqual(
+      [
+        "SCOPES",
+        "AIO_RUNTIME_NAMESPACE",
+        "AIO_PROJECT_ID",
+        "AIO_PROJECT_NAME",
+        "AIO_PROJECT_ORG_ID",
+        "AIO_PROJECT_WORKSPACE_ID",
+        "AIO_PROJECT_WORKSPACE_NAME",
+        "AIO_PROJECT_WORKSPACE_DETAILS_SERVICES",
+      ].sort(),
+    );
   });
 });
