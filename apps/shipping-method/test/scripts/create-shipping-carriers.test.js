@@ -59,4 +59,38 @@ describe("create-shipping-carriers install step", () => {
       "Failed to create shipping carrier DPS: Commerce unavailable",
     );
   });
+
+  test("deactivates every carrier defined in shipping-carriers.yaml", async () => {
+    const post = vi
+      .fn()
+      .mockReturnValueOnce({ json: () => Promise.resolve({}) })
+      .mockReturnValueOnce({ json: () => Promise.resolve({}) });
+    getCommerceClient.mockResolvedValue({ post });
+
+    const result = await createShippingCarriers.uninstall({}, context);
+
+    expect(result).toEqual(["DPS", "Fedex"]);
+    expect(post).toHaveBeenCalledWith(
+      "oope_shipping_carrier",
+      expect.objectContaining({
+        json: {
+          carrier: expect.objectContaining({ active: false, code: "DPS" }),
+        },
+      }),
+    );
+  });
+
+  test("throws when carrier deactivation fails", async () => {
+    const error = new Error("Commerce unavailable");
+    getCommerceClient.mockResolvedValue({
+      post: vi.fn().mockReturnValue({ json: () => Promise.reject(error) }),
+    });
+
+    await expect(createShippingCarriers.uninstall({}, context)).rejects.toThrow(
+      "Commerce unavailable",
+    );
+    expect(context.logger.error).toHaveBeenCalledWith(
+      "Failed to deactivate shipping carrier DPS: Commerce unavailable",
+    );
+  });
 });
