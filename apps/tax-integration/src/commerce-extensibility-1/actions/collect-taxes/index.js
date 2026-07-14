@@ -58,7 +58,7 @@ function collectTaxes(params) {
   } catch (error) {
     logger.error("Error in tax collection:", error);
     checkoutMetrics.collectTaxesCounter.add(1, {
-      error_code: "exception",
+      errorCode: "exception",
       status: "error",
     });
     return ok(exceptionOperation(`Server error: ${error.message}`));

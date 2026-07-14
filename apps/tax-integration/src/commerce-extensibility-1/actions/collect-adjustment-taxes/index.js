@@ -81,7 +81,7 @@ function collectAdjustmentTaxes(params) {
   } catch (error) {
     logger.error("Error in adjustment tax collection:", error);
     checkoutMetrics.collectAdjustmentTaxesCounter.add(1, {
-      error_code: "exception",
+      errorCode: "exception",
       status: "error",
     });
     return ok(exceptionOperation(`Server error: ${error.message}`));
