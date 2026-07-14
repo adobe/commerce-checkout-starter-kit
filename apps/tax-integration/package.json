@@ -37,5 +37,22 @@
   "imports": {
     "#app.commerce.config": "./src/commerce-extensibility-1/.generated/app.commerce.config.js",
     "#web/*": "./src/commerce-backend-ui-2/web-src/src/*"
+  },
+  "@parcel/bundler-default": {
+    "manualSharedBundles": [
+      {
+        "assets": [
+          "**/@react-spectrum/s2/**",
+          "src/commerce-backend-ui-2/web-src/*.{js,jsx,ts,tsx}"
+        ],
+        "name": "s2-styles",
+        "types": [
+          "css"
+        ]
+      }
+    ]
+  },
+  "@parcel/resolver-default": {
+    "packageExports": true
   }
 }
