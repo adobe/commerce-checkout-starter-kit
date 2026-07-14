@@ -1,6 +1,7 @@
 import {
   addOperation,
   exceptionOperation,
+  isWebhookSuccessful,
   ok,
 } from "@adobe/aio-commerce-sdk/webhooks/responses";
 import {
@@ -9,7 +10,7 @@ import {
 } from "@adobe/aio-lib-telemetry";
 
 import { checkoutMetrics } from "../checkout-metrics.js";
-import { isWebhookSuccessful, telemetryConfig } from "../telemetry.js";
+import { telemetryConfig } from "../telemetry.js";
 
 /**
  * This action returns the list of out-of-process shipping methods for the given request.
