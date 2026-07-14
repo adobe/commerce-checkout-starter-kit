@@ -107,17 +107,15 @@ jobs:
           IMSORGID: ${{ env.IMSORGID }}
           SCOPES: ${{ env.SCOPES }}
 
+      # adobe/aio-apps-action shells out with no cwd override, so it always
+      # runs from GITHUB_WORKSPACE regardless of this job's working-directory
+      # default (that default only applies to `run:` steps). Running `aio`
+      # directly here keeps build/deploy scoped to apps/${{ inputs.app }}.
       - name: Build
-        uses: adobe/aio-apps-action@6d7fdea67de9ef5ee3bf4c730aeaa5eaa7e2c533 # 4.1.0
-        with:
-          os: ubuntu-latest
-          command: build
+        run: aio app build
 
       - name: Deploy
-        uses: adobe/aio-apps-action@6d7fdea67de9ef5ee3bf4c730aeaa5eaa7e2c533 # 4.1.0
-        with:
-          os: ubuntu-latest
-          command: deploy
+        run: aio app deploy --no-build
 
       # The pr workspace is shared across every PR touching this app, so a
       # successful deploy here is a smoke test, not a lasting preview: undeploy
