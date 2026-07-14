@@ -24,9 +24,7 @@ async function install(_config, context) {
     const paymentMethodCode = paymentMethod.payment_method.code;
     try {
       // biome-ignore lint/performance/noAwaitInLoops: sequential creation matches the monolith's original script
-      await client
-        .post("V1/oope_payment_method/", { json: paymentMethod })
-        .json();
+      await client.post("oope_payment_method/", { json: paymentMethod }).json();
       logger.info(`Payment method ${paymentMethodCode} created`);
       createdPaymentMethods.push(paymentMethodCode);
     } catch (error) {

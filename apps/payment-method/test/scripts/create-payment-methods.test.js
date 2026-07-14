@@ -39,7 +39,7 @@ describe("create-payment-methods install step", () => {
 
     expect(result.createdPaymentMethods).toEqual(["method-1"]);
     expect(post).toHaveBeenCalledWith(
-      "V1/oope_payment_method/",
+      "oope_payment_method/",
       expect.objectContaining({
         json: expect.objectContaining({
           payment_method: expect.objectContaining({ code: "method-1" }),
