@@ -19,21 +19,23 @@ async function install(_config, context) {
   logger.info("Creating payment methods...");
   const client = await getCommerceClient(resolveImsAuthParams(params));
 
-  const createdPaymentMethods = [];
-  for (const paymentMethod of PAYMENT_METHODS) {
-    const paymentMethodCode = paymentMethod.payment_method.code;
-    try {
-      // biome-ignore lint/performance/noAwaitInLoops: sequential creation matches the monolith's original script
-      await client.post("oope_payment_method/", { json: paymentMethod }).json();
-      logger.info(`Payment method ${paymentMethodCode} created`);
-      createdPaymentMethods.push(paymentMethodCode);
-    } catch (error) {
-      logger.error(
-        `Failed to create payment method ${paymentMethodCode}: ${error.message}`,
-      );
-      throw error;
-    }
-  }
+  const createdPaymentMethods = await Promise.all(
+    PAYMENT_METHODS.map(async (paymentMethod) => {
+      const paymentMethodCode = paymentMethod.payment_method.code;
+      try {
+        await client
+          .post("oope_payment_method/", { json: paymentMethod })
+          .json();
+        logger.info(`Payment method ${paymentMethodCode} created`);
+        return paymentMethodCode;
+      } catch (error) {
+        logger.error(
+          `Failed to create payment method ${paymentMethodCode}: ${error.message}`,
+        );
+        throw error;
+      }
+    }),
+  );
 
   return { createdPaymentMethods };
 }
