@@ -8,12 +8,15 @@ vi.mock("@adobe/aio-commerce-lib-admin-ui/web", () => ({
     imsToken: "test-ims-token",
   })),
 }));
-vi.mock("../../src/commerce-backend-ui-2/web-src/src/config.json", () => ({
-  default: {
-    "tax-integration-admin-ui/commerce-proxy-action":
-      "https://example.com/commerce-proxy-action",
+vi.mock(
+  "../../src/commerce-backend-ui-2/web-src/src/hooks/use-config.ts",
+  () => {
+    const config = {
+      getActionUrl: () => "https://example.com/commerce-proxy-action",
+    };
+    return { useConfig: () => config };
   },
-}));
+);
 
 const { useGetCommerceTaxClasses } = await import(
   "../../src/commerce-backend-ui-2/web-src/src/hooks/use-get-commerce-tax-classes.ts"
