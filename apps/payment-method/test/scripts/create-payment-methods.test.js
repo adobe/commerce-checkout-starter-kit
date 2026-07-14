@@ -41,9 +41,12 @@ describe("create-payment-methods install step", () => {
     expect(post).toHaveBeenCalledWith(
       "oope_payment_method/",
       expect.objectContaining({
-        json: expect.objectContaining({
-          payment_method: expect.objectContaining({ code: "method-1" }),
-        }),
+        json: {
+          payment_method: expect.objectContaining({
+            active: true,
+            code: "method-1",
+          }),
+        },
       }),
     );
   });

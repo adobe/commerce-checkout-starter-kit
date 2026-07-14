@@ -24,7 +24,11 @@ async function install(_config, context) {
       const paymentMethodCode = paymentMethod.payment_method.code;
       try {
         await client
-          .post("oope_payment_method/", { json: paymentMethod })
+          .post("oope_payment_method/", {
+            json: {
+              payment_method: { ...paymentMethod.payment_method, active: true },
+            },
+          })
           .json();
         logger.info(`Payment method ${paymentMethodCode} created`);
         return paymentMethodCode;
