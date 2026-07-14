@@ -18,6 +18,9 @@
     {
       "category": "append",
       "description": "Adds out-of-process DPS shipping rates to the cart's available shipping methods (PaaS).",
+      "env": [
+        "paas"
+      ],
       "label": "Add DPS Shipping Rates (PaaS)",
       "requireAdobeAuth": true,
       "runtimeAction": "shipping-method/shipping-methods",
@@ -36,6 +39,9 @@
     {
       "category": "append",
       "description": "Adds out-of-process DPS shipping rates to the cart's available shipping methods (SaaS).",
+      "env": [
+        "saas"
+      ],
       "label": "Add DPS Shipping Rates (SaaS)",
       "requireAdobeAuth": true,
       "runtimeAction": "shipping-method/shipping-methods",
