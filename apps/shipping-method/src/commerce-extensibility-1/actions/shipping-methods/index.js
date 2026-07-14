@@ -155,7 +155,7 @@ function shippingMethods(params) {
   } catch (error) {
     logger.error("Error in shipping methods:", error);
     checkoutMetrics.shippingMethodsCounter.add(1, {
-      error_code: "exception",
+      errorCode: "exception",
       status: "error",
     });
     return ok(exceptionOperation(`Server error: ${error.message}`));
