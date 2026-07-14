@@ -15,15 +15,14 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
-    setupFiles: ["./vitest.setup.js"],
     include: ["test/**/*.test.js"],
     exclude: ["node_modules", "dist"],
     testTimeout: 10_000,
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov", "html"],
-      include: ["actions/**/*.js", "lib/**/*.js", "scripts/**/*.js"],
-      exclude: ["node_modules/", "dist/", "test/", "e2e/"],
+      include: ["scripts/**/*.js"],
+      exclude: ["node_modules/", "dist/", "test/"],
     },
   },
 });

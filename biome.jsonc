@@ -14,8 +14,7 @@
       "!!**/.github/PULL_REQUEST_TEMPLATE.md",
       "!!**/.github/SECURITY.md",
       "!!**/COPYRIGHT",
-      "!!**/CODE_OF_CONDUCT.md",
-      "!!**/commerce-backend-ui-1/web-src/src/exc-runtime.js"
+      "!!**/CODE_OF_CONDUCT.md"
     ]
   },
   "javascript": {
@@ -28,25 +27,6 @@
       "trailingCommas": "all"
     }
   },
-  "overrides": [
-    {
-      // Allow both PascalCase and camelCase for react app
-      "includes": ["commerce-backend-ui-1/web-src/**/*.js"],
-      "linter": {
-        "rules": {
-          "style": {
-            "useFilenamingConvention": {
-              "level": "error",
-              "options": {
-                "filenameCases": ["PascalCase", "camelCase"]
-              }
-            }
-          }
-        }
-      }
-    }
-  ],
-
   "assist": {
     "enabled": true,
     "actions": {

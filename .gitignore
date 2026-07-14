@@ -36,6 +36,3 @@ coverage
 
 # yeoman
 .yo-repository
-
-# App builder config
-commerce-backend-ui-1/web-src/src/config.json
