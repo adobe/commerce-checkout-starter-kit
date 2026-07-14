@@ -53,16 +53,6 @@ runtimeManifest:
             require-adobe-auth: true
           limits:
             timeout: 600000
-    commerce-checkout-starter-kit:
-      license: Apache-2.0
-      actions:
-        info:
-          function: actions/info/index.js
-          web: 'yes'
-          runtime: nodejs:24
-          annotations:
-            require-adobe-auth: true
-            final: true
     totals-collector:
       license: Apache-2.0
       actions:
