@@ -12,15 +12,6 @@ const createShippingCarriers = (
   await import("../../scripts/create-shipping-carriers.js")
 ).default;
 
-function mockPostClient(response1, response2) {
-  getCommerceClient.mockResolvedValue({
-    post: vi
-      .fn()
-      .mockReturnValueOnce({ json: () => Promise.resolve(response1) })
-      .mockReturnValueOnce({ json: () => Promise.resolve(response2) }),
-  });
-}
-
 const context = {
   logger: { debug: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() },
   params: {
@@ -39,11 +30,23 @@ describe("create-shipping-carriers install step", () => {
   });
 
   test("creates every carrier defined in shipping-carriers.yaml", async () => {
-    mockPostClient({}, {});
+    const post = vi
+      .fn()
+      .mockReturnValueOnce({ json: () => Promise.resolve({}) })
+      .mockReturnValueOnce({ json: () => Promise.resolve({}) });
+    getCommerceClient.mockResolvedValue({ post });
 
     const result = await createShippingCarriers.install({}, context);
 
     expect(result).toEqual(["DPS", "Fedex"]);
+    expect(post).toHaveBeenCalledWith(
+      "oope_shipping_carrier",
+      expect.objectContaining({
+        json: {
+          carrier: expect.objectContaining({ active: true, code: "DPS" }),
+        },
+      }),
+    );
   });
 
   test("throws when carrier creation fails", async () => {

@@ -47,7 +47,9 @@ async function installShippingCarriers(_config, context) {
       const carrierCode = shippingCarrier.carrier.code;
       try {
         await client
-          .post("oope_shipping_carrier", { json: shippingCarrier })
+          .post("oope_shipping_carrier", {
+            json: { carrier: { ...shippingCarrier.carrier, active: true } },
+          })
           .json();
         logger.info(`Shipping carrier ${carrierCode} created`);
         return carrierCode;
