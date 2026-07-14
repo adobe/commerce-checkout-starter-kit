@@ -7,6 +7,11 @@ on:
         description: Name of the apps/<app> directory to check, test, and deploy
         required: true
         type: string
+      pr_number:
+        description: PR number this run is for - non-empty means deploy to the pr workspace, empty means main
+        required: false
+        type: string
+        default: ''
 
 jobs:
   check:
@@ -37,6 +42,9 @@ jobs:
   deploy:
     name: deploy
     needs: check
+    concurrency:
+      group: deploy-${{ inputs.app }}-${{ inputs.pr_number != '' && 'pr' || 'main' }}
+      queue: max
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -54,99 +62,71 @@ jobs:
       - name: Install app dependencies
         run: npm ci
 
+      # GitHub Actions can't build a secret name from `inputs.app` (`secrets.*`
+      # requires a literal name), so every app's two secrets are listed here
+      # explicitly; scripts/prepare-workspace-config.js picks the right one
+      # for this run and flattens it into the env vars later steps need.
+      # Onboarding a new app means adding its AIO_<APP>_MAIN/PR_WORKSPACE_CONFIG
+      # secrets and a matching pair of lines here (or migrating to one GitHub
+      # Environment per app/purpose if this list gets unwieldy). See
+      # MAINTAINERS.md.
+      - name: Load workspace config
+        env:
+          PURPOSE: ${{ inputs.pr_number != '' && 'PR' || 'MAIN' }}
+          APP: ${{ inputs.app }}
+          SHIPPING_METHOD_MAIN: ${{ secrets.AIO_SHIPPING_METHOD_MAIN_WORKSPACE_CONFIG }}
+          SHIPPING_METHOD_PR: ${{ secrets.AIO_SHIPPING_METHOD_PR_WORKSPACE_CONFIG }}
+          PAYMENT_METHOD_MAIN: ${{ secrets.AIO_PAYMENT_METHOD_MAIN_WORKSPACE_CONFIG }}
+          PAYMENT_METHOD_PR: ${{ secrets.AIO_PAYMENT_METHOD_PR_WORKSPACE_CONFIG }}
+          TAX_INTEGRATION_MAIN: ${{ secrets.AIO_TAX_INTEGRATION_MAIN_WORKSPACE_CONFIG }}
+          TAX_INTEGRATION_PR: ${{ secrets.AIO_TAX_INTEGRATION_PR_WORKSPACE_CONFIG }}
+          TOTALS_COLLECTOR_MAIN: ${{ secrets.AIO_TOTALS_COLLECTOR_MAIN_WORKSPACE_CONFIG }}
+          TOTALS_COLLECTOR_PR: ${{ secrets.AIO_TOTALS_COLLECTOR_PR_WORKSPACE_CONFIG }}
+        working-directory: .
+        run: node scripts/prepare-workspace-config.js
+
+      - name: Log deploy target
+        run: |
+          echo "Deploying ${{ inputs.app }} (${{ inputs.pr_number != '' && format('pr #{0}', inputs.pr_number) || 'main' }}) to workspace ${{ env.AIO_PROJECT_WORKSPACE_NAME }}: https://developer.adobe.com/console/projects/${{ env.AIO_PROJECT_ORG_ID }}/${{ env.AIO_PROJECT_ID }}/workspaces/${{ env.AIO_PROJECT_WORKSPACE_ID }}/details"
+
       - name: Setup AIO CLI
         uses: adobe/aio-cli-setup-action@5a7a7313f7024283e7eb384dc79b69b02effb307 # 1.3.0
         with:
           os: ubuntu-latest
           version: 11.x.x
 
-      - name: Log credential source
-        run: |
-          echo "Using credentials from https://developer.adobe.com/console/projects/${{ vars.AIO_ORG_ID }}/${{ vars.AIO_PROJECT_ID }}/workspaces/${{ vars.AIO_WORKSPACE_ID }}/details"
-
       - name: Authenticate with OAuth Server-to-Server
         uses: adobe/aio-apps-action@6d7fdea67de9ef5ee3bf4c730aeaa5eaa7e2c533 # 4.1.0
         with:
           os: ubuntu-latest
           command: oauth_sts
-          CLIENTID: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_CLIENT_ID }}
-          CLIENTSECRET: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_CLIENT_SECRET }}
-          TECHNICALACCOUNTID: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_TECHNICAL_ACCOUNT_ID }}
-          TECHNICALACCOUNTEMAIL: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_TECHNICAL_ACCOUNT_EMAIL }}
-          IMSORGID: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_ORG_ID }}
-          SCOPES: ${{ secrets.AIO_WORKSPACE_IMS_OAUTH_S2S_SCOPES }}
+          CLIENTID: ${{ env.CLIENTID }}
+          CLIENTSECRET: ${{ env.CLIENTSECRET }}
+          TECHNICALACCOUNTID: ${{ env.TECHNICALACCOUNTID }}
+          TECHNICALACCOUNTEMAIL: ${{ env.TECHNICALACCOUNTEMAIL }}
+          IMSORGID: ${{ env.IMSORGID }}
+          SCOPES: ${{ env.SCOPES }}
 
-      - name: Select org & project
-        run: |
-          aio console org select "${{ vars.AIO_ORG_ID }}"
-          aio console project select "${{ vars.AIO_PROJECT_ID }}"
-
-      - name: Compute workspace name
-        id: workspace
-        env:
-          APP: ${{ inputs.app }}
-        run: |
-          app="$APP"
-          app_id="$(printf '%s' "$app" | tr -cd 'A-Za-z0-9')"
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            number="${{ github.event.pull_request.number }}"
-            raw="PR${number}${app_id}"
-            title="PR${number} ${app_id}"
-          else
-            raw="main${app_id}"
-            title="Main ${app_id}"
-          fi
-          echo "name=${raw:0:20}" >> "$GITHUB_OUTPUT"
-          echo "title=$title" >> "$GITHUB_OUTPUT"
-
-      - name: Resolve project name
-        id: project
-        run: |
-          name="$(aio console project list --orgId "${{ vars.AIO_ORG_ID }}" --json | jq -r --arg id "${{ vars.AIO_PROJECT_ID }}" '.[] | select(.id == $id) | .name')"
-          if [ -z "$name" ]; then
-            echo "Project ${{ vars.AIO_PROJECT_ID }} not found in org ${{ vars.AIO_ORG_ID }}" >&2
-            exit 1
-          fi
-          echo "name=$name" >> "$GITHUB_OUTPUT"
-
-      - name: Ensure App Builder workspace
-        run: |
-          workspace="${{ steps.workspace.outputs.name }}"
-          existing="$(aio console workspace list --orgId "${{ vars.AIO_ORG_ID }}" --projectId "${{ vars.AIO_PROJECT_ID }}" --json)"
-          if jq -e --arg n "$workspace" 'any(.[]; .name == $n)' <<< "$existing" > /dev/null; then
-            echo "Workspace \"$workspace\" already exists."
-            exit 0
-          fi
-
-          echo "Creating workspace \"$workspace\"..."
-          aio console workspace create \
-            --orgId "${{ vars.AIO_ORG_ID }}" \
-            --projectName "${{ steps.project.outputs.name }}" \
-            --name "$workspace" \
-            --title "${{ steps.workspace.outputs.title }}"
-
-          # Disabled: the CI OAuth Server-to-Server technical account doesn't have
-          # the Console role needed to attach APIs to a workspace. Listing the org's
-          # private-API catalog 400s with "Missing scope for private API access",
-          # and creating a new OAuth S2S credential on a fresh workspace (required
-          # before any API can be attached) 401s with "does not have the correct
-          # role in this organization". Re-enable once the technical account has
-          # been granted the required role.
-          # codes="$(yq -r '[(.apis // [])[].code] | join(",")' install.yaml)"
-          # if [ -n "$codes" ]; then
-          #   echo "Attaching services: $codes..."
-          #   aio console workspace api add \
-          #     --orgId "${{ vars.AIO_ORG_ID }}" \
-          #     --projectName "${{ steps.project.outputs.name }}" \
-          #     --workspaceName "$workspace" \
-          #     --service-code "$codes"
-          # fi
-
-      - name: Select workspace
-        run: aio console workspace select "${{ steps.workspace.outputs.name }}"
-
-      - name: Import Console config
-        run: aio app use --global --no-input
+      - name: Build
+        uses: adobe/aio-apps-action@6d7fdea67de9ef5ee3bf4c730aeaa5eaa7e2c533 # 4.1.0
+        with:
+          os: ubuntu-latest
+          command: build
 
       - name: Deploy
-        run: aio app deploy
+        uses: adobe/aio-apps-action@6d7fdea67de9ef5ee3bf4c730aeaa5eaa7e2c533 # 4.1.0
+        with:
+          os: ubuntu-latest
+          command: deploy
+
+      # The pr workspace is shared across every PR touching this app, so a
+      # successful deploy here is a smoke test, not a lasting preview: undeploy
+      # immediately after to keep the shared workspace clean for the next PR's
+      # run. The main workspace is the persistent target, so it's left deployed.
+      # Runs even if Deploy partially failed (always()), so a bad deploy can't
+      # leave the shared workspace dirty for the next PR; continue-on-error
+      # since there may be nothing to undeploy in that case.
+      - name: Undeploy
+        if: always() && inputs.pr_number != ''
+        continue-on-error: true
+        run: aio app undeploy
