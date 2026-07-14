@@ -26,27 +26,25 @@ async function installTaxIntegrations(_config, context) {
   const { logger, params } = context;
   const client = await getCommerceClient(resolveImsAuthParams(params));
 
-  const created = [];
-  for (const taxIntegration of TAX_INTEGRATIONS) {
-    const taxIntegrationCode = taxIntegration.tax_integration.code;
-    try {
-      // biome-ignore lint/performance/noAwaitInLoops: sequential creation matches the monolith's original script exactly
-      await client
-        .post("oope_tax_management/tax_integration", {
-          json: taxIntegration,
-        })
-        .json();
-      logger.info(`Tax integration ${taxIntegrationCode} created`);
-      created.push(taxIntegrationCode);
-    } catch (error) {
-      logger.error(
-        `Failed to create tax integration ${taxIntegrationCode}: ${error.message}`,
-      );
-      throw error;
-    }
-  }
-
-  return created;
+  return Promise.all(
+    TAX_INTEGRATIONS.map(async (taxIntegration) => {
+      const taxIntegrationCode = taxIntegration.tax_integration.code;
+      try {
+        await client
+          .post("oope_tax_management/tax_integration", {
+            json: taxIntegration,
+          })
+          .json();
+        logger.info(`Tax integration ${taxIntegrationCode} created`);
+        return taxIntegrationCode;
+      } catch (error) {
+        logger.error(
+          `Failed to create tax integration ${taxIntegrationCode}: ${error.message}`,
+        );
+        throw error;
+      }
+    }),
+  );
 }
 
 export default defineCustomInstallationStep({
