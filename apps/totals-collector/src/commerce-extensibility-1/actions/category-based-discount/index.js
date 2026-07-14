@@ -10,6 +10,7 @@
  */
 import {
   exceptionOperation,
+  isWebhookSuccessful,
   ok,
   replaceOperation,
 } from "@adobe/aio-commerce-sdk/webhooks/responses";
@@ -30,7 +31,7 @@ import {
   zeroDiscountOperation,
 } from "../../lib/total-collector-discounts.js";
 import { discountMetrics } from "../discount-metrics.js";
-import { isWebhookSuccessful, telemetryConfig } from "../telemetry.js";
+import { telemetryConfig } from "../telemetry.js";
 
 const CAT_MIX_A = "pizza";
 const CAT_MIX_B = "drinks";

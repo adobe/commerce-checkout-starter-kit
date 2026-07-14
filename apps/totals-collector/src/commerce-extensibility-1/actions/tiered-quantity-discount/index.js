@@ -10,6 +10,7 @@
  */
 import {
   exceptionOperation,
+  isWebhookSuccessful,
   ok,
 } from "@adobe/aio-commerce-sdk/webhooks/responses";
 import {
@@ -24,7 +25,7 @@ import {
   zeroDiscountOperation,
 } from "../../lib/total-collector-discounts.js";
 import { discountMetrics } from "../discount-metrics.js";
-import { isWebhookSuccessful, telemetryConfig } from "../telemetry.js";
+import { telemetryConfig } from "../telemetry.js";
 
 const QTY_TIER_1 = 3;
 const QTY_TIER_2 = 6;

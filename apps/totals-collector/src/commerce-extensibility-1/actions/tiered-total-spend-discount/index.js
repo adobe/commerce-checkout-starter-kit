@@ -10,6 +10,7 @@
  */
 import {
   exceptionOperation,
+  isWebhookSuccessful,
   ok,
 } from "@adobe/aio-commerce-sdk/webhooks/responses";
 import {
@@ -25,7 +26,7 @@ import {
   zeroDiscountOperation,
 } from "../../lib/total-collector-discounts.js";
 import { discountMetrics } from "../discount-metrics.js";
-import { isWebhookSuccessful, telemetryConfig } from "../telemetry.js";
+import { telemetryConfig } from "../telemetry.js";
 
 const TIERS = [
   { label: "Spend $200+ → 20% off", minSubtotal: 200, percent: 20 },
