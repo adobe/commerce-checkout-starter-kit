@@ -5,7 +5,6 @@
  * @see https://github.com/adobe/aio-lib-telemetry
  */
 
-import { HTTP_OK } from "@adobe/aio-commerce-sdk/core/responses";
 import {
   defineTelemetryConfig,
   getAioRuntimeResource,
@@ -20,22 +19,3 @@ export const telemetryConfig = defineTelemetryConfig((_params, _isDev) => ({
     serviceName: "checkout-tax-integration",
   },
 }));
-
-/**
- * Helper function to determine if a webhook response is successful.
- * Webhooks return HTTP_OK even for errors, so we check the body.op field.
- * @param {unknown} result - The result of the instrumented webhook action.
- * @returns {boolean} - True if the webhook response is successful, false otherwise.
- */
-export function isWebhookSuccessful(result) {
-  if (result && typeof result === "object") {
-    if ("statusCode" in result && result.statusCode === HTTP_OK) {
-      if ("body" in result && typeof result.body === "object") {
-        return result.body.op !== "exception";
-      }
-      return true;
-    }
-    return false;
-  }
-  return false;
-}

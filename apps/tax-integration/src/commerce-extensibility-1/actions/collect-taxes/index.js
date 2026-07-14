@@ -1,6 +1,7 @@
 import {
   addOperation,
   exceptionOperation,
+  isWebhookSuccessful,
   ok,
   replaceOperation,
 } from "@adobe/aio-commerce-sdk/webhooks/responses";
@@ -10,7 +11,7 @@ import {
 } from "@adobe/aio-lib-telemetry";
 
 import { checkoutMetrics } from "../checkout-metrics.js";
-import { isWebhookSuccessful, telemetryConfig } from "../telemetry.js";
+import { telemetryConfig } from "../telemetry.js";
 
 const TAX_RATES = Object.freeze({
   EXCLUDING_TAX: [
