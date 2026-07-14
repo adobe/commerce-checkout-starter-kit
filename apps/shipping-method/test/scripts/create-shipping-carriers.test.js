@@ -49,7 +49,7 @@ describe("create-shipping-carriers install step", () => {
   test("throws when carrier creation fails", async () => {
     const error = new Error("Commerce unavailable");
     getCommerceClient.mockResolvedValue({
-      post: vi.fn().mockReturnValueOnce({ json: () => Promise.reject(error) }),
+      post: vi.fn().mockReturnValue({ json: () => Promise.reject(error) }),
     });
 
     await expect(createShippingCarriers.install({}, context)).rejects.toThrow(

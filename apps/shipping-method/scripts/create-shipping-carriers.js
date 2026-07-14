@@ -42,25 +42,23 @@ async function installShippingCarriers(_config, context) {
   const { logger, params } = context;
   const client = await getCommerceClient(resolveImsAuthParams(params));
 
-  const created = [];
-  for (const shippingCarrier of SHIPPING_CARRIERS) {
-    const carrierCode = shippingCarrier.carrier.code;
-    try {
-      // biome-ignore lint/performance/noAwaitInLoops: sequential creation matches the monolith's original script exactly
-      await client
-        .post("oope_shipping_carrier", { json: shippingCarrier })
-        .json();
-      logger.info(`Shipping carrier ${carrierCode} created`);
-      created.push(carrierCode);
-    } catch (error) {
-      logger.error(
-        `Failed to create shipping carrier ${carrierCode}: ${error.message}`,
-      );
-      throw error;
-    }
-  }
-
-  return created;
+  return Promise.all(
+    SHIPPING_CARRIERS.map(async (shippingCarrier) => {
+      const carrierCode = shippingCarrier.carrier.code;
+      try {
+        await client
+          .post("oope_shipping_carrier", { json: shippingCarrier })
+          .json();
+        logger.info(`Shipping carrier ${carrierCode} created`);
+        return carrierCode;
+      } catch (error) {
+        logger.error(
+          `Failed to create shipping carrier ${carrierCode}: ${error.message}`,
+        );
+        throw error;
+      }
+    }),
+  );
 }
 
 export default defineCustomInstallationStep({
