@@ -61,7 +61,7 @@ function validatePayment(params) {
         paymentMethod,
       );
       checkoutMetrics.validatePaymentCounter.add(1, {
-        error_code: "missing_info",
+        errorCode: "missing_info",
         status: "error",
       });
       return ok(
@@ -84,7 +84,7 @@ function validatePayment(params) {
   } catch (error) {
     logger.error("Error in payment validation:", error);
     checkoutMetrics.validatePaymentCounter.add(1, {
-      error_code: "exception",
+      errorCode: "exception",
       status: "error",
     });
     return ok(exceptionOperation(`Server error: ${error.message}`));

@@ -72,7 +72,7 @@ function filterPayment(params) {
   } catch (error) {
     logger.error("Error in payment filtering:", error);
     checkoutMetrics.filterPaymentCounter.add(1, {
-      error_code: "exception",
+      errorCode: "exception",
       status: "error",
     });
     return ok(exceptionOperation(`Server error: ${error.message}`));
