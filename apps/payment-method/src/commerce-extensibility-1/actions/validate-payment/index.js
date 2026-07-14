@@ -1,5 +1,6 @@
 import {
   exceptionOperation,
+  isWebhookSuccessful,
   ok,
   successOperation,
 } from "@adobe/aio-commerce-sdk/webhooks/responses";
@@ -10,7 +11,7 @@ import {
 
 import { PAYMENT_METHODS } from "../../payment-methods.js";
 import { checkoutMetrics } from "../checkout-metrics.js";
-import { isWebhookSuccessful, telemetryConfig } from "../telemetry.js";
+import { telemetryConfig } from "../telemetry.js";
 
 const SUPPORTED_PAYMENT_METHOD_CODES = PAYMENT_METHODS.map(
   (paymentMethod) => paymentMethod.payment_method.code,
