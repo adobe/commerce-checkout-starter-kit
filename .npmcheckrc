@@ -1,5 +1,0 @@
-{
-  "depcheck": {
-    "ignoreMatches": ["@vitest/coverage-v8"]
-  }
-}
