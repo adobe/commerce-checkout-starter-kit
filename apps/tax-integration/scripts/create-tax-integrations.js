@@ -23,8 +23,8 @@ const TAX_INTEGRATIONS = [
  * @returns {Promise<string[]>} the tax integration codes successfully created
  */
 async function installTaxIntegrations(_config, context) {
-  const { logger } = context;
-  const client = await getCommerceClient(resolveImsAuthParams(context.params));
+  const { logger, params } = context;
+  const client = await getCommerceClient(resolveImsAuthParams(params));
 
   const created = [];
   for (const taxIntegration of TAX_INTEGRATIONS) {
@@ -32,7 +32,7 @@ async function installTaxIntegrations(_config, context) {
     try {
       // biome-ignore lint/performance/noAwaitInLoops: sequential creation matches the monolith's original script exactly
       await client
-        .post("V1/oope_tax_management/tax_integration", {
+        .post("oope_tax_management/tax_integration", {
           json: taxIntegration,
         })
         .json();
