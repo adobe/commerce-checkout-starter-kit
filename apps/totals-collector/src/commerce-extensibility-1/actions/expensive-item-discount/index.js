@@ -210,7 +210,7 @@ function collectExpensiveItemDiscount(params) {
   } catch (err) {
     logger.error("Error in expensive-item-discount:", err);
     discountMetrics.discountRequestsCounter.add(1, {
-      error_code: "exception",
+      errorCode: "exception",
       status: "error",
     });
     return ok(exceptionOperation(`Server error: ${err.message}`));
