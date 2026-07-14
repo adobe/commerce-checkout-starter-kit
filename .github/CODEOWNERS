@@ -1,5 +1,4 @@
 # See https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 # The deployment repository does not have code owner restrictions, but adding this to notify the team
 
-* @adobe/party-parrots
-
+* @adobe/commerce-decepticons
