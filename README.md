@@ -21,10 +21,11 @@ for install, build/deploy, and association details common to all of them.
 | [`apps/tax-integration`](apps/tax-integration) | Out-of-process tax calculation, tax-integration setup, and the Tax Management Admin UI. | [Tax in Checkout Starter Kit](https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/tax-install) |
 | [`apps/totals-collector`](apps/totals-collector) | Example out-of-process discount webhook implementations (cart totals collector rules). | [Totals Collector in Checkout Starter Kit](https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/totals-collector-install) |
 
-## Building your own app
+## App submission guidelines
 
-Using this repo as a template for your own App Builder app submission? See [`SUBMISSION_TEMPLATE.md`](SUBMISSION_TEMPLATE.md)
-for an example app installation guide.
+Submitting your own Adobe Commerce app for review? Adobe's [App submission guidelines](https://developer.adobe.com/commerce/extensibility/app-development/app-submission-guidelines/)
+recommend using this starter kit's documentation as a starting point. See [`SUBMISSION_TEMPLATE.md`](SUBMISSION_TEMPLATE.md)
+for an example installation guide that follows those guidelines.
 
 ## Contributing
 
