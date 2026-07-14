@@ -13,13 +13,7 @@
   },
   "scripts": {
     "prepare": "husky",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "lint:check": "npx biome lint .",
-    "lint": "npx biome lint --write .",
-    "format:check": "npx biome format .",
-    "format": "npx biome format --write .",
+    "test": "vitest run --coverage",
     "code:check": "npx biome check .",
     "code:fix": "npx biome check --write ."
   },
