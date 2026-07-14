@@ -39,8 +39,8 @@ const SHIPPING_CARRIERS = [
  * @returns {Promise<string[]>} the carrier codes successfully created
  */
 async function installShippingCarriers(_config, context) {
-  const { logger } = context;
-  const client = await getCommerceClient(resolveImsAuthParams(context.params));
+  const { logger, params } = context;
+  const client = await getCommerceClient(resolveImsAuthParams(params));
 
   const created = [];
   for (const shippingCarrier of SHIPPING_CARRIERS) {
@@ -48,7 +48,7 @@ async function installShippingCarriers(_config, context) {
     try {
       // biome-ignore lint/performance/noAwaitInLoops: sequential creation matches the monolith's original script exactly
       await client
-        .post("V1/oope_shipping_carrier", { json: shippingCarrier })
+        .post("oope_shipping_carrier", { json: shippingCarrier })
         .json();
       logger.info(`Shipping carrier ${carrierCode} created`);
       created.push(carrierCode);
