@@ -69,4 +69,40 @@ describe("create-payment-methods install step", () => {
       "not associated",
     );
   });
+
+  test("deactivates every payment method defined in PAYMENT_METHODS", async () => {
+    const post = vi
+      .fn()
+      .mockReturnValueOnce({ json: () => Promise.resolve({ success: true }) });
+    getCommerceClient.mockResolvedValue({ post });
+
+    const result = await createPaymentMethods.uninstall({}, context);
+
+    expect(result.deactivatedPaymentMethods).toEqual(["method-1"]);
+    expect(post).toHaveBeenCalledWith(
+      "oope_payment_method/",
+      expect.objectContaining({
+        json: {
+          payment_method: expect.objectContaining({
+            active: false,
+            code: "method-1",
+          }),
+        },
+      }),
+    );
+  });
+
+  test("throws when a payment method fails to deactivate", async () => {
+    const error = new Error("Commerce API rejected the request");
+    getCommerceClient.mockResolvedValue({
+      post: vi.fn().mockReturnValue({ json: () => Promise.reject(error) }),
+    });
+
+    await expect(createPaymentMethods.uninstall({}, context)).rejects.toThrow(
+      "Commerce API rejected the request",
+    );
+    expect(context.logger.error).toHaveBeenCalledWith(
+      "Failed to deactivate payment method method-1: Commerce API rejected the request",
+    );
+  });
 });
