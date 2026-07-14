@@ -32,7 +32,12 @@ async function installTaxIntegrations(_config, context) {
       try {
         await client
           .post("oope_tax_management/tax_integration", {
-            json: taxIntegration,
+            json: {
+              tax_integration: {
+                ...taxIntegration.tax_integration,
+                active: true,
+              },
+            },
           })
           .json();
         logger.info(`Tax integration ${taxIntegrationCode} created`);

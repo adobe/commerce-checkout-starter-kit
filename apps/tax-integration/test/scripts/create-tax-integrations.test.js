@@ -12,14 +12,6 @@ const createTaxIntegrations = (
   await import("../../scripts/create-tax-integrations.js")
 ).default;
 
-function mockPostClient(response) {
-  getCommerceClient.mockResolvedValue({
-    post: vi
-      .fn()
-      .mockReturnValueOnce({ json: () => Promise.resolve(response) }),
-  });
-}
-
 const context = {
   logger: { debug: vi.fn(), error: vi.fn(), info: vi.fn(), warn: vi.fn() },
   params: {
@@ -38,11 +30,25 @@ describe("create-tax-integrations install step", () => {
   });
 
   test("creates every tax integration defined in TAX_INTEGRATIONS", async () => {
-    mockPostClient({});
+    const post = vi
+      .fn()
+      .mockReturnValueOnce({ json: () => Promise.resolve({}) });
+    getCommerceClient.mockResolvedValue({ post });
 
     const result = await createTaxIntegrations.install({}, context);
 
     expect(result).toEqual(["oop-tax-integration"]);
+    expect(post).toHaveBeenCalledWith(
+      "oope_tax_management/tax_integration",
+      expect.objectContaining({
+        json: {
+          tax_integration: expect.objectContaining({
+            active: true,
+            code: "oop-tax-integration",
+          }),
+        },
+      }),
+    );
   });
 
   test("throws when tax integration creation fails", async () => {
