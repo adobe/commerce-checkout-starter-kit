@@ -1,0 +1,58 @@
+name: Apps CI
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'apps/**'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/**'
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number this retest is for
+        required: true
+        type: string
+
+jobs:
+  detect:
+    name: Detect changed apps
+    runs-on: ubuntu-latest
+    outputs:
+      apps: ${{ steps.detect.outputs.apps }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed apps
+        id: detect
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            range="${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            range="origin/main...HEAD"
+          else
+            range="${{ github.event.before }}..${{ github.sha }}"
+          fi
+          apps=$(git diff --name-only "$range" -- apps | cut -d/ -f2 | sort -u)
+          json=$(printf '%s\n' "$apps" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "apps=$json" >> "$GITHUB_OUTPUT"
+          echo "Changed apps: $json"
+
+  pipeline:
+    name: ${{ matrix.app }}
+    needs: detect
+    if: needs.detect.outputs.apps != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJSON(needs.detect.outputs.apps) }}
+    uses: ./.github/workflows/apps-pipeline.yml
+    with:
+      app: ${{ matrix.app }}
+      pr_number: ${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.event_name == 'workflow_dispatch' && inputs.pr_number || '' }}
+    secrets: inherit
