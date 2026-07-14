@@ -10,6 +10,12 @@ on:
     branches: [main]
     paths:
       - 'apps/**'
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number this retest is for
+        required: true
+        type: string
 
 jobs:
   detect:
@@ -27,6 +33,8 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             range="${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            range="origin/main...HEAD"
           else
             range="${{ github.event.before }}..${{ github.sha }}"
           fi
@@ -46,4 +54,5 @@ jobs:
     uses: ./.github/workflows/apps-pipeline.yml
     with:
       app: ${{ matrix.app }}
+      pr_number: ${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.event_name == 'workflow_dispatch' && inputs.pr_number || '' }}
     secrets: inherit

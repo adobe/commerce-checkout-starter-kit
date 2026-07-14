@@ -1,0 +1,39 @@
+{
+  "project": {
+    "id": "4566206088345709923",
+    "name": "CommerceCheckoutStarterKit",
+    "org": {
+      "id": "1340225",
+      "ims_org_id": "2BB51E2264CC11A30A495EE7@AdobeOrg",
+      "name": "commerce-enterprise-integrations"
+    },
+    "workspace": {
+      "id": "4566206088345752619",
+      "name": "ShippingMethodMain",
+      "details": {
+        "credentials": [
+          {
+            "id": "1234",
+            "name": "shipping-method-main-credential",
+            "integration_type": "oauth_server_to_server",
+            "oauth_server_to_server": {
+              "client_id": "test-client-id",
+              "client_secrets": ["test-client-secret"],
+              "technical_account_id": "test-tech-acct-id@techacct.adobe.com",
+              "technical_account_email": "test-tech-acct@techacct.adobe.com",
+              "scopes": ["AdobeID", "openid", "adobeio_api"]
+            }
+          }
+        ],
+        "runtime": {
+          "namespaces": [
+            { "name": "12345-shippingmethodmain", "auth": "test-runtime-auth" }
+          ]
+        },
+        "services": [
+          { "code": "AdobeIOManagementAPISDK", "name": "I/O Management API" }
+        ]
+      }
+    }
+  }
+}
