@@ -4,6 +4,7 @@ import { Dialog, DialogTrigger } from "@react-spectrum/s2/Dialog";
 import { Heading } from "@react-spectrum/s2/Heading";
 import { IllustratedMessage } from "@react-spectrum/s2/IllustratedMessage";
 import { ProgressCircle } from "@react-spectrum/s2/ProgressCircle";
+import { space, style } from "@react-spectrum/s2/style" with { type: "macro" };
 import {
   Cell,
   Column,
@@ -54,16 +55,20 @@ export function TaxClassesPage() {
 
   return (
     <main
-      style={{ display: "flex", flexDirection: "column", marginInline: 20 }}>
+      className={style({
+        display: "flex",
+        flexDirection: "column",
+        marginX: 20,
+      })}>
       <div
-        style={{
+        className={style({
           alignItems: "center",
           display: "flex",
           flexDirection: "row",
           gap: 16,
           justifyContent: "space-between",
-          marginInline: 5,
-        }}>
+          marginX: space(5),
+        })}>
         <Heading level={1}>Manage Tax Classes</Heading>
 
         <DialogTrigger>
@@ -85,16 +90,16 @@ export function TaxClassesPage() {
 
       {isLoadingCustomTaxCodes || isLoadingCommerceTaxClasses ? (
         <div
-          style={{
+          className={style({
             alignItems: "center",
             display: "flex",
-            height: "100vh",
+            height: "screen",
             justifyContent: "center",
-          }}>
+          })}>
           <ProgressCircle aria-label="Loading…" isIndeterminate size="L" />
         </div>
       ) : (
-        <div style={{ display: "flex" }}>
+        <div className={style({ display: "flex" })}>
           <TableView
             aria-label="tax class table"
             overflowMode="wrap"
