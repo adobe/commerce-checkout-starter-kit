@@ -51,7 +51,7 @@ describe("commerce-proxy-action admin-ui action", () => {
     });
 
     const client = await getCommerceClient.mock.results[0].value;
-    expect(client.get).toHaveBeenCalledWith("V1/taxClasses/search");
+    expect(client.get).toHaveBeenCalledWith("taxClasses/search");
   });
 
   test("POSTs the payload for a create/update request", async () => {
@@ -66,7 +66,7 @@ describe("commerce-proxy-action admin-ui action", () => {
       }),
     );
 
-    expect(post).toHaveBeenCalledWith("V1/taxClasses", {
+    expect(post).toHaveBeenCalledWith("taxClasses", {
       json: { taxClass: { class_name: "Taxable Goods" } },
     });
   });

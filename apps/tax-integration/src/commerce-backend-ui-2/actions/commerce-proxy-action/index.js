@@ -35,8 +35,8 @@ export async function main(params) {
     const client = await getCommerceClient(authProvider);
     const response =
       httpMethod === "GET"
-        ? await client.get(`V1/${operation}`).json()
-        : await client.post(`V1/${operation}`, { json: payload }).json();
+        ? await client.get(operation).json()
+        : await client.post(operation, { json: payload }).json();
 
     return ok({ body: response });
   } catch (error) {
