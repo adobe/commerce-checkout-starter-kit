@@ -114,14 +114,14 @@ function shippingMethods(params) {
     }
 
     // If the Commerce customer is logged in, the request contains customer data otherwise the customer is set to null
-    // In the next example, the shipping method is added based on the Customer group id
-    const { customer: Customer = {} } = request;
+    // In the next example, the shipping method is added based on the customer group id
+    const { customer = {} } = request;
 
     if (
-      Customer !== null &&
-      typeof Customer === "object" &&
-      Object.hasOwn(Customer, "group_id") &&
-      Customer.group_id === "1"
+      customer !== null &&
+      typeof customer === "object" &&
+      Object.hasOwn(customer, "group_id") &&
+      customer.group_id === "1"
     ) {
       operations.push(
         addOperation("result", {
