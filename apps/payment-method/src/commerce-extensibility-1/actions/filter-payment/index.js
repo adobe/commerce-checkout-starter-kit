@@ -37,14 +37,14 @@ function filterPayment(params) {
     operations.push(addOperation("result", { code: "checkmo" }));
 
     // If the Commerce customer is logged in, the payload contains customer data otherwise the customer is set to null
-    // In the next example, the payment method is filtered out based on Customer group id
-    const { customer: Customer = {} } = payload;
+    // In the next example, the payment method is filtered out based on customer group id
+    const { customer = {} } = payload;
 
     if (
-      Customer !== null &&
-      typeof Customer === "object" &&
-      Object.hasOwn(Customer, "group_id") &&
-      Customer.group_id === "1"
+      customer !== null &&
+      typeof customer === "object" &&
+      Object.hasOwn(customer, "group_id") &&
+      customer.group_id === "1"
     ) {
       operations.push(addOperation("result", { code: "cashondelivery" }));
     }
