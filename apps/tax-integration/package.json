@@ -1,5 +1,5 @@
 {
-  "name": "checkout-tax-integration",
+  "name": "@adobe/commerce-checkout-starter-kit/tax-integration",
   "description": "Out-of-process tax calculation and tax-integration setup for the Adobe Commerce checkout starter kit.",
   "version": "1.0.0",
   "type": "module",
