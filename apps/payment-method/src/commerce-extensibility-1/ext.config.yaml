@@ -62,7 +62,7 @@ runtimeManifest:
           web: 'yes'
           runtime: nodejs:24
           inputs:
-            LOG_LEVEL: debug
+            LOG_LEVEL: $LOG_LEVEL
             ENABLE_TELEMETRY: true
           annotations:
             require-adobe-auth: true
@@ -72,7 +72,7 @@ runtimeManifest:
           web: 'yes'
           runtime: nodejs:24
           inputs:
-            LOG_LEVEL: debug
+            LOG_LEVEL: $LOG_LEVEL
             ENABLE_TELEMETRY: true
           annotations:
             require-adobe-auth: true
