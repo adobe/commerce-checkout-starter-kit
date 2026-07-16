@@ -1,0 +1,58 @@
+{
+  "name": "@adobe/commerce-checkout-starter-kit/tax-integration",
+  "description": "Out-of-process tax calculation and tax-integration setup for the Adobe Commerce checkout starter kit.",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": "^24.0.0"
+  },
+  "scripts": {
+    "test": "vitest run --coverage",
+    "code:check": "npx biome check .",
+    "code:fix": "npx biome check --write .",
+    "postinstall": "npx aio-commerce-lib-app hooks postinstall"
+  },
+  "dependencies": {
+    "@adobe/aio-commerce-lib-admin-ui": "0.2.0-beta-20260714082406",
+    "@adobe/aio-commerce-lib-app": "1.8.0-beta-20260714082406",
+    "@adobe/aio-commerce-sdk": "1.4.0-beta-20260714082406",
+    "@adobe/aio-lib-telemetry": "^1.2.0",
+    "@react-spectrum/s2": "^1.5.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.0",
+    "@testing-library/react": "^16.3.2",
+    "@tsconfig/bases": "^1.0.26",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitest/coverage-v8": "^4.0.7",
+    "jsdom": "^29.1.1",
+    "typescript": "^6.0.0",
+    "ultracite": "^7.0.0",
+    "vitest": "^4.0.7"
+  },
+  "imports": {
+    "#app.commerce.config": "./src/commerce-extensibility-1/.generated/app.commerce.config.js",
+    "#web/*": "./src/commerce-backend-ui-2/web-src/src/*"
+  },
+  "@parcel/bundler-default": {
+    "manualSharedBundles": [
+      {
+        "assets": [
+          "**/@react-spectrum/s2/**",
+          "src/commerce-backend-ui-2/web-src/*.{js,jsx,ts,tsx}"
+        ],
+        "name": "s2-styles",
+        "types": [
+          "css"
+        ]
+      }
+    ]
+  },
+  "@parcel/resolver-default": {
+    "packageExports": true
+  }
+}

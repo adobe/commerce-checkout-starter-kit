@@ -1,0 +1,94 @@
+{
+  // remove once root biome.jsonc is deleted
+  "root": false,
+  "$schema": "https://biomejs.dev/schemas/2.5.2/schema.json",
+  "extends": ["ultracite/biome/core"],
+
+  "files": {
+    "ignoreUnknown": true,
+    "includes": ["!**/.generated"]
+  },
+
+  "json": {
+    "formatter": {
+      "trailingCommas": "none"
+    }
+  },
+
+  "javascript": {
+    "formatter": {
+      "arrowParentheses": "always",
+      "bracketSameLine": true,
+      "jsxQuoteStyle": "double",
+      "quoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "all"
+    }
+  },
+
+  "linter": {
+    "rules": {
+      "performance": {
+        "noNamespaceImport": "off"
+      },
+
+      "style": {
+        "useConsistentMemberAccessibility": {
+          "level": "error",
+          "options": {
+            "accessibility": "explicit"
+          }
+        },
+
+        "useImportType": {
+          "level": "error",
+          "fix": "safe",
+          "options": {
+            "style": "separatedType"
+          }
+        },
+
+        "useConsistentTypeDefinitions": {
+          "level": "error",
+          "options": {
+            "style": "type"
+          }
+        }
+      }
+    }
+  },
+
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": {
+          "level": "on",
+          "options": {
+            "groups": [
+              { "type": false, "source": [":BUN:", ":NODE:"] },
+              ":BLANK_LINE:",
+              {
+                "type": false,
+                "source": [":PACKAGE:", ":PACKAGE_WITH_PROTOCOL:"]
+              },
+              ":BLANK_LINE:",
+              { "type": false, "source": [":ALIAS:"] },
+              ":BLANK_LINE:",
+              { "type": false, "source": [":PATH:"] },
+              ":BLANK_LINE:",
+
+              { "type": true, "source": [":BUN:", ":NODE:"] },
+              {
+                "type": true,
+                "source": [":PACKAGE:", ":PACKAGE_WITH_PROTOCOL:"]
+              },
+              { "type": true, "source": [":ALIAS:"] },
+              { "type": true, "source": [":PATH:"] }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

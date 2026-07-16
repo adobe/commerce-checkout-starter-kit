@@ -1,0 +1,25 @@
+web: web-src
+
+# The [pre-app-build] hooks are auto-generated. Do not remove or manually edit.
+hooks:
+  pre-app-build: EXTENSION=backend-ui/2 npx aio-commerce-lib-app hooks pre-app-build
+
+operations:
+  view:
+    - type: web
+      impl: index.html
+
+runtimeManifest:
+  packages:
+    tax-integration-admin-ui:
+      license: Apache-2.0
+      actions:
+        commerce-proxy-action:
+          function: actions/commerce-proxy-action/index.js
+          web: 'yes'
+          runtime: nodejs:24
+          inputs:
+            LOG_LEVEL: debug
+          annotations:
+            require-adobe-auth: true
+            final: true
