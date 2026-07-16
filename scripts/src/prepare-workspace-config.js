@@ -146,6 +146,10 @@ export async function main() {
   const rawWorkspaceJson = resolveWorkspaceConfig(process.env);
   const config = parseWorkspaceConfig(rawWorkspaceJson);
 
+  console.log(
+    `Deploying to workspace: https://developer.adobe.com/console/projects/${config.AIO_PROJECT_ORG_ID}/${config.AIO_PROJECT_ID}/workspaces/${config.AIO_PROJECT_WORKSPACE_ID}/details`,
+  );
+
   const lines = Object.entries(config).map(([key, value]) => {
     const serialized = serialize(key, value);
     if (SECRET_FIELDS.includes(key)) {

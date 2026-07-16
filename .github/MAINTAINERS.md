@@ -4,20 +4,16 @@ This document explains how the `apps/*` CI/CD pipeline works and how to onboard 
 
 ## How the pipeline works
 
-Whenever a pull request or a push to `main` changes anything under an app's directory
-(`apps/<name>/`), that app is automatically checked and deployed. Apps that weren't touched are
-left alone entirely.
+Every pull request and push to `main` first lints and tests the whole repo (all workspaces,
+including every app) via `ci.yml`'s root `test` job. Once that passes, whichever apps had
+anything change under their directory (`apps/<name>/`) are automatically built and deployed.
+Apps that weren't touched are left alone entirely.
 
-1. The app's code is linted and its test suite runs.
-2. If that passes, the app is built and deployed to its workspace for this run — the `main`
-   workspace for a push to `main`, or the `pr` workspace for a pull request.
+1. The root `test` job runs `code:check` and `test` across every workspace.
+2. If that passes, each changed app is built and deployed to its workspace for this run — the
+   `main` workspace for a push to `main`, or the `pr` workspace for a pull request.
 3. For pull requests, the app is undeployed again immediately after a successful deploy (see
    below for why).
-
-Commenting `/retest` on a pull request re-runs this whole check-and-deploy cycle against the
-PR's current code, without needing a new commit — useful after a flaky failure, or after fixing
-something outside the PR itself (like provisioning a workspace secret). Only repo collaborators
-can trigger it.
 
 ## Workspaces and secrets
 
@@ -76,7 +72,7 @@ workspace identifiers) from that file at deploy time.
 6. **Register the app in `apps-pipeline.yml`'s `deploy` job** alongside the existing apps, so
    its two new secrets are picked up — this is a small, mechanical edit today; worth
    revisiting if the number of apps grows enough to make it unwieldy.
-7. Open a PR touching `apps/<name>/**` — `apps-ci.yml`'s `detect` job picks it up
+7. Open a PR touching `apps/<name>/**` — `ci.yml`'s `detect` job picks it up
    automatically, no changes needed there.
 
 ## Concurrency

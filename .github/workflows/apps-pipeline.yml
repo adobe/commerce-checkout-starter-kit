@@ -14,34 +14,8 @@ on:
         default: ''
 
 jobs:
-  check:
-    name: check & test
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/${{ inputs.app }}
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - name: Use Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'npm'
-          cache-dependency-path: apps/${{ inputs.app }}/package-lock.json
-
-      - name: Install app dependencies
-        run: npm ci
-
-      - name: Check
-        run: npm run code:check
-
-      - name: Test
-        run: npm test
-
   deploy:
     name: deploy
-    needs: check
     concurrency:
       group: deploy-${{ inputs.app }}-${{ inputs.pr_number != '' && 'pr' || 'main' }}
       queue: max
@@ -57,9 +31,10 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-          cache-dependency-path: apps/${{ inputs.app }}/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install app dependencies
+        working-directory: .
         run: npm ci
 
       # GitHub Actions can't build a secret name from `inputs.app` (`secrets.*`
@@ -84,10 +59,6 @@ jobs:
           TOTALS_COLLECTOR_PR: ${{ secrets.AIO_TOTALS_COLLECTOR_PR_WORKSPACE_CONFIG }}
         working-directory: .
         run: node scripts/prepare-workspace-config.js
-
-      - name: Log deploy target
-        run: |
-          echo "Deploying ${{ inputs.app }} (${{ inputs.pr_number != '' && format('pr #{0}', inputs.pr_number) || 'main' }}) to workspace ${{ env.AIO_PROJECT_WORKSPACE_NAME }}: https://developer.adobe.com/console/projects/${{ env.AIO_PROJECT_ORG_ID }}/${{ env.AIO_PROJECT_ID }}/workspaces/${{ env.AIO_PROJECT_WORKSPACE_ID }}/details"
 
       - name: Setup AIO CLI
         uses: adobe/aio-cli-setup-action@5a7a7313f7024283e7eb384dc79b69b02effb307 # 1.3.0
