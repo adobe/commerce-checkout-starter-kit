@@ -39,7 +39,7 @@ jobs:
 
       # GitHub Actions can't build a secret name from `inputs.app` (`secrets.*`
       # requires a literal name), so every app's two secrets are listed here
-      # explicitly; scripts/prepare-workspace-config.js picks the right one
+      # explicitly; scripts/src/prepare-workspace-config.js picks the right one
       # for this run and flattens it into the env vars later steps need.
       # Onboarding a new app means adding its AIO_<APP>_MAIN/PR_WORKSPACE_CONFIG
       # secrets and a matching pair of lines here (or migrating to one GitHub
@@ -58,7 +58,7 @@ jobs:
           TOTALS_COLLECTOR_MAIN: ${{ secrets.AIO_TOTALS_COLLECTOR_MAIN_WORKSPACE_CONFIG }}
           TOTALS_COLLECTOR_PR: ${{ secrets.AIO_TOTALS_COLLECTOR_PR_WORKSPACE_CONFIG }}
         working-directory: .
-        run: node scripts/prepare-workspace-config.js
+        run: node scripts/src/prepare-workspace-config.js
 
       - name: Setup AIO CLI
         uses: adobe/aio-cli-setup-action@5a7a7313f7024283e7eb384dc79b69b02effb307 # 1.3.0
