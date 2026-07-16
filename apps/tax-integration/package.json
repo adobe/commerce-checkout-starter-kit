@@ -23,7 +23,7 @@
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.0",
+    "@biomejs/biome": "^2.5.4",
     "@testing-library/react": "^16.3.2",
     "@tsconfig/bases": "^1.0.26",
     "@types/react": "^19.2.17",
