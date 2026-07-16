@@ -20,6 +20,14 @@ npm workspaces monorepo, one root `package.json` and one root `package-lock.json
   changed via `apps-pipeline.yml`. See `.github/MAINTAINERS.md` for how the pipeline works and how
   to onboard a new app.
 
+## History
+
+This repo used to be a single monolithic checkout app. It was split into the domain-focused
+`apps/*` apps (`shipping-method`, `payment-method`, `tax-integration`, `totals-collector`), each
+independently installable/deployable, and the monolithic app was later removed once the split was
+complete. Expect no code in the monolithic shape going forward — treat `apps/*` as the only place
+checkout functionality lives.
+
 ## Apps must stay standalone
 
 Each app under `apps/*` must be independently installable, buildable, and deployable on its own —
@@ -41,6 +49,15 @@ Every app depends on `@adobe/aio-commerce-sdk` and `@adobe/aio-commerce-lib-app`
 Commerce API access, extensibility config (`defineConfig` from
 `@adobe/aio-commerce-lib-app/config`), and webhook/action wiring rather than hand-rolling
 HTTP calls or config plumbing that these packages already provide.
+
+## Documentation strategy
+
+Keep in-repo docs to the minimum needed to build, test, and deploy. Full install/usage/business
+docs are published at
+[developer.adobe.com/commerce/extensibility/starter-kit/checkout](https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/),
+backed by the [`AdobeDocs/commerce-extensibility`](https://github.com/AdobeDocs/commerce-extensibility/)
+repo — that's where user-facing documentation changes belong, not here. Don't grow this repo's
+README/app READMEs into a parallel copy of those docs; link out instead.
 
 ## Commands
 
