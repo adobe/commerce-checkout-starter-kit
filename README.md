@@ -21,6 +21,17 @@ for install, build/deploy, and association details common to all of them.
 | [`apps/tax-integration`](apps/tax-integration) | Out-of-process tax integration scaffolding. | [Tax in Checkout Starter Kit](https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/tax-install) |
 | [`apps/totals-collector`](apps/totals-collector) | Out-of-process totals collector scaffolding. | [Totals Collector in Checkout Starter Kit](https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/totals-collector-install) |
 
+## Quick setup
+
+Use `aio app init <dir> --repo adobe/commerce-checkout-starter-kit/apps/<app-name>` to scaffold a new project from one of the apps in this repo:
+
+```bash
+aio app init my-shipping-method --repo adobe/commerce-checkout-starter-kit/apps/shipping-method
+aio app init my-payment-method --repo adobe/commerce-checkout-starter-kit/apps/payment-method
+aio app init my-tax-integration --repo adobe/commerce-checkout-starter-kit/apps/tax-integration
+aio app init my-totals-collector --repo adobe/commerce-checkout-starter-kit/apps/totals-collector
+```
+
 ## App submission guidelines
 
 Submitting your own Adobe Commerce app for review? Adobe's [App submission guidelines](https://developer.adobe.com/commerce/extensibility/app-development/app-submission-guidelines/)
