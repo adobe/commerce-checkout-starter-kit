@@ -11,6 +11,9 @@ build
 dist
 .manifest-dist.yml
 
+# Parcel
+.parcel-cache
+
 # Adobe I/O console config
 console.json
 ws.json
