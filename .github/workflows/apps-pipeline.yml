@@ -64,7 +64,7 @@ jobs:
         uses: adobe/aio-cli-setup-action@5a7a7313f7024283e7eb384dc79b69b02effb307 # 1.3.0
         with:
           os: ubuntu-latest
-          version: 11.x.x
+          version: 11.1.2
 
       - name: Authenticate with OAuth Server-to-Server
         uses: adobe/aio-apps-action@6d7fdea67de9ef5ee3bf4c730aeaa5eaa7e2c533 # 4.1.0
