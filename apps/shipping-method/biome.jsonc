@@ -1,6 +1,4 @@
 {
-  // remove once root biome.jsonc is deleted
-  "root": false,
   "$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
   "extends": ["ultracite/biome/core"],
 
