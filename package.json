@@ -1,28 +1,31 @@
 {
-  "name": "commerce-checkout-starter-kit",
-  "version": "0.0.1",
+  "name": "@adobe/commerce-checkout-starter-kit",
+  "version": "1.0.0",
   "type": "module",
   "private": true,
   "devDependencies": {
-    "@biomejs/biome": "^2.5.4",
-    "@vitest/coverage-v8": "^4.0.7",
     "husky": "^9.1.7",
-    "lint-staged": "^17.0.0",
-    "ultracite": "^7.0.0",
-    "vitest": "^4.0.7"
+    "lint-staged": "^17.0.0"
   },
   "scripts": {
     "prepare": "husky",
-    "test": "vitest run --coverage",
-    "code:check": "npx biome check .",
-    "code:fix": "npx biome check --write ."
+    "test": "npm test --workspaces",
+    "code:check": "npm run code:check --workspaces",
+    "code:fix": "npm run code:fix --workspaces"
   },
   "engines": {
     "node": "^24.0.0"
   },
+  "workspaces": [
+    "apps/*",
+    "scripts"
+  ],
   "lint-staged": {
     "*": [
       "npm run code:fix"
     ]
+  },
+  "@parcel/resolver-default": {
+    "packageExports": true
   }
 }

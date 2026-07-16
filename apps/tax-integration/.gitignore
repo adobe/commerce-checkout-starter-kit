@@ -18,6 +18,7 @@ dist
 # Adobe I/O console config
 console.json
 ws.json
+workspace.json
 
 # IDE & Temp
 .cache

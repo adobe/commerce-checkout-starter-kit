@@ -20,7 +20,7 @@ import {
   resolveWorkspaceEnvVarName,
   SECRET_FIELDS,
   serialize,
-} from "../../scripts/prepare-workspace-config.js";
+} from "../src/prepare-workspace-config.js";
 
 const rawWorkspaceJson = JSON.parse(
   readFileSync(
@@ -48,22 +48,22 @@ describe("resolveWorkspaceEnvVarName", () => {
 describe("parseWorkspaceConfig", () => {
   test("flattens a raw workspace.json into the expected fields", () => {
     expect(parseWorkspaceConfig(rawWorkspaceJson)).toEqual({
-      CLIENTID: "test-client-id",
-      CLIENTSECRET: "test-client-secret",
-      TECHNICALACCOUNTID: "test-tech-acct-id@techacct.adobe.com",
-      TECHNICALACCOUNTEMAIL: "test-tech-acct@techacct.adobe.com",
-      IMSORGID: "2BB51E2264CC11A30A495EE7@AdobeOrg",
-      SCOPES: ["AdobeID", "openid", "adobeio_api"],
-      AIO_RUNTIME_NAMESPACE: "12345-shippingmethodmain",
-      AIO_RUNTIME_AUTH: "test-runtime-auth",
       AIO_PROJECT_ID: "4566206088345709923",
       AIO_PROJECT_NAME: "CommerceCheckoutStarterKit",
       AIO_PROJECT_ORG_ID: "1340225",
-      AIO_PROJECT_WORKSPACE_ID: "4566206088345752619",
-      AIO_PROJECT_WORKSPACE_NAME: "ShippingMethodMain",
       AIO_PROJECT_WORKSPACE_DETAILS_SERVICES: [
         { code: "AdobeIOManagementAPISDK", name: "I/O Management API" },
       ],
+      AIO_PROJECT_WORKSPACE_ID: "4566206088345752619",
+      AIO_PROJECT_WORKSPACE_NAME: "ShippingMethodMain",
+      AIO_RUNTIME_AUTH: "test-runtime-auth",
+      AIO_RUNTIME_NAMESPACE: "12345-shippingmethodmain",
+      CLIENTID: "test-client-id",
+      CLIENTSECRET: "test-client-secret",
+      IMSORGID: "2BB51E2264CC11A30A495EE7@AdobeOrg",
+      SCOPES: ["AdobeID", "openid", "adobeio_api"],
+      TECHNICALACCOUNTEMAIL: "test-tech-acct@techacct.adobe.com",
+      TECHNICALACCOUNTID: "test-tech-acct-id@techacct.adobe.com",
     });
   });
 
@@ -82,8 +82,8 @@ describe("parseWorkspaceConfig", () => {
     const withOtherCredential = structuredClone(rawWorkspaceJson);
     withOtherCredential.project.workspace.details.credentials.unshift({
       id: "9999",
-      name: "some-other-credential",
       integration_type: "oauthweb",
+      name: "some-other-credential",
       oauth2: { client_id: "should-not-be-used" },
     });
 
@@ -151,8 +151,8 @@ describe("resolveWorkspaceConfig", () => {
     expect(() =>
       resolveWorkspaceConfig({
         APP: "payment-method",
-        PURPOSE: "MAIN",
         PAYMENT_METHOD_MAIN: "not json",
+        PURPOSE: "MAIN",
       }),
     ).toThrow(INVALID_JSON_ERROR);
   });

@@ -36,6 +36,16 @@
       "depNameTemplate": "node",
       "datasourceTemplate": "node-version",
       "versioningTemplate": "node"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/\\.github/workflows/.+\\.ya?ml$/"],
+      "matchStrings": [
+        "adobe/aio-cli-setup-action@[^\\n]+[\\s\\S]+?version:\\s*(?<currentValue>[\\d.]+)"
+      ],
+      "depNameTemplate": "@adobe/aio-cli",
+      "datasourceTemplate": "npm",
+      "versioningTemplate": "npm"
     }
   ],
   "packageRules": [

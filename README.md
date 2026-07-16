@@ -14,12 +14,12 @@ The starter kit is split into independent Adobe Commerce App Management apps, on
 installed, associated, and versioned on its own. See the [App Management docs](https://developer.adobe.com/commerce/extensibility/app-management/)
 for install, build/deploy, and association details common to all of them.
 
-| App | What it does | Business context |
+| App | What it does | Docs |
 | --- | --- | --- |
-| [`apps/shipping-method`](apps/shipping-method) | Out-of-process shipping carrier setup and the shipping rates webhook. | [Shipping in Checkout Starter Kit](https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/shipping-install) |
-| [`apps/payment-method`](apps/payment-method) | Out-of-process payment method validation and filtering. | [Payment in Checkout Starter Kit](https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/payment-install) |
-| [`apps/tax-integration`](apps/tax-integration) | Out-of-process tax calculation, tax-integration setup, and the Tax Management Admin UI. | [Tax in Checkout Starter Kit](https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/tax-install) |
-| [`apps/totals-collector`](apps/totals-collector) | Example out-of-process discount webhook implementations (cart totals collector rules). | [Totals Collector in Checkout Starter Kit](https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/totals-collector-install) |
+| [`apps/shipping-method`](apps/shipping-method) | Out-of-process shipping method scaffolding. | [Shipping in Checkout Starter Kit](https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/shipping-install) |
+| [`apps/payment-method`](apps/payment-method) | Out-of-process payment method scaffolding. | [Payment in Checkout Starter Kit](https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/payment-install) |
+| [`apps/tax-integration`](apps/tax-integration) | Out-of-process tax integration scaffolding. | [Tax in Checkout Starter Kit](https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/tax-install) |
+| [`apps/totals-collector`](apps/totals-collector) | Out-of-process totals collector scaffolding. | [Totals Collector in Checkout Starter Kit](https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/totals-collector-install) |
 
 ## App submission guidelines
 
