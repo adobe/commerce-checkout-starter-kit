@@ -53,26 +53,27 @@ describe("relocated total-collector discount actions", () => {
     expect(typeof main).toBe("function");
   });
 
-  test.each(
-    discountActions,
-  )("%s returns the zero-discount result operation for an empty cart", async (_name, main) => {
-    const result = await main(
-      buildParams({ quote: {}, shippingAssignment: { items: [] } }),
-    );
+  test.each(discountActions)(
+    "%s returns the zero-discount result operation for an empty cart",
+    async (_name, main) => {
+      const result = await main(
+        buildParams({ quote: {}, shippingAssignment: { items: [] } }),
+      );
 
-    expect(result.type).toBe("success");
-    expect(result.statusCode).toBe(200);
-    expect(result.body).toEqual(
-      expect.objectContaining({
-        op: "replace",
-        path: "result",
-        value: expect.objectContaining({
-          base_discount: 0,
-          code: "discount",
+      expect(result.type).toBe("success");
+      expect(result.statusCode).toBe(200);
+      expect(result.body).toEqual(
+        expect.objectContaining({
+          op: "replace",
+          path: "result",
+          value: expect.objectContaining({
+            base_discount: 0,
+            code: "discount",
+          }),
         }),
-      }),
-    );
-  });
+      );
+    },
+  );
 
   function resultOp(body) {
     return Array.isArray(body) ? body.find((op) => op.path === "result") : body;
@@ -349,18 +350,21 @@ describe("relocated total-collector discount actions", () => {
   test.each([
     [2, 35],
     [3, 45],
-  ])("step-price-discount grants the %i-unit tier's %i%% off", async (qty, percent) => {
-    const result = await stepPriceDiscount(
-      buildParams({
-        quote: {},
-        shippingAssignment: {
-          items: [{ base_price: 5, item_id: 1, qty, sku: "a" }],
-        },
-      }),
-    );
+  ])(
+    "step-price-discount grants the %i-unit tier's %i%% off",
+    async (qty, percent) => {
+      const result = await stepPriceDiscount(
+        buildParams({
+          quote: {},
+          shippingAssignment: {
+            items: [{ base_price: 5, item_id: 1, qty, sku: "a" }],
+          },
+        }),
+      );
 
-    expect(resultOp(result.body).value.base_discount).toBe(percent);
-  });
+      expect(resultOp(result.body).value.base_discount).toBe(percent);
+    },
+  );
 
   test("multi-condition-discount stays at zero when qty qualifies but spend does not", async () => {
     const result = await multiConditionDiscount(
@@ -395,19 +399,22 @@ describe("relocated total-collector discount actions", () => {
     ["category-based-discount", categoryBasedDiscount, "x-pizza"],
     ["cheapest-item-discount", cheapestItemDiscount, "a-shirts"],
     ["expensive-item-discount", expensiveItemDiscount, "a-wine"],
-  ])("%s returns an exception operation when quote.items is not iterable", async (_name, main, sku) => {
-    const result = await main(
-      buildParams({
-        quote: { items: 123 },
-        shippingAssignment: {
-          items: [{ base_price: 10, item_id: 1, qty: 3, sku }],
-        },
-      }),
-    );
+  ])(
+    "%s returns an exception operation when quote.items is not iterable",
+    async (_name, main, sku) => {
+      const result = await main(
+        buildParams({
+          quote: { items: 123 },
+          shippingAssignment: {
+            items: [{ base_price: 10, item_id: 1, qty: 3, sku }],
+          },
+        }),
+      );
 
-    expect(result.type).toBe("success");
-    expect(result.body).toEqual(expect.objectContaining({ op: "exception" }));
-  });
+      expect(result.type).toBe("success");
+      expect(result.body).toEqual(expect.objectContaining({ op: "exception" }));
+    },
+  );
 
   test("cheapest-item-discount picks the cheapest of multiple eligible lines", async () => {
     const result = await cheapestItemDiscount(
@@ -500,16 +507,19 @@ describe("relocated total-collector discount actions", () => {
       tieredTotalSpendDiscount,
       { base_price: 150, qty: 1 },
     ],
-  ])("%s stays at zero when an otherwise-qualifying line has no usable item id", async (_name, main, item) => {
-    const result = await main(
-      buildParams({
-        quote: {},
-        shippingAssignment: { items: [{ sku: "a", ...item }] },
-      }),
-    );
+  ])(
+    "%s stays at zero when an otherwise-qualifying line has no usable item id",
+    async (_name, main, item) => {
+      const result = await main(
+        buildParams({
+          quote: {},
+          shippingAssignment: { items: [{ sku: "a", ...item }] },
+        }),
+      );
 
-    expect(resultOp(result.body).value.base_discount).toBe(0);
-  });
+      expect(resultOp(result.body).value.base_discount).toBe(0);
+    },
+  );
 
   test("step-price-discount stays at zero when the cart has lines but zero total quantity", async () => {
     const result = await stepPriceDiscount(
