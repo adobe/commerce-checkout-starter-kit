@@ -30,7 +30,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitest/coverage-v8": "^4.0.7",
     "jsdom": "^29.1.1",
-    "typescript": "^6.0.0",
+    "typescript": "^7.0.0",
     "ultracite": "^7.0.0",
     "vitest": "^4.0.7"
   },
