@@ -1,5 +1,5 @@
 {
-  "name": "@adobe/commerce-checkout-starter-kit/payment-method",
+  "name": "@adobe/commerce-checkout-payment-method",
   "description": "Out-of-process payment method validation and filtering for the Adobe Commerce checkout starter kit.",
   "version": "1.0.0",
   "type": "module",

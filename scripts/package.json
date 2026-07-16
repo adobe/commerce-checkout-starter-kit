@@ -1,0 +1,25 @@
+{
+  "name": "@adobe/commerce-checkout-starter-kit-scripts",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.4",
+    "@vitest/coverage-v8": "^4.0.7",
+    "ultracite": "^7.0.0",
+    "vitest": "^4.0.7"
+  },
+  "scripts": {
+    "test": "vitest run --coverage",
+    "code:check": "npx biome check .",
+    "code:fix": "npx biome check --write ."
+  },
+  "engines": {
+    "node": "^24.0.0"
+  },
+  "lint-staged": {
+    "*": [
+      "npm run code:fix"
+    ]
+  }
+}

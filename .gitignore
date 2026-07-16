@@ -11,10 +11,6 @@ build
 dist
 .manifest-dist.yml
 
-# Config
-.env*
-.aio
-
 # Adobe I/O console config
 console.json
 ws.json
@@ -28,11 +24,5 @@ coverage
 .aws.tmp.creds.json
 .wskdebug.props.tmp
 
-# Parcel
-.parcel-cache
-
 # OSX
 .DS_Store
-
-# yeoman
-.yo-repository

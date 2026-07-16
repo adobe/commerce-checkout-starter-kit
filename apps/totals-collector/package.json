@@ -1,5 +1,5 @@
 {
-  "name": "@adobe/commerce-checkout-starter-kit/totals-collector",
+  "name": "@adobe/commerce-checkout-totals-collector",
   "description": "Out-of-process discount webhook actions for the Adobe Commerce checkout starter kit (cart totals collector rules).",
   "version": "1.0.0",
   "type": "module",

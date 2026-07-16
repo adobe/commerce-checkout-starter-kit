@@ -1,5 +1,5 @@
 {
-  "name": "@adobe/commerce-checkout-starter-kit/shipping-method",
+  "name": "@adobe/commerce-checkout-shipping-method",
   "description": "Out-of-process shipping methods and carrier setup for the Adobe Commerce checkout starter kit.",
   "version": "1.0.0",
   "type": "module",

@@ -74,6 +74,7 @@ export function resolveWorkspaceConfig(env) {
   } catch (error) {
     throw new Error(
       `Workspace config for ${APP} (${PURPOSE}) is not valid JSON: ${error.message}`,
+      { cause: error },
     );
   }
 }
@@ -98,20 +99,20 @@ export function parseWorkspaceConfig(rawWorkspaceJson) {
   const runtime = workspaceDetails.runtime?.namespaces?.[0] ?? {};
 
   const config = {
-    CLIENTID: credential.client_id,
-    CLIENTSECRET: credential.client_secrets?.[0],
-    TECHNICALACCOUNTID: credential.technical_account_id,
-    TECHNICALACCOUNTEMAIL: credential.technical_account_email,
-    IMSORGID: project.org?.ims_org_id,
-    SCOPES: credential.scopes ?? [],
-    AIO_RUNTIME_NAMESPACE: runtime.name,
-    AIO_RUNTIME_AUTH: runtime.auth,
     AIO_PROJECT_ID: project.id,
     AIO_PROJECT_NAME: project.name,
     AIO_PROJECT_ORG_ID: project.org?.id,
+    AIO_PROJECT_WORKSPACE_DETAILS_SERVICES: workspaceDetails.services ?? [],
     AIO_PROJECT_WORKSPACE_ID: project.workspace?.id,
     AIO_PROJECT_WORKSPACE_NAME: project.workspace?.name,
-    AIO_PROJECT_WORKSPACE_DETAILS_SERVICES: workspaceDetails.services ?? [],
+    AIO_RUNTIME_AUTH: runtime.auth,
+    AIO_RUNTIME_NAMESPACE: runtime.name,
+    CLIENTID: credential.client_id,
+    CLIENTSECRET: credential.client_secrets?.[0],
+    IMSORGID: project.org?.ims_org_id,
+    SCOPES: credential.scopes ?? [],
+    TECHNICALACCOUNTEMAIL: credential.technical_account_email,
+    TECHNICALACCOUNTID: credential.technical_account_id,
   };
 
   const missing = REQUIRED_FIELDS.filter((field) => !config[field]);
