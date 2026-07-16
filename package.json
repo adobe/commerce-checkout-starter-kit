@@ -3,55 +3,19 @@
   "version": "0.0.1",
   "type": "module",
   "private": true,
-  "dependencies": {
-    "@adobe/aio-lib-ims": "^8.0.0",
-    "@adobe/aio-lib-telemetry": "^1.1.0",
-    "@adobe/aio-sdk": "^6",
-    "@adobe/exc-app": "^1.4.11",
-    "@adobe/react-spectrum": "^3.40.1",
-    "@adobe/uix-guest": "^1.0.0",
-    "cloudevents": "^10.0.0",
-    "core-js": "^3.41.0",
-    "dotenv": "^17.0.0",
-    "got": "^15.0.0",
-    "js-yaml": "^5.0.0",
-    "oauth-1.0a": "^2.2.6",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-error-boundary": "^6.0.0",
-    "react-router-dom": "^7.0.0",
-    "regenerator-runtime": "^0.14.1",
-    "uuid": "^14.0.0"
-  },
   "devDependencies": {
     "@biomejs/biome": "^2.5.4",
     "@vitest/coverage-v8": "^4.0.7",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.0",
-    "nock": "^14.0.5",
     "ultracite": "^7.0.0",
-    "vitest": "^4.0.7",
-    "wait-for-expect": "^4.0.0"
+    "vitest": "^4.0.7"
   },
   "scripts": {
     "prepare": "husky",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "e2e": "vitest run --config vitest.e2e.config.js",
-    "lint:check": "npx biome lint .",
-    "lint": "npx biome lint --write .",
-    "format:check": "npx biome format .",
-    "format": "npx biome format --write .",
+    "test": "vitest run --coverage",
     "code:check": "npx biome check .",
-    "code:fix": "npx biome check --write .",
-    "configure-events": "node scripts/configure-events.js",
-    "configure-commerce-events": "aio console workspace download ws.json && node scripts/configure-commerce-events.js ws.json; rm -f ws.json",
-    "create-payment-methods": "node scripts/create-payment-methods.js payment-methods.yaml",
-    "create-tax-integrations": "node scripts/create-tax-integrations.js tax-integrations.yaml",
-    "create-shipping-carriers": "node scripts/create-shipping-carriers.js shipping-carriers.yaml",
-    "get-shipping-carriers": "node scripts/get-shipping-carriers.js",
-    "sync-oauth-credentials": "node scripts/sync-oauth-credentials.js"
+    "code:fix": "npx biome check --write ."
   },
   "engines": {
     "node": "^24.0.0"

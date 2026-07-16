@@ -1,5 +1,0 @@
-{
-  "depcheck": {
-    "ignoreMatches": ["@babel/preset-react", "@vitest/coverage-v8"]
-  }
-}
