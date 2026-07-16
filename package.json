@@ -24,5 +24,8 @@
     "*": [
       "npm run code:fix"
     ]
+  },
+  "@parcel/resolver-default": {
+    "packageExports": true
   }
 }
