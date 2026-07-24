@@ -11,8 +11,12 @@ const COMMERCE_PROXY_ACTION = "tax-integration-admin-ui/commerce-proxy-action";
  * credentials (from `useIms()`).
  */
 export function useCommerceProxyAction() {
-  const { imsOrgId, imsToken } = useIms();
+  const ims = useIms();
   const { getActionUrl } = useConfig();
+
+  const imsError = ims.error;
+  const imsToken = ims.error ? null : ims.data.imsToken;
+  const imsOrgId = ims.error ? null : ims.data.imsOrgId;
 
   return useCallback(
     async (
@@ -20,6 +24,10 @@ export function useCommerceProxyAction() {
       method: "GET" | "POST" = "GET",
       payload: Record<string, unknown> | null = null,
     ): Promise<unknown> => {
+      if (imsError) {
+        throw imsError;
+      }
+
       const actionUrl = getActionUrl(COMMERCE_PROXY_ACTION);
 
       const response = await fetch(actionUrl, {
@@ -31,7 +39,7 @@ export function useCommerceProxyAction() {
         headers: {
           authorization: `Bearer ${imsToken}`,
           "Content-Type": "application/json",
-          "x-gw-ims-org-id": imsOrgId,
+          "x-gw-ims-org-id": `${imsOrgId}`,
         },
         method: "POST",
       });
@@ -45,6 +53,6 @@ export function useCommerceProxyAction() {
 
       return response.json();
     },
-    [getActionUrl, imsOrgId, imsToken],
+    [getActionUrl, imsError, imsOrgId, imsToken],
   );
 }

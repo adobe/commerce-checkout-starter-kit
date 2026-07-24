@@ -5,9 +5,8 @@ import config from "#app.commerce.config";
 import { TaxClassesPage } from "#web/pages/tax-classes-page.tsx";
 
 createExtensionApp({
+  menu: <TaxClassesPage />,
   metadata: {
     extensionId: config.metadata.id,
   },
-
-  routes: [{ element: <TaxClassesPage />, index: true }],
 });
