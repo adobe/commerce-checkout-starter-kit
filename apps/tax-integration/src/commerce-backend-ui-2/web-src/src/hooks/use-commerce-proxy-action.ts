@@ -23,8 +23,8 @@ export function useCommerceProxyAction() {
       method: "GET" | "POST" = "GET",
       payload: Record<string, unknown> | null = null,
     ): Promise<unknown> => {
-      if (error) {
-        throw error;
+      if (!(imsToken && imsOrgId)) {
+        throw error ?? new Error("IMS credentials are not available.");
       }
 
       const actionUrl = getActionUrl(COMMERCE_PROXY_ACTION);
@@ -38,7 +38,7 @@ export function useCommerceProxyAction() {
         headers: {
           authorization: `Bearer ${imsToken}`,
           "Content-Type": "application/json",
-          "x-gw-ims-org-id": `${imsOrgId}`,
+          "x-gw-ims-org-id": imsOrgId,
         },
         method: "POST",
       });
