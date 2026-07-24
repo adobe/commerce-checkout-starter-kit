@@ -15,7 +15,7 @@ on:
 
 jobs:
   deploy:
-    name: deploy
+    name: ${{ inputs.app }} CI
     concurrency:
       group: deploy-${{ inputs.app }}-${{ inputs.pr_number != '' && 'pr' || 'main' }}
       queue: max
@@ -29,12 +29,18 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version-file: '.nvmrc'
+          node-version-file: apps/${{ inputs.app }}/.nvmrc
           cache: 'npm'
           cache-dependency-path: apps/${{ inputs.app }}/package-lock.json
 
       - name: Install app dependencies
         run: npm ci
+
+      - name: Lint
+        run: npm run code:check
+
+      - name: Test
+        run: npm test
 
       # GitHub Actions can't build a secret name from `inputs.app` (`secrets.*`
       # requires a literal name), so every app's two secrets are listed here
