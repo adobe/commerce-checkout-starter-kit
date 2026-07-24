@@ -4,12 +4,13 @@ This document explains how the `apps/*` CI/CD pipeline works and how to onboard 
 
 ## How the pipeline works
 
-Every pull request and push to `main` first lints and tests the whole repo (all workspaces,
-including every app) via `ci.yml`'s root `test` job. Once that passes, whichever apps had
-anything change under their directory (`apps/<name>/`) are automatically built and deployed.
-Apps that weren't touched are left alone entirely.
+Every pull request and push to `main` first lints and tests root and every app independently via
+`ci.yml`'s `test` job. Once that passes, whichever apps had anything change under their directory
+(`apps/<name>/`) are automatically built and deployed. Apps that weren't touched are left alone
+entirely.
 
-1. The root `test` job runs `code:check` and `test` across every workspace.
+1. The `test` job runs as a 5-leg matrix (root + one leg per app), each installing from its own
+   `package-lock.json` and running its own `code:check`/`test`.
 2. If that passes, each changed app is built and deployed to its workspace for this run — the
    `main` workspace for a push to `main`, or the `pr` workspace for a pull request.
 3. For pull requests, the app is undeployed again immediately after a successful deploy (see

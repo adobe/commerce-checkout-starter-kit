@@ -9,12 +9,20 @@ on:
       - main
 jobs:
   test:
-    name: CI check
+    name: ${{ matrix.project.name }}
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 1
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest]
+        project:
+          - { path: '.', name: root }
+          - { path: apps/payment-method, name: payment-method }
+          - { path: apps/shipping-method, name: shipping-method }
+          - { path: apps/tax-integration, name: tax-integration }
+          - { path: apps/totals-collector, name: totals-collector }
+    defaults:
+      run:
+        working-directory: ${{ matrix.project.path }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Use Node.js
@@ -22,6 +30,7 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
+          cache-dependency-path: ${{ matrix.project.path }}/package-lock.json
       - run: npm ci
       - run: npm run code:check
       - run: npm test

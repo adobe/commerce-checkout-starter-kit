@@ -31,10 +31,9 @@ jobs:
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: apps/${{ inputs.app }}/package-lock.json
 
       - name: Install app dependencies
-        working-directory: .
         run: npm ci
 
       # GitHub Actions can't build a secret name from `inputs.app` (`secrets.*`
