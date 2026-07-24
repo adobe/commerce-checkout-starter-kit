@@ -15,7 +15,7 @@ on:
 
 jobs:
   deploy:
-    name: ${{ inputs.app }} CI
+    name: app checks
     concurrency:
       group: deploy-${{ inputs.app }}-${{ inputs.pr_number != '' && 'pr' || 'main' }}
       queue: max
