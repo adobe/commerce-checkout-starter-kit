@@ -23,8 +23,8 @@ const { useCommerceProxyAction } = await import(
 beforeEach(() => {
   vi.clearAllMocks();
   useIms.mockReturnValue({
-    imsOrgId: "test-org-id",
-    imsToken: "test-ims-token",
+    data: { imsOrgId: "test-org-id", imsToken: "test-ims-token" },
+    error: null,
   });
   global.fetch = vi.fn();
 });

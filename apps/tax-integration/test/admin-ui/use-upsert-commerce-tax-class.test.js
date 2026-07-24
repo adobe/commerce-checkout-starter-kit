@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 vi.mock("@adobe/aio-commerce-lib-admin-ui/web", () => ({
   useIms: vi.fn(() => ({
-    imsOrgId: "test-org-id",
-    imsToken: "test-ims-token",
+    data: { imsOrgId: "test-org-id", imsToken: "test-ims-token" },
+    error: null,
   })),
 }));
 vi.mock(
