@@ -4,6 +4,7 @@
   "type": "module",
   "private": true,
   "devDependencies": {
+    "@ljharb/tsconfig": "^0.3.2",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.0"
   },
