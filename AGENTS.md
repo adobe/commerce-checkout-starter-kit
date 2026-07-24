@@ -10,15 +10,18 @@ See `README.md` for the per-app business context and links to the official docs.
 
 ## Repo structure
 
-npm workspaces monorepo, one root `package.json` and one root `package-lock.json` for everything.
+Five independent npm projects live in this repo, each with its own `package.json` and
+`package-lock.json`: the root project, and each of the 4 apps under `apps/*`.
 
+- **Root** — the repo's own tooling project. Its dependencies and its `test`/`code:check`/
+  `code:fix` scripts (config in `biome.jsonc`/`vitest.config.js`, scoped away from `apps/**`)
+  build and test the repo-tooling source that lives in `scripts/`.
 - `apps/*` — one standalone app per checkout domain (`shipping-method`, `payment-method`,
   `tax-integration`, `totals-collector`). Each has its own `package.json`, `app.config.yaml`,
   `install.yaml`, `app.commerce.config.ts`, `src/`, and `test/`.
-- `scripts/` — repo-tooling workspace (e.g. CI helper scripts), its own `package.json`/`test/`.
-- `.github/workflows/` — CI. `ci.yml` runs root lint+test, then builds/deploys only the apps that
-  changed via `apps-pipeline.yml`. See `.github/MAINTAINERS.md` for how the pipeline works and how
-  to onboard a new app.
+- `.github/workflows/` — CI. `ci.yml` lints+tests root and every app independently, then
+  builds/deploys only the apps that changed via `apps-pipeline.yml`. See `.github/MAINTAINERS.md`
+  for how the pipeline works and how to onboard a new app.
 
 ## History
 
@@ -61,18 +64,19 @@ README/app READMEs into a parallel copy of those docs; link out instead.
 
 ## Commands
 
-Run from the repo root unless noted — `npm ci` at root installs every workspace's dependencies.
+Each of the 5 projects (root, `apps/payment-method`, `apps/shipping-method`,
+`apps/tax-integration`, `apps/totals-collector`) is installed and run independently — `cd` into
+the target directory (or use `npm --prefix <dir> run <script>` from elsewhere) before running:
 
-- `npm test` — runs `vitest` across every workspace (all apps + `scripts`).
-- `npm run code:check` — runs Biome (`biome check .`) across every workspace.
+- `npm ci` / `npm install` — installs only that project's own dependencies.
+- `npm test` — runs that project's `vitest` suite (root's is scoped to `scripts/test/**`).
+- `npm run code:check` — runs Biome (`biome check .`) scoped to that project.
 - `npm run code:fix` — same, with `--write`; also runs automatically via `lint-staged`/husky on
-  commit.
-- Scope any of the above to one workspace with `-w`, e.g. `npm test -w apps/shipping-method`, or
-  `cd apps/shipping-method && npm test`.
+  commit, scoped per-project to whichever directories have staged changes.
 - Node version is pinned via `.nvmrc` (see `engines` in each `package.json`).
 
 ## Conventions
 
 - Linting: Biome, extending `ultracite/biome/core` (see each app's `biome.jsonc`).
-- Tests: Vitest, files under each workspace's `test/**/*.test.js`, coverage via `@vitest/coverage-v8`.
+- Tests: Vitest, files under each project's `test/**/*.test.js`, coverage via `@vitest/coverage-v8`.
 - Module system: `type: module` (ESM) everywhere.

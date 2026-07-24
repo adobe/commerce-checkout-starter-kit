@@ -12,6 +12,7 @@ export default defineConfig({
         "**/*.config.*",
         "**/*.test.*",
         "**/*.spec.*",
+        "**/apps/**",
       ],
       provider: "v8",
 
@@ -28,6 +29,7 @@ export default defineConfig({
       },
     },
     environment: "node",
+    exclude: ["**/node_modules/**", "**/dist/**", "**/build/**", "**/apps/**"],
     globals: true,
   },
 });
