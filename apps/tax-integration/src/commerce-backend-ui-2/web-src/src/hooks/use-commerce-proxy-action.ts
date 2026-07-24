@@ -11,8 +11,11 @@ const COMMERCE_PROXY_ACTION = "tax-integration-admin-ui/commerce-proxy-action";
  * credentials (from `useIms()`).
  */
 export function useCommerceProxyAction() {
-  const { imsOrgId, imsToken } = useIms();
+  const { data, error } = useIms();
   const { getActionUrl } = useConfig();
+
+  const imsToken = data?.imsToken;
+  const imsOrgId = data?.imsOrgId;
 
   return useCallback(
     async (
@@ -20,6 +23,10 @@ export function useCommerceProxyAction() {
       method: "GET" | "POST" = "GET",
       payload: Record<string, unknown> | null = null,
     ): Promise<unknown> => {
+      if (!(imsToken && imsOrgId)) {
+        throw error ?? new Error("IMS credentials are not available.");
+      }
+
       const actionUrl = getActionUrl(COMMERCE_PROXY_ACTION);
 
       const response = await fetch(actionUrl, {
@@ -45,6 +52,6 @@ export function useCommerceProxyAction() {
 
       return response.json();
     },
-    [getActionUrl, imsOrgId, imsToken],
+    [error, getActionUrl, imsOrgId, imsToken],
   );
 }
