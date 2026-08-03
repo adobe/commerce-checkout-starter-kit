@@ -1,24 +1,13 @@
 {
   "name": "@adobe/commerce-checkout-starter-kit",
   "version": "1.0.0",
-  "type": "module",
   "private": true,
-  "devDependencies": {
-    "@biomejs/biome": "^2.5.4",
-    "@vitest/coverage-v8": "^4.0.7",
-    "husky": "^9.1.7",
-    "lint-staged": "^17.0.0",
-    "ultracite": "^7.0.0",
-    "vitest": "^4.0.7"
-  },
+  "type": "module",
   "scripts": {
-    "prepare": "husky",
-    "test": "vitest run --coverage",
     "code:check": "npx biome check .",
-    "code:fix": "npx biome check --write ."
-  },
-  "engines": {
-    "node": "^24.0.0"
+    "code:fix": "npx biome check --write .",
+    "prepare": "husky",
+    "test": "vitest run --coverage"
   },
   "lint-staged": {
     "apps/payment-method/**": [
@@ -36,5 +25,16 @@
     "*": [
       "npm run code:fix"
     ]
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.4",
+    "@vitest/coverage-v8": "^4.0.7",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.0",
+    "ultracite": "^7.0.0",
+    "vitest": "^4.0.7"
+  },
+  "engines": {
+    "node": "^24.0.0"
   }
 }

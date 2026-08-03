@@ -1,17 +1,18 @@
 {
   "name": "@adobe/commerce-checkout-tax-integration",
-  "description": "Out-of-process tax calculation and tax-integration setup for the Adobe Commerce checkout starter kit.",
   "version": "1.0.0",
-  "type": "module",
   "private": true,
-  "engines": {
-    "node": "^24.0.0"
+  "description": "Out-of-process tax calculation and tax-integration setup for the Adobe Commerce checkout starter kit.",
+  "type": "module",
+  "imports": {
+    "#app.commerce.config": "./src/commerce-extensibility-1/.generated/app.commerce.config.js",
+    "#web/*": "./src/commerce-backend-ui-2/web-src/src/*"
   },
   "scripts": {
-    "test": "vitest run --coverage",
     "code:check": "npx biome check .",
     "code:fix": "npx biome check --write .",
-    "postinstall": "npx aio-commerce-lib-app hooks postinstall"
+    "postinstall": "npx aio-commerce-lib-app hooks postinstall",
+    "test": "vitest run --coverage"
   },
   "dependencies": {
     "@adobe/aio-commerce-lib-admin-ui": "^1.0.0",
@@ -34,9 +35,8 @@
     "ultracite": "^7.0.0",
     "vitest": "^4.0.7"
   },
-  "imports": {
-    "#app.commerce.config": "./src/commerce-extensibility-1/.generated/app.commerce.config.js",
-    "#web/*": "./src/commerce-backend-ui-2/web-src/src/*"
+  "engines": {
+    "node": "^24.0.0"
   },
   "@parcel/bundler-default": {
     "manualSharedBundles": [
