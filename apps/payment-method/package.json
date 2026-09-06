@@ -20,9 +20,9 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.4",
-    "@vitest/coverage-v8": "^4.0.7",
+    "@vitest/coverage-v8": "^5.0.0",
     "ultracite": "^7.0.0",
-    "vitest": "^4.0.7"
+    "vitest": "^5.0.0"
   },
   "engines": {
     "node": "^24.0.0"
