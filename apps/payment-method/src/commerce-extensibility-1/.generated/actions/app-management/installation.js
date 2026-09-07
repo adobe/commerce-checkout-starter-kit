@@ -6,14 +6,13 @@ import appConfig from "#app.commerce.config";
 
 import * as customScript0 from "../../../../../scripts/create-payment-methods.js";
 
+import { defineCustomScriptsLoader } from "@adobe/aio-commerce-lib-app/actions/installation";
+
 /**
  * Loads custom installation scripts defined in the manifest
- * @param {object} appConfig - Application configuration from manifest
- * @param {object} logger - Logger instance
- * @returns {Promise<object>} Object mapping script paths to loaded modules
  */
-export function customScriptsLoader(appConfig, logger) {
-  const customSteps = appConfig.installation?.customInstallationSteps || [];
+export const customScriptsLoader = defineCustomScriptsLoader((appConfig, logger) => {
+  const customSteps = appConfig.installation?.customInstallationSteps ?? [];
 
   if (customSteps.length === 0) {
     logger.debug("No custom installation scripts configured");
@@ -28,10 +27,13 @@ export function customScriptsLoader(appConfig, logger) {
     logger.debug(`Loaded ${Object.keys(loadedScripts).length} custom installation script(s)`);
     return loadedScripts;
   } catch (error) {
-    logger.error(`Failed to load custom installation scripts: ${error.message}`);
-    throw new Error(`Failed to load custom installation scripts: ${error.message}`);
+    const reason = error instanceof Error ? error.message : String(error);
+    logger.error(`Failed to load custom installation scripts: ${reason}`);
+    throw new Error(`Failed to load custom installation scripts: ${reason}`, {
+      cause: error,
+    });
   }
-}
+});
 
 const args = { appConfig, customScriptsLoader };
 export const main = installationRuntimeAction(args);
