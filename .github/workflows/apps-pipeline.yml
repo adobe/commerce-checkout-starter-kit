@@ -90,6 +90,12 @@ jobs:
       - name: Build
         run: aio app build
 
+      # Must run after Build: tsc needs config.json, which is gitignored and
+      # only written by `aio app build`. --if-present no-ops for apps without
+      # a `types` script.
+      - name: Type check
+        run: npm run --if-present types
+
       - name: Deploy
         run: aio app deploy --no-build
 
