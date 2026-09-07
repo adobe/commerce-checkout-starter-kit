@@ -12,7 +12,8 @@
     "code:check": "npx biome check .",
     "code:fix": "npx biome check --write .",
     "postinstall": "npx aio-commerce-lib-app hooks postinstall",
-    "test": "vitest run --coverage"
+    "test": "vitest run --coverage",
+    "types": "tsc --noEmit -p src/commerce-backend-ui-2/web-src/tsconfig.json"
   },
   "dependencies": {
     "@adobe/aio-commerce-lib-admin-ui": "^1.0.0",
@@ -31,7 +32,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitest/coverage-v8": "^5.0.0",
     "jsdom": "^30.0.0",
-    "typescript": "^7.0.0",
+    "typescript": "^6.0.3",
     "ultracite": "^7.0.0",
     "vitest": "^5.0.0"
   },
