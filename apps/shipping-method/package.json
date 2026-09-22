@@ -14,8 +14,8 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@adobe/aio-commerce-lib-app": "^1.8.0",
-    "@adobe/aio-commerce-sdk": "^1.4.0",
+    "@adobe/aio-commerce-lib-app": "^2.0.0",
+    "@adobe/aio-commerce-sdk": "^2.0.0",
     "@adobe/aio-lib-telemetry": "^1.2.0"
   },
   "devDependencies": {
