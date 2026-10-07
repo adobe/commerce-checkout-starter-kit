@@ -17,14 +17,16 @@
   },
   "dependencies": {
     "@adobe/aio-commerce-lib-admin-ui": "^1.0.0",
-    "@adobe/aio-commerce-lib-app": "^1.8.0",
-    "@adobe/aio-commerce-sdk": "^1.4.0",
+    "@adobe/aio-commerce-lib-app": "^2.0.0",
+    "@adobe/aio-commerce-sdk": "^2.0.0",
     "@adobe/aio-lib-telemetry": "^1.2.0",
     "@react-spectrum/s2": "^1.5.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@babel/preset-react": "^7.29.7",
     "@biomejs/biome": "^2.5.4",
     "@testing-library/react": "^16.3.2",
     "@tsconfig/bases": "^1.0.26",

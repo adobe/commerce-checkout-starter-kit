@@ -2,6 +2,7 @@
   "project": {
     "id": "4566206088345709923",
     "name": "CommerceCheckoutStarterKit",
+    "title": "Commerce Checkout Starter Kit",
     "org": {
       "id": "1340225",
       "ims_org_id": "2BB51E2264CC11A30A495EE7@AdobeOrg",
@@ -10,6 +11,7 @@
     "workspace": {
       "id": "4566206088345752619",
       "name": "ShippingMethodMain",
+      "title": "Shipping Method Main",
       "details": {
         "credentials": [
           {

@@ -1,6 +1,18 @@
-# Maintaining the apps CI/CD pipeline
+# Maintaining the apps and CI/CD pipeline
 
-This document explains how the `apps/*` CI/CD pipeline works and how to onboard a new app to it.
+This document covers rebuilding apps after SDK upgrades, how the `apps/*` CI/CD pipeline works,
+and how to onboard a new app to it.
+
+## Rebuilding apps after SDK upgrades
+
+After updating the apps' SDK dependencies, run `npm run apps:build` from the repo root to
+reinstall dependencies and rebuild every app, regenerating generated files through the apps'
+postinstall hooks and build process. This command does not upgrade the SDK dependencies itself.
+
+The command discovers immediate subdirectories of `apps/` and runs `npm install` followed by
+`aio app build` in each, sequentially in alphabetical order, stopping on the first failure.
+Use the Node version in `.nvmrc` and ensure the Adobe I/O CLI (`aio`) is installed and each app
+is configured for a local build. Regenerate generated files rather than editing them by hand.
 
 ## How the pipeline works
 
@@ -40,6 +52,13 @@ Adobe's own documented pattern
 avoids all of this by never touching Console Management APIs from CI: a human provisions the
 workspace and extracts its config *once*, and CI just injects the pre-extracted values as
 plain environment variables into `aio app deploy`. This pipeline follows that model.
+
+The workspace config helper validates the downloaded workspace config and
+exports the credentials, Runtime settings, and project metadata needed for authentication,
+deployment, and the SDK's post-deploy upgrade hook. The hook reads the IMS org ID, org name,
+project title, and workspace title from the AIO project configuration. The IMS org ID is
+exported as `AIO_PROJECT_ORG_IMS__ORG__ID`: AIO config maps single underscores to nested keys
+and double underscores to literal underscores, producing `project.org.ims_org_id`.
 
 ### The workspace config secrets
 
