@@ -1,6 +1,18 @@
-# Maintaining the apps CI/CD pipeline
+# Maintaining the apps and CI/CD pipeline
 
-This document explains how the `apps/*` CI/CD pipeline works and how to onboard a new app to it.
+This document covers rebuilding apps after SDK upgrades, how the `apps/*` CI/CD pipeline works,
+and how to onboard a new app to it.
+
+## Rebuilding apps after SDK upgrades
+
+After updating the apps' SDK dependencies, run `npm run apps:build` from the repo root to
+reinstall dependencies and rebuild every app, regenerating generated files through the apps'
+postinstall hooks and build process. This command does not upgrade the SDK dependencies itself.
+
+The command discovers immediate subdirectories of `apps/` and runs `npm install` followed by
+`aio app build` in each, sequentially in alphabetical order, stopping on the first failure.
+Use the Node version in `.nvmrc` and ensure the Adobe I/O CLI (`aio`) is installed and each app
+is configured for a local build. Regenerate generated files rather than editing them by hand.
 
 ## How the pipeline works
 
@@ -40,6 +52,11 @@ Adobe's own documented pattern
 avoids all of this by never touching Console Management APIs from CI: a human provisions the
 workspace and extracts its config *once*, and CI just injects the pre-extracted values as
 plain environment variables into `aio app deploy`. This pipeline follows that model.
+
+The workspace config helper also exports `AIO_PROJECT_ORG_IMS__ORG__ID` for the SDK's
+post-deploy upgrade hook. AIO config maps single underscores to nested keys and double
+underscores to literal underscores, so this supplies `project.org.ims_org_id`. It uses the
+same IMS org ID already present in the workspace secret; no additional secret is needed.
 
 ### The workspace config secrets
 

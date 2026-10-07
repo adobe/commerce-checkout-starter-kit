@@ -51,6 +51,7 @@ describe("parseWorkspaceConfig", () => {
       AIO_PROJECT_ID: "4566206088345709923",
       AIO_PROJECT_NAME: "CommerceCheckoutStarterKit",
       AIO_PROJECT_ORG_ID: "1340225",
+      AIO_PROJECT_ORG_IMS__ORG__ID: "2BB51E2264CC11A30A495EE7@AdobeOrg",
       AIO_PROJECT_WORKSPACE_DETAILS_SERVICES: [
         { code: "AdobeIOManagementAPISDK", name: "I/O Management API" },
       ],
@@ -122,6 +123,15 @@ describe("parseWorkspaceConfig", () => {
 
     expect(() => parseWorkspaceConfig(noRuntime)).toThrow(
       MISSING_RUNTIME_NAMESPACE_ERROR,
+    );
+  });
+
+  test("throws when the IMS org ID required by the post-deploy hook is missing", () => {
+    const missingImsOrgId = structuredClone(rawWorkspaceJson);
+    missingImsOrgId.project.org.ims_org_id = undefined;
+
+    expect(() => parseWorkspaceConfig(missingImsOrgId)).toThrow(
+      "AIO_PROJECT_ORG_IMS__ORG__ID",
     );
   });
 });
@@ -224,6 +234,7 @@ describe("SECRET_FIELDS", () => {
         "TECHNICALACCOUNTID",
         "TECHNICALACCOUNTEMAIL",
         "IMSORGID",
+        "AIO_PROJECT_ORG_IMS__ORG__ID",
         "AIO_RUNTIME_AUTH",
       ].sort(),
     );
