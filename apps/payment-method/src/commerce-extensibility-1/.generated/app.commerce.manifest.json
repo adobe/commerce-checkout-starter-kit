@@ -12,6 +12,7 @@
     "description": "Out-of-process payment method validation and filtering for the Adobe Commerce checkout starter kit.",
     "displayName": "Checkout Payment Method",
     "id": "checkout-payment-method",
+    "upgradeMode": "manual",
     "version": "1.0.0"
   },
   "webhooks": [

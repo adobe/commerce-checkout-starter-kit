@@ -3,6 +3,7 @@
     "description": "Adobe Commerce checkout starter kit discount webhook actions (cart totals collector rules).",
     "displayName": "Checkout Totals Collector",
     "id": "checkout-totals-collector",
+    "upgradeMode": "manual",
     "version": "1.0.0"
   },
   "webhooks": [

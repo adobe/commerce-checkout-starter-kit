@@ -40,5 +40,10 @@ for an example installation guide that follows those guidelines.
 
 ## Contributing
 
+To install dependencies and build all apps locally, run `npm run apps:build` from the repo root.
+This discovers immediate subdirectories of `apps/` and runs `npm install` followed by `aio app build` in each,
+sequentially in alphabetical order, stopping on the first failure.
+Use the Node version in `.nvmrc` and ensure the Adobe I/O CLI (`aio`) is installed and each app is configured for a local build.
+
 See [`.github/CONTRIBUTING.md`](.github/CONTRIBUTING.md) for how to contribute, and
 [`.github/MAINTAINERS.md`](.github/MAINTAINERS.md) for how the `apps/*` CI/CD pipeline works and how to onboard a new app to it.

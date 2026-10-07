@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "apps:build": "node scripts/src/build-apps.js",
     "code:check": "npx biome check .",
     "code:fix": "npx biome check --write .",
     "prepare": "husky",
