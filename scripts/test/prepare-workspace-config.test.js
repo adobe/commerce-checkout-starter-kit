@@ -52,11 +52,14 @@ describe("parseWorkspaceConfig", () => {
       AIO_PROJECT_NAME: "CommerceCheckoutStarterKit",
       AIO_PROJECT_ORG_ID: "1340225",
       AIO_PROJECT_ORG_IMS__ORG__ID: "2BB51E2264CC11A30A495EE7@AdobeOrg",
+      AIO_PROJECT_ORG_NAME: "commerce-enterprise-integrations",
+      AIO_PROJECT_TITLE: "Commerce Checkout Starter Kit",
       AIO_PROJECT_WORKSPACE_DETAILS_SERVICES: [
         { code: "AdobeIOManagementAPISDK", name: "I/O Management API" },
       ],
       AIO_PROJECT_WORKSPACE_ID: "4566206088345752619",
       AIO_PROJECT_WORKSPACE_NAME: "ShippingMethodMain",
+      AIO_PROJECT_WORKSPACE_TITLE: "Shipping Method Main",
       AIO_RUNTIME_AUTH: "test-runtime-auth",
       AIO_RUNTIME_NAMESPACE: "12345-shippingmethodmain",
       CLIENTID: "test-client-id",
@@ -133,6 +136,19 @@ describe("parseWorkspaceConfig", () => {
     expect(() => parseWorkspaceConfig(missingImsOrgId)).toThrow(
       "AIO_PROJECT_ORG_IMS__ORG__ID",
     );
+  });
+
+  test.each([
+    ["org", "name", "AIO_PROJECT_ORG_NAME"],
+    ["project", "title", "AIO_PROJECT_TITLE"],
+    ["workspace", "title", "AIO_PROJECT_WORKSPACE_TITLE"],
+  ])("requires the post-deploy %s %s", (scope, field, envKey) => {
+    const missingField = structuredClone(rawWorkspaceJson);
+    const target =
+      scope === "project" ? missingField.project : missingField.project[scope];
+    target[field] = undefined;
+
+    expect(() => parseWorkspaceConfig(missingField)).toThrow(envKey);
   });
 });
 
@@ -252,9 +268,12 @@ describe("SECRET_FIELDS", () => {
         "AIO_RUNTIME_NAMESPACE",
         "AIO_PROJECT_ID",
         "AIO_PROJECT_NAME",
+        "AIO_PROJECT_TITLE",
         "AIO_PROJECT_ORG_ID",
+        "AIO_PROJECT_ORG_NAME",
         "AIO_PROJECT_WORKSPACE_ID",
         "AIO_PROJECT_WORKSPACE_NAME",
+        "AIO_PROJECT_WORKSPACE_TITLE",
         "AIO_PROJECT_WORKSPACE_DETAILS_SERVICES",
       ].sort(),
     );

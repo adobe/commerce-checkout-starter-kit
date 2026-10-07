@@ -53,10 +53,12 @@ avoids all of this by never touching Console Management APIs from CI: a human pr
 workspace and extracts its config *once*, and CI just injects the pre-extracted values as
 plain environment variables into `aio app deploy`. This pipeline follows that model.
 
-The workspace config helper also exports `AIO_PROJECT_ORG_IMS__ORG__ID` for the SDK's
-post-deploy upgrade hook. AIO config maps single underscores to nested keys and double
-underscores to literal underscores, so this supplies `project.org.ims_org_id`. It uses the
-same IMS org ID already present in the workspace secret; no additional secret is needed.
+The workspace config helper validates the downloaded workspace config and
+exports the credentials, Runtime settings, and project metadata needed for authentication,
+deployment, and the SDK's post-deploy upgrade hook. The hook reads the IMS org ID, org name,
+project title, and workspace title from the AIO project configuration. The IMS org ID is
+exported as `AIO_PROJECT_ORG_IMS__ORG__ID`: AIO config maps single underscores to nested keys
+and double underscores to literal underscores, producing `project.org.ims_org_id`.
 
 ### The workspace config secrets
 

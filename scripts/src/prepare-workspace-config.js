@@ -22,10 +22,13 @@ const REQUIRED_FIELDS = [
   "AIO_RUNTIME_AUTH",
   "AIO_PROJECT_ID",
   "AIO_PROJECT_NAME",
+  "AIO_PROJECT_TITLE",
   "AIO_PROJECT_ORG_ID",
+  "AIO_PROJECT_ORG_NAME",
   "AIO_PROJECT_ORG_IMS__ORG__ID",
   "AIO_PROJECT_WORKSPACE_ID",
   "AIO_PROJECT_WORKSPACE_NAME",
+  "AIO_PROJECT_WORKSPACE_TITLE",
 ];
 
 // Fields that need ::add-mask:: — the rest are non-secret identifiers.
@@ -106,9 +109,12 @@ export function parseWorkspaceConfig(rawWorkspaceJson) {
     AIO_PROJECT_ORG_ID: project.org?.id,
     // Double underscores preserve the literal underscores in project.org.ims_org_id.
     AIO_PROJECT_ORG_IMS__ORG__ID: project.org?.ims_org_id,
+    AIO_PROJECT_ORG_NAME: project.org?.name,
+    AIO_PROJECT_TITLE: project.title,
     AIO_PROJECT_WORKSPACE_DETAILS_SERVICES: workspaceDetails.services ?? [],
     AIO_PROJECT_WORKSPACE_ID: project.workspace?.id,
     AIO_PROJECT_WORKSPACE_NAME: project.workspace?.name,
+    AIO_PROJECT_WORKSPACE_TITLE: project.workspace?.title,
     AIO_RUNTIME_AUTH: runtime.auth,
     AIO_RUNTIME_NAMESPACE: runtime.name,
     CLIENTID: credential.client_id,
