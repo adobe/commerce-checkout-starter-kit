@@ -59,7 +59,7 @@ runtimeManifest:
       actions:
         info:
           function: actions/info/index.js
-          web: 'yes'
+          web: "yes"
           runtime: nodejs:24
           annotations:
             require-adobe-auth: true
@@ -69,7 +69,7 @@ runtimeManifest:
       actions:
         tiered-quantity-discount:
           function: actions/tiered-quantity-discount/index.js
-          web: 'yes'
+          web: "yes"
           runtime: nodejs:24
           inputs:
             LOG_LEVEL: $LOG_LEVEL
@@ -79,7 +79,7 @@ runtimeManifest:
             final: true
         tiered-category-discount:
           function: actions/tiered-category-discount/index.js
-          web: 'yes'
+          web: "yes"
           runtime: nodejs:24
           inputs:
             LOG_LEVEL: $LOG_LEVEL
@@ -89,7 +89,7 @@ runtimeManifest:
             final: true
         category-based-discount:
           function: actions/category-based-discount/index.js
-          web: 'yes'
+          web: "yes"
           runtime: nodejs:24
           inputs:
             LOG_LEVEL: $LOG_LEVEL
@@ -99,7 +99,7 @@ runtimeManifest:
             final: true
         cheapest-item-discount:
           function: actions/cheapest-item-discount/index.js
-          web: 'yes'
+          web: "yes"
           runtime: nodejs:24
           inputs:
             LOG_LEVEL: $LOG_LEVEL
@@ -109,7 +109,7 @@ runtimeManifest:
             final: true
         expensive-item-discount:
           function: actions/expensive-item-discount/index.js
-          web: 'yes'
+          web: "yes"
           runtime: nodejs:24
           inputs:
             LOG_LEVEL: $LOG_LEVEL
@@ -119,7 +119,7 @@ runtimeManifest:
             final: true
         cheapest-quantity-discount:
           function: actions/cheapest-quantity-discount/index.js
-          web: 'yes'
+          web: "yes"
           runtime: nodejs:24
           inputs:
             LOG_LEVEL: $LOG_LEVEL
@@ -129,7 +129,7 @@ runtimeManifest:
             final: true
         step-price-discount:
           function: actions/step-price-discount/index.js
-          web: 'yes'
+          web: "yes"
           runtime: nodejs:24
           inputs:
             LOG_LEVEL: $LOG_LEVEL
@@ -139,7 +139,7 @@ runtimeManifest:
             final: true
         multi-condition-discount:
           function: actions/multi-condition-discount/index.js
-          web: 'yes'
+          web: "yes"
           runtime: nodejs:24
           inputs:
             LOG_LEVEL: $LOG_LEVEL
@@ -149,7 +149,7 @@ runtimeManifest:
             final: true
         tiered-total-spend-discount:
           function: actions/tiered-total-spend-discount/index.js
-          web: 'yes'
+          web: "yes"
           runtime: nodejs:24
           inputs:
             LOG_LEVEL: $LOG_LEVEL

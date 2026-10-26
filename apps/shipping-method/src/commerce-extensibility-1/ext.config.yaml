@@ -59,7 +59,7 @@ runtimeManifest:
       actions:
         info:
           function: actions/info/index.js
-          web: 'yes'
+          web: "yes"
           runtime: nodejs:24
           annotations:
             require-adobe-auth: true
@@ -69,7 +69,7 @@ runtimeManifest:
       actions:
         shipping-methods:
           function: actions/shipping-methods/index.js
-          web: 'yes'
+          web: "yes"
           runtime: nodejs:24
           inputs:
             LOG_LEVEL: $LOG_LEVEL

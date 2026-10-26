@@ -29,10 +29,10 @@ const rawWorkspaceJson = JSON.parse(
   ),
 );
 
-const MISSING_CLIENTID_ERROR = /CLIENTID/;
-const MISSING_RUNTIME_NAMESPACE_ERROR = /AIO_RUNTIME_NAMESPACE/;
-const MISSING_SECRET_ERROR = /TOTALS_COLLECTOR_PR/;
-const INVALID_JSON_ERROR = /not valid JSON/;
+const MISSING_CLIENTID_ERROR = /CLIENTID/u;
+const MISSING_RUNTIME_NAMESPACE_ERROR = /AIO_RUNTIME_NAMESPACE/u;
+const MISSING_SECRET_ERROR = /TOTALS_COLLECTOR_PR/u;
+const INVALID_JSON_ERROR = /not valid JSON/u;
 
 describe("resolveWorkspaceEnvVarName", () => {
   test("uppercases and replaces hyphens with underscores", () => {
@@ -107,7 +107,7 @@ describe("parseWorkspaceConfig", () => {
     ] = undefined;
 
     expect(() => parseWorkspaceConfig(missingField)).toThrow(
-      new RegExp(envKey),
+      new RegExp(envKey, "u"),
     );
   });
 
