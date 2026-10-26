@@ -2,8 +2,8 @@ import fs from "node:fs";
 
 import { describe, expect, test } from "vitest";
 
-const GET_COMMERCE_CLIENT_PATTERN = /getCommerceClient/;
-const GET_ADOBE_COMMERCE_CLIENT_PATTERN = /getAdobeCommerceClient/;
+const GET_COMMERCE_CLIENT_PATTERN = /getCommerceClient/u;
+const GET_ADOBE_COMMERCE_CLIENT_PATTERN = /getAdobeCommerceClient/u;
 
 describe("collect-taxes / collect-adjustment-taxes have no Commerce client dependency", () => {
   test.each([

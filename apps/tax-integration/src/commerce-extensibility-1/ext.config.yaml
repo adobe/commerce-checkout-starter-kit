@@ -59,7 +59,7 @@ runtimeManifest:
       actions:
         info:
           function: actions/info/index.js
-          web: 'yes'
+          web: "yes"
           runtime: nodejs:24
           annotations:
             require-adobe-auth: true
@@ -69,7 +69,7 @@ runtimeManifest:
       actions:
         collect-taxes:
           function: actions/collect-taxes/index.js
-          web: 'yes'
+          web: "yes"
           runtime: nodejs:24
           inputs:
             LOG_LEVEL: $LOG_LEVEL
@@ -79,7 +79,7 @@ runtimeManifest:
             final: true
         collect-adjustment-taxes:
           function: actions/collect-adjustment-taxes/index.js
-          web: 'yes'
+          web: "yes"
           runtime: nodejs:24
           inputs:
             LOG_LEVEL: $LOG_LEVEL

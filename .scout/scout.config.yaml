@@ -5,12 +5,12 @@
 # ignore / dampen / boost / tune overrides; defaults for
 # repository/markdown/ranking/index/projects are filled in at load time.
 ignore:
-  - '**/CHANGELOG.md'
-  - '**/CHANGELOG*'
-  - '**/CHANGES.md'
-  - '**/HISTORY.md'
+  - "**/CHANGELOG.md"
+  - "**/CHANGELOG*"
+  - "**/CHANGES.md"
+  - "**/HISTORY.md"
 
 dampen:
   - factor: 0.3
     patterns:
-      - '**/package.json'
+      - "**/package.json"

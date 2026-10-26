@@ -11,7 +11,7 @@ on:
         description: PR number this run is for - non-empty means deploy to the pr workspace, empty means main
         required: false
         type: string
-        default: ''
+        default: ""
 
 jobs:
   deploy:
@@ -30,7 +30,7 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: apps/${{ inputs.app }}/.nvmrc
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: apps/${{ inputs.app }}/package-lock.json
 
       - name: Install app dependencies

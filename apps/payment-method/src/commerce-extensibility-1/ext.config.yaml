@@ -59,7 +59,7 @@ runtimeManifest:
       actions:
         info:
           function: actions/info/index.js
-          web: 'yes'
+          web: "yes"
           runtime: nodejs:24
           annotations:
             require-adobe-auth: true
@@ -70,7 +70,7 @@ runtimeManifest:
         # https://developer.adobe.com/commerce/extensibility/starter-kit/checkout/payment-use-cases/
         validate-payment:
           function: actions/validate-payment/index.js
-          web: 'yes'
+          web: "yes"
           runtime: nodejs:24
           inputs:
             LOG_LEVEL: $LOG_LEVEL
@@ -80,7 +80,7 @@ runtimeManifest:
             final: true
         filter-payment:
           function: actions/filter-payment/index.js
-          web: 'yes'
+          web: "yes"
           runtime: nodejs:24
           inputs:
             LOG_LEVEL: $LOG_LEVEL

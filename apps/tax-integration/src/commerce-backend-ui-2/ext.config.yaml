@@ -18,7 +18,7 @@ runtimeManifest:
       actions:
         commerce-proxy-action:
           function: actions/commerce-proxy-action/index.js
-          web: 'yes'
+          web: "yes"
           runtime: nodejs:24
           inputs:
             LOG_LEVEL: debug
