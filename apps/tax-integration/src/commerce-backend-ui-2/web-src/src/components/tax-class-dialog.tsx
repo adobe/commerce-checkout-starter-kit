@@ -8,7 +8,7 @@ import { Picker, PickerItem } from "@react-spectrum/s2/Picker";
 import { TextField } from "@react-spectrum/s2/TextField";
 import { useCallback, useState } from "react";
 
-import type { Key } from "react-aria-components";
+import type { Key } from "@react-spectrum/s2";
 import type { CustomTaxCode } from "../hooks/use-custom-tax-codes.ts";
 
 export type TaxClass = {
