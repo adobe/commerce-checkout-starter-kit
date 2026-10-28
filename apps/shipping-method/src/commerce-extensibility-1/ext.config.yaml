@@ -22,7 +22,7 @@ runtimeManifest:
         app-config:
           function: .generated/actions/app-management/app-config.js
           web: yes
-          runtime: nodejs:24
+          runtime: nodejs:26
           inputs:
             LOG_LEVEL: $LOG_LEVEL
           annotations:
@@ -31,7 +31,7 @@ runtimeManifest:
         association:
           function: .generated/actions/app-management/association.js
           web: yes
-          runtime: nodejs:24
+          runtime: nodejs:26
           inputs:
             LOG_LEVEL: $LOG_LEVEL
           annotations:
@@ -40,7 +40,7 @@ runtimeManifest:
         installation:
           function: .generated/actions/app-management/installation.js
           web: yes
-          runtime: nodejs:24
+          runtime: nodejs:26
           inputs:
             LOG_LEVEL: $LOG_LEVEL
             AIO_COMMERCE_AUTH_IMS_CLIENT_ID: $AIO_COMMERCE_AUTH_IMS_CLIENT_ID
@@ -60,7 +60,7 @@ runtimeManifest:
         info:
           function: actions/info/index.js
           web: "yes"
-          runtime: nodejs:24
+          runtime: nodejs:26
           annotations:
             require-adobe-auth: true
             final: true
@@ -70,7 +70,7 @@ runtimeManifest:
         shipping-methods:
           function: actions/shipping-methods/index.js
           web: "yes"
-          runtime: nodejs:24
+          runtime: nodejs:26
           inputs:
             LOG_LEVEL: $LOG_LEVEL
             ENABLE_TELEMETRY: true
