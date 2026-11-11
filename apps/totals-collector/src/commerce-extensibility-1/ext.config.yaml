@@ -157,3 +157,13 @@ runtimeManifest:
           annotations:
             require-adobe-auth: true
             final: true
+        custom-fees:
+          function: actions/custom-fees/index.js
+          web: "yes"
+          runtime: nodejs:24
+          inputs:
+            LOG_LEVEL: $LOG_LEVEL
+            ENABLE_TELEMETRY: true
+          annotations:
+            require-adobe-auth: true
+            final: true
