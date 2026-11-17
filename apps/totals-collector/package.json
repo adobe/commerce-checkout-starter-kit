@@ -2,7 +2,7 @@
   "name": "@adobe/commerce-checkout-totals-collector",
   "version": "1.0.0",
   "private": true,
-  "description": "Out-of-process discount webhook actions for the Adobe Commerce checkout starter kit (cart totals collector rules).",
+  "description": "Out-of-process discount and custom fee webhook actions for the Adobe Commerce checkout starter kit (cart totals collector rules).",
   "type": "module",
   "imports": {
     "#app.commerce.config": "./src/commerce-extensibility-1/.generated/app.commerce.config.js"

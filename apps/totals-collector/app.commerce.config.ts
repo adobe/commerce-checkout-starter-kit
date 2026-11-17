@@ -15,7 +15,7 @@ import { defineConfig } from "@adobe/aio-commerce-lib-app/config";
 export default defineConfig({
   metadata: {
     description:
-      "Adobe Commerce checkout starter kit discount webhook actions (cart totals collector rules).",
+      "Adobe Commerce checkout starter kit discount and custom fee webhook actions (cart totals collector rules).",
     displayName: "Checkout Totals Collector",
     id: "checkout-totals-collector",
     version: "1.0.0",
@@ -28,6 +28,9 @@ export default defineConfig({
   // `tiered-quantity-discount`. Before deploying to a real store, change BOTH entries below to
   // whichever single discount action you actually want live — never point this webhook at more
   // than one action at a time.
+  //
+  // Custom fees use their own `get_total_modifications.custom_fees` slot (totals collector 1.2.0
+  // and later), so the `custom-fees` action runs alongside the discount action.
   webhooks: [
     {
       category: "modification",
@@ -78,6 +81,58 @@ export default defineConfig({
         timeout: 30_000,
         webhook_method:
           "plugin.out_of_process_totals_collector.api.get_total_modifications.execute",
+        webhook_type: "after",
+      },
+    },
+    {
+      category: "modification",
+      description:
+        "Adds custom fee lines to the cart totals through the totals collector custom fees webhook (PaaS).",
+      env: ["paas"],
+      label: "Totals Collector Custom Fees (PaaS)",
+      requireAdobeAuth: true,
+      runtimeAction: "totals-collector/custom-fees",
+      webhook: {
+        batch_name: "totals_collector_fees",
+        fallback_error_message:
+          "We encountered an issue while calculating your fees. Please contact the store owner for further assistance.",
+        fields: [
+          { name: "total" },
+          { name: "quote" },
+          { name: "shippingAssignment" },
+        ],
+        hook_name: "totals_collector_fees",
+        method: "POST",
+        soft_timeout: 1000,
+        timeout: 30_000,
+        webhook_method:
+          "plugin.magento.out_of_process_totals_collector.api.get_total_modifications.custom_fees",
+        webhook_type: "after",
+      },
+    },
+    {
+      category: "modification",
+      description:
+        "Adds custom fee lines to the cart totals through the totals collector custom fees webhook (SaaS).",
+      env: ["saas"],
+      label: "Totals Collector Custom Fees (SaaS)",
+      requireAdobeAuth: true,
+      runtimeAction: "totals-collector/custom-fees",
+      webhook: {
+        batch_name: "totals_collector_fees",
+        fallback_error_message:
+          "We encountered an issue while calculating your fees. Please contact the store owner for further assistance.",
+        fields: [
+          { name: "total" },
+          { name: "quote" },
+          { name: "shippingAssignment" },
+        ],
+        hook_name: "totals_collector_fees",
+        method: "POST",
+        soft_timeout: 1000,
+        timeout: 30_000,
+        webhook_method:
+          "plugin.out_of_process_totals_collector.api.get_total_modifications.custom_fees",
         webhook_type: "after",
       },
     },
