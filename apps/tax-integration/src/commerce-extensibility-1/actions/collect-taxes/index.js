@@ -42,9 +42,22 @@ function collectTaxes(params) {
     currentSpan.setAttribute("quote.items.count", oopQuote?.items?.length || 0);
 
     const operations = [];
+    const quantityByCode = new Map(
+      oopQuote.items.map((item) => [item.code, item.quantity]),
+    );
+    const parentCodes = new Set(
+      oopQuote.items.map((item) => item.parent_code).filter(Boolean),
+    );
 
     oopQuote.items.forEach((item, index) => {
-      operations.push(...calculateTaxOperations(item, index));
+      // Commerce sets a parent line's tax, such as a dynamic bundle's, to the sum of its children's tax
+      if (parentCodes.has(item.code)) {
+        return;
+      }
+      // A child's quantity is per unit of its parent line, while its discount and tax cover the whole row
+      const parentQuantity = quantityByCode.get(item.parent_code) ?? 1;
+      const rowQuantity = item.quantity * parentQuantity;
+      operations.push(...calculateTaxOperations(item, index, rowQuantity));
     });
 
     logger.info(
@@ -64,23 +77,23 @@ function collectTaxes(params) {
     return ok(exceptionOperation(`Server error: ${error.message}`));
   }
 }
+
 /**
  * Calculates the tax operations for the given item.
  * @param {object} item the item to calculate the tax operations for
  * @param {number} index the index of the item in the quote
+ * @param {number} rowQuantity the quantity of the whole row
  * @returns {object[]} the tax operations
  */
-function calculateTaxOperations(item, index) {
+function calculateTaxOperations(item, index, rowQuantity) {
   const taxesToApply = obtainTaxRates(item);
 
   const operations = [];
 
   // This sample assumes that discount is applied before tax (Apply Tax After Discount = NO)
-  const discountAmount = Math.min(
-    item.unit_price * item.quantity,
-    item.discount_amount,
-  );
-  const taxableAmount = item.unit_price * item.quantity - discountAmount;
+  const rowTotal = item.unit_price * rowQuantity;
+  const discountAmount = Math.min(rowTotal, item.discount_amount);
+  const taxableAmount = rowTotal - discountAmount;
   let itemTaxAmount = 0.0;
   let discountCompensationTaxAmount = 0.0;
 
