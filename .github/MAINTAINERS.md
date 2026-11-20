@@ -50,7 +50,7 @@ credential on a workspace, and a flat "invalid client ID" on the workspace-downl
 Adobe's own documented pattern
 ([CI/CD using GitHub Actions](https://developer.adobe.com/app-builder/docs/guides/app_builder_guides/deployment/cicd-using-github-actions))
 avoids all of this by never touching Console Management APIs from CI: a human provisions the
-workspace and extracts its config *once*, and CI just injects the pre-extracted values as
+workspace and extracts its config _once_, and CI just injects the pre-extracted values as
 plain environment variables into `aio app deploy`. This pipeline follows that model.
 
 The workspace config helper validates the downloaded workspace config and
@@ -99,7 +99,7 @@ workspace identifiers) from that file at deploy time.
 
 The `deploy` job sets `concurrency: { group: deploy-<app>-<purpose>, queue: max }`. `queue: max`
 is what guarantees strict FIFO ordering with no dropped runs — without it, GitHub Actions'
-default concurrency behavior cancels an older *pending* (not yet started) run whenever a newer
+default concurrency behavior cancels an older _pending_ (not yet started) run whenever a newer
 one arrives in the same group, which would silently drop a deploy if three or more runs piled
 up close together. `queue: max` is a newer addition to `concurrency`; if GitHub ever changes
 this, re-check
